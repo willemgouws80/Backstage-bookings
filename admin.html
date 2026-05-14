@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backstage Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C9911A;--gold-light:#e8b040;--gold-dim:rgba(201,145,26,.12);--black:#090805;--surface:#111009;--surface2:#1a1810;--surface3:#232116;--border:rgba(201,145,26,.16);--text:#f0ead8;--muted:#7a7060;--danger:#c0392b;--success:#27ae60}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOP BAR ── */
+.topbar{background:linear-gradient(90deg,#0f0d07,#1a1810);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-logo{display:flex;align-items:center;gap:.75rem}
+.tb-logo svg{width:34px}
+.tb-logo-text{display:flex;flex-direction:column;line-height:1.1}
+.tb-logo-text span:first-child{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)}
+.tb-logo-text span:last-child{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:1rem}
+.tb-status{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:.3rem .8rem;border-radius:100px;background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
+.tb-preview{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:1px;transition:all .3s}
+.tb-preview:hover{color:var(--gold);border-color:var(--gold)}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
+.sidebar-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:.5rem 1.5rem;margin-top:1rem;display:block}
+.sidebar-label:first-child{margin-top:0}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.5rem;color:var(--muted);cursor:pointer;transition:all .3s;font-size:.9rem;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--gold);background:var(--gold-dim);border-left-color:var(--gold)}
+.nav-item .icon{font-size:1rem;width:20px;text-align:center}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;padding:2rem}
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.page-header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300}
+.page-header h1 em{font-style:italic;color:var(--gold)}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.5rem;text-align:center}
+.stat-val{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:300;color:var(--gold);line-height:1;margin-bottom:.25rem}
+.stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* ── SECTION CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.75rem;margin-bottom:1.5rem}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between}
+
+/* ── FORM ELEMENTS ── */
+.fg{margin-bottom:1.25rem}
+.fg label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.75rem .9rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;transition:border-color .3s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold)}
+.fg textarea{resize:vertical;min-height:80px;font-family:'Barlow',sans-serif}
+.fg select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23C9911A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .8rem center;-webkit-appearance:none;padding-right:2rem;cursor:pointer}
+.fg select option{background:var(--surface2)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:700px){.two-col,.three-col{grid-template-columns:1fr}}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;border-top:1px solid rgba(255,255,255,.04)}
+.toggle-row:first-of-type{border-top:none}
+.toggle-label{font-size:.9rem;color:var(--text)}
+.toggle-label small{display:block;font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.toggle{position:relative;display:inline-block;width:44px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:22px;transition:.3s;cursor:pointer}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--gold)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(22px)}
+
+/* ── BUTTONS ── */
+.btn{padding:.7rem 1.5rem;border:none;border-radius:1px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-gold{background:var(--gold);color:#000}
+.btn-gold:hover{background:var(--gold-light);box-shadow:0 4px 12px rgba(201,145,26,.3)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#a93226}
+.btn-sm{padding:.4rem .9rem;font-size:.72rem}
+.btn-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1rem 1.5rem;font-size:.9rem;z-index:999;transform:translateY(80px);opacity:0;transition:all .4s;pointer-events:none;min-width:260px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+
+/* ── LIST ITEMS ── */
+.list-item{background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.li-content{flex:1}
+.li-title{font-weight:500;margin-bottom:.2rem;font-size:.95rem}
+.li-meta{font-size:.8rem;color:var(--muted)}
+.li-actions{display:flex;gap:.5rem;flex-shrink:0}
+
+/* ── PRICING PLAN EDITOR ── */
+.plan-row{background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:.75rem}
+.plan-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:1rem}
+.plan-row-header h4{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text)}
+
+/* ── BOOKING STATUS ── */
+.status-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:2px}
+.status-pending{background:rgba(201,145,26,.15);color:var(--gold);border:1px solid rgba(201,145,26,.3)}
+.status-confirmed{background:rgba(39,174,96,.15);color:var(--success);border:1px solid rgba(39,174,96,.3)}
+.status-cancelled{background:rgba(192,57,43,.15);color:var(--danger);border:1px solid rgba(192,57,43,.3)}
+
+/* ── LOADING ── */
+.loading-text{color:var(--muted);font-size:.9rem;padding:1.5rem 0}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:1px;height:60px;margin-bottom:.6rem}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="tb-logo">
+    <img src="New_Backstage_logo.png" style="width:40px;height:40px;object-fit:contain;border-radius:3px" alt="Backstage Worship">
+    <div class="tb-logo-text">
+      <span>Backstage Worship</span>
+      <span>Admin Dashboard</span>
+    </div>
+  </div>
+  <div class="tb-right">
+    <span class="tb-status" id="fbStatus">Connecting…</span>
+    <a href="index.html" target="_blank" class="tb-preview">↗ View Site</a>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <span class="sidebar-label">Overview</span>
+    <div class="nav-item active" onclick="showPanel('dashboard')"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPanel('bookings')"><span class="icon">📅</span> Bookings</div>
+
+    <span class="sidebar-label">Content</span>
+    <div class="nav-item" onclick="showPanel('courses')"><span class="icon">🎓</span> Courses</div>
+    <div class="nav-item" onclick="showPanel('pricing')"><span class="icon">💰</span> Pricing</div>
+    <div class="nav-item" onclick="showPanel('promo')"><span class="icon">🎯</span> Promotion</div>
+
+    <span class="sidebar-label">Settings</span>
+    <div class="nav-item" onclick="showPanel('payments')"><span class="icon">💳</span> Payments</div>
+    <div class="nav-item" onclick="showPanel('contact')"><span class="icon">📍</span> Contact & Bank</div>
+    <div class="nav-item" onclick="showPanel('config')"><span class="icon">⚙️</span> Firebase Setup</div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header">
+        <h1>Good day, <em>Willem</em></h1>
+      </div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val" id="statBookings">—</div><div class="stat-lbl">Bookings</div></div>
+        <div class="stat"><div class="stat-val" id="statCourses">—</div><div class="stat-lbl">Courses</div></div>
+        <div class="stat"><div class="stat-val" id="statStudents">—</div><div class="stat-lbl">Students</div></div>
+        <div class="stat"><div class="stat-val" id="statRevenue">—</div><div class="stat-lbl">Est. Revenue</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Bookings</div>
+        <div id="recentBookings"><div class="loading-text">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── BOOKINGS ── -->
+    <div class="panel" id="panel-bookings">
+      <div class="page-header">
+        <h1>Bookings</h1>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('all')">All</button>
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('pending')">Pending</button>
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('confirmed')">Confirmed</button>
+        </div>
+      </div>
+      <div id="bookingsList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+
+    <!-- ── COURSES ── -->
+    <div class="panel" id="panel-courses">
+      <div class="page-header">
+        <h1><em>Courses</em></h1>
+        <button class="btn btn-gold btn-sm" onclick="toggleCourseForm()">+ Add Course</button>
+      </div>
+
+      <!-- Add / Edit form -->
+      <div class="card" id="courseFormCard" style="display:none">
+        <div class="card-title">New Course</div>
+        <div class="fg"><label>Course Title</label><input type="text" id="cTitle" placeholder="e.g. Beginner Guitar Fundamentals"></div>
+        <div class="fg"><label>Description</label><textarea id="cDesc" placeholder="What students will learn…"></textarea></div>
+        <div class="three-col">
+          <div class="fg"><label>Category</label>
+            <select id="cCat">
+              <option value="Guitar">Guitar</option>
+              <option value="Vocals">Vocals</option>
+              <option value="Theory">Theory</option>
+              <option value="Worship">Worship</option>
+            </select>
+          </div>
+          <div class="fg"><label>Level</label>
+            <select id="cLevel">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+          <div class="fg"><label>Duration (weeks)</label><input type="number" id="cDuration" placeholder="8"></div>
+        </div>
+        <div class="fg"><label>Price (ZAR)</label><input type="number" id="cPrice" placeholder="1200"></div>
+        <div class="fg"><label>Modules (one per line)</label><textarea id="cModules" rows="6" placeholder="Module 1: Introduction&#10;Module 2: Basic Chords&#10;Module 3: Strumming"></textarea></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="saveCourse()">Save Course → Live Instantly</button>
+          <button class="btn btn-outline" onclick="toggleCourseForm()">Cancel</button>
+        </div>
+      </div>
+
+      <div id="coursesList"><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+
+    <!-- ── PRICING ── -->
+    <div class="panel" id="panel-pricing">
+      <div class="page-header">
+        <h1><em>Pricing</em> Plans</h1>
+        <button class="btn btn-gold btn-sm" onclick="addPlanRow()">+ Add Plan</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Lesson Plans <span style="color:var(--muted);font-size:.7rem;font-weight:400">Changes go live on save</span></div>
+        <div id="planRows"></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="savePricing()">Save Pricing → Live Instantly</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROMOTION ── -->
+    <div class="panel" id="panel-promo">
+      <div class="page-header"><h1><em>Promotion</em> Banner</h1></div>
+      <div class="card">
+        <div class="card-title">Promo Banner (shown at top of website)</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Banner Active<small>Shows the gold banner strip on the website</small></div>
+          <label class="toggle"><input type="checkbox" id="promoActive"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg" style="margin-top:1.25rem"><label>Banner Text</label><input type="text" id="promoText" placeholder="April Special — First month 50% off all guitar lessons!"></div>
+        <div class="two-col">
+          <div class="fg"><label>Discount %</label><input type="number" id="promoDiscount" placeholder="50"></div>
+          <div class="fg"><label>Valid Until</label><input type="date" id="promoEnd"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="savePromo()">Save → Live Instantly</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAYMENTS ── -->
+    <div class="panel" id="panel-payments">
+      <div class="page-header"><h1><em>Payment</em> Settings</h1></div>
+      <div class="card">
+        <div class="card-title">Yoco (In-Person Card Payments)</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Yoco<small>Show card payment tab on booking form</small></div>
+          <label class="toggle"><input type="checkbox" id="yocoEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg" style="margin-top:1rem"><label>Yoco Public Key</label><input type="text" id="yocoPublicKey" placeholder="pk_live_…"></div>
+        <div class="fg"><label>Yoco Secret Key</label><input type="password" id="yocoSecretKey" placeholder="sk_live_…"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Stripe (Online Payments)</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Stripe<small>Show online payment tab on booking form</small></div>
+          <label class="toggle"><input type="checkbox" id="stripeEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg" style="margin-top:1rem"><label>Stripe Checkout URL</label><input type="text" id="stripeUrl" placeholder="https://buy.stripe.com/…"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">EFT / Bank Transfer</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable EFT<small>Show bank transfer tab on booking form</small></div>
+          <label class="toggle"><input type="checkbox" id="eftEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="savePayments()">Save Payment Settings → Live Instantly</button>
+      </div>
+    </div>
+
+    <!-- ── CONTACT & BANK ── -->
+    <div class="panel" id="panel-contact">
+      <div class="page-header"><h1>Contact &amp; <em>Banking</em></h1></div>
+      <div class="card">
+        <div class="card-title">Contact Information (shown on website)</div>
+        <div class="two-col">
+          <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="contactPhone" placeholder="+27 82 XXX XXXX"></div>
+          <div class="fg"><label>Email</label><input type="email" id="contactEmail" placeholder="info@backstage.co.za"></div>
+        </div>
+        <div class="fg"><label>Location Description</label><input type="text" id="contactLocation" placeholder="Pretoria East, South Africa"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Banking Details (shown in EFT tab)</div>
+        <div class="fg"><label>Account Name</label><input type="text" id="bankName" placeholder="Backstage Worship Music School"></div>
+        <div class="two-col">
+          <div class="fg"><label>Bank</label><input type="text" id="bankBank" placeholder="FNB"></div>
+          <div class="fg"><label>Account Number</label><input type="text" id="bankAccNo" placeholder="XXXX XXXX XXX"></div>
+        </div>
+        <div class="fg"><label>Branch Code</label><input type="text" id="bankBranch" placeholder="250655"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="saveContact()">Save → Live Instantly</button>
+      </div>
+    </div>
+
+    <!-- ── FIREBASE CONFIG ── -->
+    <div class="panel" id="panel-config">
+      <div class="page-header"><h1>Firebase <em>Setup</em></h1></div>
+      <div class="card">
+        <div class="card-title">How to find your Firebase credentials</div>
+        <ol style="color:var(--muted);font-size:.875rem;line-height:2;padding-left:1.25rem">
+          <li>Go to <strong style="color:var(--gold)">console.firebase.google.com</strong></li>
+          <li>Select your <strong style="color:var(--gold)">backstage-music</strong> project</li>
+          <li>Click the ⚙️ gear icon → Project Settings</li>
+          <li>Scroll to "Your apps" → find your Web app</li>
+          <li>Copy the config values below into both HTML files</li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="card-title">Firebase Config (paste into both index.html and admin.html)</div>
+        <div class="fg"><label>API Key</label><input type="text" id="cfgApiKey" placeholder="AIzaSy…"></div>
+        <div class="fg"><label>Project ID</label><input type="text" id="cfgProjectId" placeholder="backstage-music"></div>
+        <div class="fg"><label>Messaging Sender ID</label><input type="text" id="cfgSenderId" placeholder="123456789"></div>
+        <div class="fg"><label>App ID</label><input type="text" id="cfgAppId" placeholder="1:123:web:abc…"></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="generateConfig()">Generate Code Snippet</button>
+        </div>
+        <pre id="configOutput" style="display:none;background:var(--black);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-top:1rem;font-size:.8rem;color:var(--gold);overflow-x:auto;white-space:pre-wrap;line-height:1.6"></pre>
+      </div>
+      <div class="card">
+        <div class="card-title">Firestore Rules (paste into Firebase → Firestore → Rules)</div>
+        <pre style="background:var(--black);border:1px solid var(--border);border-radius:1px;padding:1.25rem;font-size:.8rem;color:#a0c08a;overflow-x:auto;white-space:pre-wrap;line-height:1.6">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /bookings/{b} {
+      allow read, write: if true;
+    }
+    match /courses/{c} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /siteConfig/{d} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}</pre>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+// ─── FIREBASE CONFIG ────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",
+  authDomain:        "backstage-music.firebaseapp.com",
+  databaseURL:       "https://backstage-music-default-rtdb.firebaseio.com",
+  projectId:         "backstage-music",
+  storageBucket:     "backstage-music.firebasestorage.app",
+  messagingSenderId: "864389877971",
+  appId:             "1:864389877971:web:c7d15ae843d54172c90426",
+  measurementId:     "G-DY40YLD9FM"
+};
+// ────────────────────────────────────────────────────────────
+
+let app, db;
+try {
+  app = initializeApp(firebaseConfig);
+  db  = getFirestore(app);
+  document.getElementById('fbStatus').textContent  = '● Connected';
+  document.getElementById('fbStatus').style.color  = '#27ae60';
+} catch(e) {
+  document.getElementById('fbStatus').textContent = '✕ Not Connected';
+  document.getElementById('fbStatus').style.color = '#c0392b';
+}
+
+window._db = db;
+
+// ─── LOAD DASHBOARD ───
+async function loadDashboard() {
+  try {
+    const [bookSnap, courseSnap] = await Promise.all([
+      getDocs(collection(db,'bookings')),
+      getDocs(collection(db,'courses'))
+    ]);
+    const bookings = [], courses = [];
+    bookSnap.forEach(d => bookings.push({ id: d.id, ...d.data() }));
+    courseSnap.forEach(d => courses.push({ id: d.id, ...d.data() }));
+
+    window._bookings = bookings;
+    window._courses  = courses;
+
+    document.getElementById('statBookings').textContent = bookings.length;
+    document.getElementById('statCourses').textContent  = courses.length;
+    document.getElementById('statStudents').textContent = new Set(bookings.map(b=>b.email)).size;
+    const rev = bookings.reduce((s,b) => s + (Number(b.price)||0), 0);
+    document.getElementById('statRevenue').textContent  = `R${(rev/1000).toFixed(0)}k`;
+
+    // Recent bookings
+    const recent = [...bookings].sort((a,b) => b.createdAt?.localeCompare(a.createdAt||'')).slice(0,5);
+    document.getElementById('recentBookings').innerHTML = recent.length ? recent.map(b => `
+      <div class="list-item">
+        <div class="li-content">
+          <div class="li-title">${b.firstName||''} ${b.lastName||''}</div>
+          <div class="li-meta">${b.plan||'—'} · ${b.prefDay||'—'} ${b.prefTime||''} · ${b.payMethod||'—'}</div>
+        </div>
+        <span class="status-badge status-${b.status||'pending'}">${b.status||'pending'}</span>
+      </div>`) .join('') : '<div class="loading-text">No bookings yet</div>';
+
+    renderBookingsList(bookings);
+    renderCoursesList(courses);
+  } catch(e) {
+    console.warn('Dashboard load error:', e);
+  }
+}
+
+// ─── BOOKINGS ───
+window.filterBookings = function(status) {
+  const list = status === 'all' ? window._bookings : (window._bookings||[]).filter(b=>b.status===status);
+  renderBookingsList(list);
+};
+
+function renderBookingsList(bookings) {
+  document.getElementById('bookingsList').innerHTML = bookings.length ? bookings.map(b=>`
+    <div class="list-item">
+      <div class="li-content">
+        <div class="li-title">${b.firstName||''} ${b.lastName||''} <span class="status-badge status-${b.status||'pending'}" style="margin-left:.5rem">${b.status||'pending'}</span></div>
+        <div class="li-meta">${b.plan||'—'} · ${b.instrument||'—'} · ${b.prefDay||'—'} ${b.prefTime||''} · ${b.email||''}</div>
+      </div>
+      <div class="li-actions">
+        <button class="btn btn-outline btn-sm" onclick="window.confirmBooking('${b.id}')">✓ Confirm</button>
+        <button class="btn btn-danger btn-sm" onclick="window.deleteBooking('${b.id}')">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="loading-text">No bookings found</div>';
+}
+
+window.confirmBooking = async function(id) {
+  try {
+    await updateDoc(doc(db,'bookings',id), { status:'confirmed' });
+    toast('Booking confirmed!','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.deleteBooking = async function(id) {
+  if (!confirm('Delete this booking?')) return;
+  try {
+    await deleteDoc(doc(db,'bookings',id));
+    toast('Booking deleted','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ─── COURSES ───
+window.toggleCourseForm = function() {
+  const card = document.getElementById('courseFormCard');
+  card.style.display = card.style.display === 'none' ? 'block' : 'none';
+};
+
+window.saveCourse = async function() {
+  const title = document.getElementById('cTitle').value.trim();
+  if (!title) { toast('Please enter a course title','error'); return; }
+  const course = {
+    title,
+    description: document.getElementById('cDesc').value,
+    category:    document.getElementById('cCat').value,
+    level:       document.getElementById('cLevel').value,
+    duration:    Number(document.getElementById('cDuration').value)||8,
+    price:       Number(document.getElementById('cPrice').value)||0,
+    modules:     document.getElementById('cModules').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    createdAt:   new Date().toISOString()
+  };
+  try {
+    await addDoc(collection(db,'courses'), course);
+    toast('Course saved! Live on website now.','success');
+    toggleCourseForm();
+    ['cTitle','cDesc','cDuration','cPrice','cModules'].forEach(id => document.getElementById(id).value='');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.deleteCourse = async function(id) {
+  if (!confirm('Delete this course?')) return;
+  try {
+    await deleteDoc(doc(db,'courses',id));
+    toast('Course deleted','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+function renderCoursesList(courses) {
+  document.getElementById('coursesList').innerHTML = courses.length ? courses.map(c=>`
+    <div class="list-item">
+      <div class="li-content">
+        <div class="li-title">${c.title}</div>
+        <div class="li-meta">${c.category} · ${c.level} · ${c.duration} weeks · R${Number(c.price).toLocaleString()}</div>
+      </div>
+      <div class="li-actions">
+        <button class="btn btn-danger btn-sm" onclick="window.deleteCourse('${c.id}')">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="loading-text">No courses yet — add one above</div>';
+}
+
+// ─── PRICING ───
+let _plans = [];
+
+async function loadPricing() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','pricing'));
+    _plans = snap.exists() ? (snap.data().plans||[]) : getDefaultPlans();
+  } catch(e) {
+    _plans = getDefaultPlans();
+  }
+  renderPlanRows();
+}
+
+function getDefaultPlans() {
+  return [
+    {id:'30m',name:'30-min Monthly',label:'30 Minutes · Monthly',price:800,period:'per month · 4 lessons',featured:false,features:['4 lessons/month','30 min per session','Guitar or vocals','Flexible scheduling']},
+    {id:'60m',name:'60-min Monthly',label:'60 Minutes · Monthly',price:1200,period:'per month · 4 lessons',featured:true,features:['4 lessons/month','60 min per session','Guitar or vocals','Theory included','Flexible scheduling']},
+    {id:'30a',name:'30-min Annual',label:'30 Minutes · Annual',price:8000,period:'per year · 48 lessons',featured:false,features:['48 lessons/year','30 min per session','Save R1,600','Priority scheduling']},
+    {id:'60a',name:'60-min Annual',label:'60 Minutes · Annual',price:12000,period:'per year · 48 lessons',featured:false,features:['48 lessons/year','60 min per session','Save R2,400','Theory included','Priority scheduling']}
+  ];
+}
+
+function renderPlanRows() {
+  document.getElementById('planRows').innerHTML = _plans.map((p,i) => `
+    <div class="plan-row" id="plan-${i}">
+      <div class="plan-row-header">
+        <h4>Plan ${i+1}</h4>
+        <button class="btn btn-danger btn-sm" onclick="removePlan(${i})">Remove</button>
+      </div>
+      <div class="two-col">
+        <div class="fg"><label>Plan Name</label><input type="text" value="${p.name}" onchange="_plans[${i}].name=this.value" placeholder="60-min Monthly"></div>
+        <div class="fg"><label>Label (shown on card)</label><input type="text" value="${p.label}" onchange="_plans[${i}].label=this.value" placeholder="60 Minutes · Monthly"></div>
+      </div>
+      <div class="two-col">
+        <div class="fg"><label>Price (ZAR)</label><input type="number" value="${p.price}" onchange="_plans[${i}].price=Number(this.value)"></div>
+        <div class="fg"><label>Period text</label><input type="text" value="${p.period}" onchange="_plans[${i}].period=this.value" placeholder="per month · 4 lessons"></div>
+      </div>
+      <div class="fg"><label>Features (one per line)</label><textarea rows="4" onchange="_plans[${i}].features=this.value.split('\\n').filter(Boolean)">${(p.features||[]).join('\n')}</textarea></div>
+      <div class="toggle-row">
+        <div class="toggle-label">Mark as "Most Popular"</div>
+        <label class="toggle"><input type="checkbox" ${p.featured?'checked':''} onchange="_plans[${i}].featured=this.checked"><span class="toggle-slider"></span></label>
+      </div>
+    </div>`).join('');
+}
+
+window.addPlanRow = function() {
+  _plans.push({id:'plan'+Date.now(),name:'',label:'',price:0,period:'',featured:false,features:[]});
+  renderPlanRows();
+};
+
+window.removePlan = function(i) {
+  _plans.splice(i,1);
+  renderPlanRows();
+};
+
+window.savePricing = async function() {
+  try {
+    await setDoc(doc(db,'siteConfig','pricing'), { plans: _plans });
+    toast('Pricing saved! Website updated instantly.','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ─── PROMO ───
+async function loadPromo() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const promo = snap.data().promo || {};
+    document.getElementById('promoActive').checked = !!promo.active;
+    document.getElementById('promoText').value     = promo.text||'';
+    document.getElementById('promoDiscount').value = promo.discount||'';
+    document.getElementById('promoEnd').value      = promo.validUntil||'';
+  } catch(e) {}
+}
+
+window.savePromo = async function() {
+  const promo = {
+    active:     document.getElementById('promoActive').checked,
+    text:       document.getElementById('promoText').value,
+    discount:   Number(document.getElementById('promoDiscount').value)||0,
+    validUntil: document.getElementById('promoEnd').value
+  };
+  try {
+    const ref = doc(db,'siteConfig','main');
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? snap.data() : {};
+    await setDoc(ref, { ...existing, promo });
+    toast('Promo banner updated! Live on website now.','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ─── PAYMENTS ───
+async function loadPayments() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const pay = snap.data().payments||{};
+    if (pay.yoco)   { document.getElementById('yocoEnabled').checked=!!pay.yoco.enabled; document.getElementById('yocoPublicKey').value=pay.yoco.publicKey||''; }
+    if (pay.stripe) { document.getElementById('stripeEnabled').checked=!!pay.stripe.enabled; document.getElementById('stripeUrl').value=pay.stripe.checkoutUrl||''; }
+    if (pay.eft)    { document.getElementById('eftEnabled').checked=!!pay.eft.enabled; }
+  } catch(e) {}
+}
+
+window.savePayments = async function() {
+  const payments = {
+    yoco:   { enabled: document.getElementById('yocoEnabled').checked,   publicKey: document.getElementById('yocoPublicKey').value },
+    stripe: { enabled: document.getElementById('stripeEnabled').checked,  checkoutUrl: document.getElementById('stripeUrl').value },
+    eft:    { enabled: document.getElementById('eftEnabled').checked }
+  };
+  try {
+    const ref = doc(db,'siteConfig','main');
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? snap.data() : {};
+    await setDoc(ref, { ...existing, payments });
+    toast('Payment settings saved! Live on website now.','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ─── CONTACT & BANK ───
+async function loadContact() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const d = snap.data();
+    if (d.contact) {
+      document.getElementById('contactPhone').value    = d.contact.phone||'';
+      document.getElementById('contactEmail').value    = d.contact.email||'';
+      document.getElementById('contactLocation').value = d.contact.location||'';
+    }
+    if (d.banking) {
+      document.getElementById('bankName').value   = d.banking.accountName||'';
+      document.getElementById('bankBank').value   = d.banking.bank||'';
+      document.getElementById('bankAccNo').value  = d.banking.accountNumber||'';
+      document.getElementById('bankBranch').value = d.banking.branchCode||'';
+    }
+  } catch(e) {}
+}
+
+window.saveContact = async function() {
+  const contact = {
+    phone:    document.getElementById('contactPhone').value,
+    email:    document.getElementById('contactEmail').value,
+    location: document.getElementById('contactLocation').value
+  };
+  const banking = {
+    accountName:   document.getElementById('bankName').value,
+    bank:          document.getElementById('bankBank').value,
+    accountNumber: document.getElementById('bankAccNo').value,
+    branchCode:    document.getElementById('bankBranch').value
+  };
+  try {
+    const ref = doc(db,'siteConfig','main');
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? snap.data() : {};
+    await setDoc(ref, { ...existing, contact, banking });
+    toast('Contact & banking updated! Live on website now.','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ─── CONFIG GENERATOR ───
+window.generateConfig = function() {
+  const apiKey    = document.getElementById('cfgApiKey').value;
+  const projectId = document.getElementById('cfgProjectId').value;
+  const senderId  = document.getElementById('cfgSenderId').value;
+  const appId     = document.getElementById('cfgAppId').value;
+  const code = `const firebaseConfig = {
+  apiKey:            "${apiKey}",
+  authDomain:        "${projectId}.firebaseapp.com",
+  projectId:         "${projectId}",
+  storageBucket:     "${projectId}.appspot.com",
+  messagingSenderId: "${senderId}",
+  appId:             "${appId}"
+};`;
+  const out = document.getElementById('configOutput');
+  out.textContent = code;
+  out.style.display = 'block';
+  toast('Paste this block into both index.html and admin.html','success');
+};
+
+// ─── INIT ───
+loadDashboard();
+loadPricing();
+loadPromo();
+loadPayments();
+loadContact();
+</script>
+
+<script>
+// ─── PANEL SWITCHING ───
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ─── TOAST ───
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+window.toast = toast;
+</script>
+</body>
+</html>
