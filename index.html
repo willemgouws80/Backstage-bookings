@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backstage Worship Music School</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C9911A;--gold-light:#e8b040;--gold-dim:rgba(201,145,26,0.15);--black:#090805;--surface:#111009;--surface2:#1a1810;--surface3:#232116;--border:rgba(201,145,26,0.16);--text:#f0ead8;--muted:#7a7060;--white:#FFFFFF}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;opacity:.6}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.2rem 3rem;display:flex;align-items:center;justify-content:space-between;transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(9,8,5,0.92);backdrop-filter:blur(12px);border-bottom-color:var(--border)}
+.nav-logo{display:flex;align-items:center;gap:.85rem;text-decoration:none}
+.nav-logo-img{width:48px;height:48px;object-fit:contain;border-radius:3px}
+.nav-links{display:flex;align-items:center;gap:2.5rem}
+.nav-links a{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .3s}
+.nav-links a:hover{color:var(--gold)}
+.nav-book{background:var(--gold);color:#000!important;padding:.5rem 1.4rem;border-radius:1px;font-weight:600!important}
+.nav-book:hover{background:var(--gold-light)!important}
+@media(max-width:768px){.nav-links{display:none}nav{padding:1rem 1.5rem}.nav-mobile-book{display:flex!important}}
+#promoBanner{background:linear-gradient(90deg,#7a5510,var(--gold),#7a5510);padding:.7rem 2rem;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;letter-spacing:.08em;color:#000;font-weight:600;display:none;text-decoration:none;cursor:pointer;transition:opacity .2s}
+#promoBanner.show{display:block}
+#promoBanner:hover{opacity:.88}
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 5rem;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -10%,rgba(201,145,26,.11) 0%,transparent 65%);background-color:var(--black)}
+.hero-ring{position:absolute;left:50%;top:0;transform:translateX(-50%);width:900px;height:900px;border-radius:50%;border:1px solid rgba(201,145,26,.12);margin-top:-350px;animation:breathe 7s ease-in-out infinite}
+.hero-ring2{position:absolute;left:50%;top:0;transform:translateX(-50%);width:1400px;height:1400px;border-radius:50%;border:1px solid rgba(201,145,26,.06);margin-top:-620px;animation:breathe 7s ease-in-out infinite .8s}
+@keyframes breathe{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.015)}}
+.hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+.hero-logo{width:320px;height:320px;object-fit:contain;margin-bottom:1.5rem;animation:fadeUp .9s ease both;filter:drop-shadow(0 0 50px rgba(201,145,26,0.3))}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);border:1px solid var(--border);padding:.4rem 1.2rem;border-radius:100px;background:var(--gold-dim);margin-bottom:2rem;animation:fadeUp .9s ease .1s both}
+.hero-desc{max-width:500px;font-size:.975rem;line-height:1.75;color:var(--muted);margin-bottom:3rem;animation:fadeUp .9s ease .4s both}
+.hero-ctas{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;animation:fadeUp .9s ease .5s both}
+.btn-primary{background:var(--gold);color:#000;padding:.9rem 2.2rem;border:1px solid var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:.85rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;cursor:pointer;text-decoration:none;transition:all .3s;border-radius:1px;display:inline-block}
+.btn-primary:hover{background:var(--gold-light);box-shadow:0 8px 24px rgba(201,145,26,.3);transform:translateY(-2px)}
+.btn-ghost{background:transparent;color:var(--text);padding:.9rem 2.2rem;border:1px solid var(--border);font-family:'Barlow Condensed',sans-serif;font-size:.85rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:all .3s;border-radius:1px;display:inline-block}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.section{max-width:1200px;margin:0 auto;padding:6rem 2rem}
+.section-label{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.8rem);font-weight:300;line-height:1.1;margin-bottom:1.5rem}
+.section-title em{font-style:italic;color:var(--gold)}
+.rule{width:50px;height:1px;background:var(--gold);opacity:.5;margin-bottom:3rem}
+.offerings-wrap{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.offerings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:var(--border);border:1px solid var(--border)}
+.offering{background:var(--surface);padding:2.5rem;position:relative;overflow:hidden;transition:background .3s}
+.offering::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gold);transform:scaleX(0);transition:transform .4s ease;transform-origin:left}
+.offering:hover{background:var(--surface2)}.offering:hover::after{transform:scaleX(1)}
+.offering-icon{font-size:1.8rem;margin-bottom:1.5rem}
+.offering h3{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:400;margin-bottom:.75rem}
+.offering p{font-size:.875rem;color:var(--muted);line-height:1.75}
+#coursesGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
+.course-card{background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden;display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s}
+.course-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.course-head{padding:1.75rem 1.75rem 1.25rem;border-bottom:1px solid var(--border);display:flex;gap:1rem;justify-content:space-between;align-items:flex-start}
+.course-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem}
+.badge{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.2rem .6rem;border-radius:2px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,145,26,.22)}
+.badge-full{background:rgba(192,57,43,.15);color:#e74c3c;border-color:rgba(192,57,43,.3)}
+.course-head h3{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:400;line-height:1.2}
+.course-price-block{text-align:right;flex-shrink:0}
+.course-price-block .amt{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:600;color:var(--gold);display:block}
+.course-price-block .dur{font-size:.75rem;color:var(--muted)}
+.course-body{padding:1.25rem 1.75rem;flex:1}
+.course-body p{font-size:.875rem;color:var(--muted);line-height:1.7;margin-bottom:1rem}
+.module-list{list-style:none}
+.module-list li{font-size:.82rem;color:var(--muted);padding:.3rem 0 .3rem 1.2rem;position:relative;border-top:1px solid rgba(255,255,255,.04)}
+.module-list li::before{content:'—';position:absolute;left:0;color:var(--gold);opacity:.5}
+.course-foot{padding:1.25rem 1.75rem;border-top:1px solid var(--border)}
+.course-foot-info{font-size:.78rem;color:var(--muted);margin-bottom:.75rem;display:flex;gap:1rem;flex-wrap:wrap}
+.spots-left{color:var(--gold)}.spots-full{color:#e74c3c}
+.enroll-btn{width:100%;padding:.8rem;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:.82rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-radius:1px}
+.enroll-btn:hover{background:var(--gold);color:#000}
+.enroll-btn:disabled{border-color:var(--border);color:var(--muted);cursor:not-allowed}
+.enroll-btn:disabled:hover{background:transparent}
+.slot-full{opacity:.45;cursor:not-allowed;border-style:dashed}
+.slot-full:hover{border-color:var(--border)!important}
+.course-slots{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem}
+.slot-row{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:var(--muted);padding:.3rem 0;border-top:1px solid rgba(255,255,255,.04)}
+.slot-row:first-child{border-top:none}
+.slot-time{color:var(--text)}
+.pricing-wrap{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+#pricingGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem}
+.price-card{border:1px solid var(--border);border-radius:2px;padding:2.25rem 2rem;background:var(--surface2);text-align:center;cursor:pointer;transition:border-color .3s,box-shadow .3s;position:relative}
+.price-card.featured{border-color:var(--gold);background:linear-gradient(180deg,rgba(201,145,26,.07) 0%,var(--surface2) 100%)}
+.price-card:hover{border-color:var(--gold-light);box-shadow:0 0 0 2px rgba(201,145,26,.25),0 16px 32px rgba(0,0,0,.35)}
+.feat-tag{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.28rem 1rem;font-weight:600}
+.price-label{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.price-amount{font-family:'Cormorant Garamond',serif;font-size:3.8rem;font-weight:300;line-height:1;color:var(--white);margin-bottom:.2rem}
+.price-amount sup{font-size:1.4rem;color:var(--gold);vertical-align:super}
+.price-period{font-size:.78rem;color:var(--muted);margin-bottom:1.5rem}
+.price-features{list-style:none;text-align:left;margin-bottom:2rem}
+.price-features li{font-size:.85rem;color:var(--muted);padding:.45rem 0;border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:.5rem}
+.price-features li::before{content:'✓';color:var(--gold);font-size:.75rem;flex-shrink:0}
+.price-loading{color:var(--muted);font-size:.9rem;padding:2rem 0;text-align:center;grid-column:1/-1}
+.booking-section{border-top:1px solid var(--border)}
+.booking-wrap{display:grid;grid-template-columns:1fr 1.25fr;gap:5rem;align-items:start}
+@media(max-width:900px){.booking-wrap{grid-template-columns:1fr;gap:3rem}}
+.booking-aside{position:sticky;top:6rem}@media(max-width:900px){.booking-aside{position:static;top:auto}}
+.booking-aside h2{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3rem);font-weight:300;line-height:1.1;margin-bottom:1.25rem}
+.booking-aside h2 em{font-style:italic;color:var(--gold)}
+.booking-aside p{color:var(--muted);font-size:.9rem;line-height:1.75;margin-bottom:2rem}
+.contact-list{display:flex;flex-direction:column;gap:.75rem}
+.contact-item{display:flex;align-items:center;gap:.75rem;font-size:.86rem;color:var(--muted)}
+.contact-item .icon{color:var(--gold);width:18px;text-align:center}
+.form-panel{background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:2.5rem}
+@media(max-width:600px){.form-panel{padding:1.5rem}}
+.steps{display:flex;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.step{flex:1;text-align:center}
+.step-dot{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;color:var(--muted);margin-bottom:.35rem;transition:all .3s}
+.step.active .step-dot{border-color:var(--gold);background:var(--gold);color:#000}
+.step.done .step-dot{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.step-name{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);transition:color .3s}
+.step.active .step-name,.step.done .step-name{color:var(--gold)}
+.fs{display:none}.fs.active{display:block;animation:fadeUp .35s ease}
+.fg{margin-bottom:1.4rem}
+.fg label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.45rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.8rem 1rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.92rem;transition:border-color .3s;-webkit-appearance:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,145,26,.08)}
+.fg select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23C9911A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .9rem center;padding-right:2.2rem;cursor:pointer}
+.fg select option{background:var(--surface2)}
+.fg textarea{resize:vertical;min-height:90px;font-family:'Barlow',sans-serif}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:520px){.two-col{grid-template-columns:1fr}}
+.lesson-opts{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+@media(max-width:420px){.lesson-opts{grid-template-columns:1fr}}
+.lesson-opt{border:1px solid var(--border);border-radius:1px;padding:1.1rem;cursor:pointer;transition:all .3s;position:relative}
+.lesson-opt:hover{border-color:rgba(201,145,26,.4)}
+.lesson-opt.selected{border-color:var(--gold);background:rgba(201,145,26,.06)}
+.lesson-opt input{position:absolute;opacity:0;width:0;height:0}
+.lo-name{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text);margin-bottom:.2rem}
+.lo-price{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold);line-height:1}
+.lo-period{font-size:.72rem;color:var(--muted)}
+.fixed-schedule-notice{background:rgba(201,145,26,.08);border:1px solid rgba(201,145,26,.25);border-radius:1px;padding:1.25rem;font-size:.875rem;color:var(--muted);line-height:1.7;margin-bottom:1.4rem}
+.fixed-schedule-notice strong{color:var(--gold)}
+.order-summary{background:var(--black);border:1px solid var(--border);border-radius:1px;padding:1.4rem;margin-bottom:1.5rem}
+.order-summary h4{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.order-row{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-top:1px solid rgba(255,255,255,.04);font-size:.86rem;color:var(--muted)}
+.order-row:first-of-type{border-top:none}
+.order-total{border-top:1px solid var(--border)!important;padding-top:1rem!important;margin-top:.5rem;color:var(--text)!important;font-weight:500}
+.order-total .tot-amt{font-family:'Cormorant Garamond',serif;font-size:1.7rem;color:var(--gold)}
+.pay-tabs{display:flex;border:1px solid var(--border);border-radius:1px;overflow:hidden;margin-bottom:1.4rem}
+.pay-tab{flex:1;padding:.8rem .5rem;background:transparent;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-right:1px solid var(--border)}
+.pay-tab:last-child{border-right:none}
+.pay-tab.active{background:var(--gold-dim);color:var(--gold)}
+.pay-content{display:none}.pay-content.active{display:block;animation:fadeUp .3s ease}
+.eft-info{background:var(--black);border:1px solid var(--border);border-radius:1px;padding:1.2rem;font-size:.86rem;line-height:1.8}
+.eft-info strong{color:var(--gold)}
+.form-nav{display:flex;gap:1rem;margin-top:2rem;align-items:center}
+.btn-back{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.8rem 1.5rem;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-radius:1px}
+.btn-back:hover{border-color:var(--muted);color:var(--text)}
+.btn-next,.btn-submit{flex:1;background:var(--gold);border:1px solid var(--gold);color:#000;padding:.85rem 2rem;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .3s;border-radius:1px}
+.btn-next:hover,.btn-submit:hover{background:var(--gold-light);border-color:var(--gold-light);box-shadow:0 8px 24px rgba(201,145,26,.3)}
+.success-state{display:none;text-align:center;padding:3rem 1rem}
+.success-state.show{display:block;animation:fadeUp .6s ease}
+.success-ring{width:72px;height:72px;border-radius:50%;border:2px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:1.5rem;animation:popIn .5s ease}
+@keyframes popIn{0%{transform:scale(0);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.success-state h3{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:300;margin-bottom:.75rem}
+.success-state p{color:var(--muted);font-size:.9rem;line-height:1.7}
+footer{background:var(--surface);border-top:1px solid var(--border);padding:3.5rem 2rem;text-align:center}
+.footer-logo{display:inline-flex;align-items:center;gap:.85rem;margin-bottom:.75rem}
+.footer-logo-img{width:60px;height:60px;object-fit:contain;opacity:.85}
+footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:2px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<a id="promoBanner" href="#courses"></a>
+
+<nav id="mainNav">
+  <a href="#home" class="nav-logo">
+    <img src="New_Backstage_logo.png" class="nav-logo-img" alt="Backstage Worship">
+  </a>
+  <div class="nav-links">
+    <a href="#offerings">Offerings</a>
+    <a href="#courses">Courses</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#courses" class="nav-book">Book Now</a>
+  </div>
+  <a href="#courses" class="nav-book nav-mobile-book" style="display:none">Book Now</a>
+</nav>
+
+<section class="hero" id="home">
+  <div class="hero-bg"></div><div class="hero-ring"></div><div class="hero-ring2"></div>
+  <div class="hero-inner">
+    <img src="New_Backstage_logo.png" class="hero-logo" alt="Backstage Worship">
+    <div class="hero-eyebrow">Pretoria East · Worship Music Education</div>
+    <p class="hero-desc">Guitar &amp; vocal training rooted in worship. Individual lessons, structured courses, and ministry-focused instruction for all ages and levels.</p>
+    <div class="hero-ctas">
+      <a href="#book" class="btn-primary">Book Your First Lesson</a>
+      <a href="#courses" class="btn-ghost">View Courses</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="courses">
+  <div class="section-label">Structured Learning</div>
+  <h2 class="section-title">Current <em>Courses</em></h2>
+  <div class="rule"></div>
+  <div id="coursesGrid"><div class="price-loading">Loading courses…</div></div>
+</section>
+
+<div class="pricing-wrap" id="pricing">
+  <div class="section">
+    <div class="section-label">Private Lessons</div>
+    <h2 class="section-title">Simple, <em>transparent</em> pricing</h2>
+    <div class="rule"></div>
+    <div id="pricingGrid"><div class="price-loading">Loading pricing…</div></div>
+  </div>
+</div>
+
+<div class="offerings-wrap" id="offerings">
+  <div class="section">
+    <div class="section-label">What We Offer</div>
+    <h2 class="section-title">Train for the <em>stage</em><br>and the sanctuary</h2>
+    <div class="rule"></div>
+    <div class="offerings-grid">
+      <div class="offering"><div class="offering-icon">🎸</div><h3>Guitar Lessons</h3><p>From first chord to worship leading. Open chords, slash chords, descending bass lines, and full worship song application.</p></div>
+      <div class="offering"><div class="offering-icon">🎤</div><h3>Vocal Coaching</h3><p>Technique, tone, and stage presence. Individual coaching that develops your unique voice for worship and performance.</p></div>
+      <div class="offering"><div class="offering-icon">⛪</div><h3>Worship Ministry</h3><p>Ministry-focused consulting and training for church worship teams. Equipping leaders and musicians for the local church.</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="booking-section" id="book">
+  <div class="section">
+    <div class="booking-wrap">
+      <div class="booking-aside">
+        <div class="section-label">Get Started</div>
+        <h2>Book &amp; pay<br><em>in one step</em></h2>
+        <p>Choose your lesson, pick a time, and pay securely — all right here. Confirmation sent by email and WhatsApp.</p>
+        <div class="contact-list">
+          <div class="contact-item"><span class="icon">📍</span><span id="contactLocation">Pretoria East, South Africa</span></div>
+          <div class="contact-item"><span class="icon">📞</span><span id="contactPhone">+27 XX XXX XXXX</span></div>
+          <div class="contact-item"><span class="icon">✉️</span><span id="contactEmail">info@backstage.co.za</span></div>
+          <div class="contact-item"><span class="icon">⏰</span><span>Mon–Fri 9am–6pm · Sat 9am–2pm</span></div>
+        </div>
+      </div>
+      <div class="form-panel">
+        <div class="steps" id="stepsBar">
+          <div class="step active" id="st1"><div class="step-dot">1</div><span class="step-name">Details</span></div>
+          <div class="step" id="st2"><div class="step-dot">2</div><span class="step-name">Lesson</span></div>
+          <div class="step" id="st3"><div class="step-dot">3</div><span class="step-name">Schedule</span></div>
+          <div class="step" id="st4"><div class="step-dot">4</div><span class="step-name">Payment</span></div>
+        </div>
+
+        <!-- Step 1: Personal details -->
+        <div class="fs active" id="fs1">
+          <div class="two-col">
+            <div class="fg"><label>First Name</label><input type="text" id="fName" placeholder="Name"></div>
+            <div class="fg"><label>Surname</label><input type="text" id="lName" placeholder="Surname"></div>
+          </div>
+          <div class="fg"><label>Email Address</label><input type="email" id="fEmail" placeholder="you@email.com"></div>
+          <div class="fg"><label>WhatsApp Number</label><input type="tel" id="fPhone" placeholder="+27 82 XXX XXXX"></div>
+          <div class="fg"><label>Age Group</label>
+            <select id="fAge">
+              <option value="">Select age group</option>
+              <option>Child (under 12)</option><option>Teen (12–17)</option><option>Adult (18+)</option>
+            </select>
+          </div>
+          <div class="form-nav"><button class="btn-next" onclick="nextStep(2)">Continue →</button></div>
+        </div>
+
+        <!-- Step 2: Lesson/course selection -->
+        <div class="fs" id="fs2">
+          <div id="instrumentBlock">
+            <div class="fg"><label>Instrument / Focus</label>
+              <select id="fInstrument">
+                <option value="">Select type</option>
+                <option>Guitar</option><option>Vocals</option>
+              </select>
+            </div>
+            <div class="fg"><label>Experience Level</label>
+              <select id="fLevel">
+                <option value="">Select level</option>
+                <option>Complete Beginner</option><option>Some Experience</option><option>Intermediate</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label id="planLabel">Select Lesson Plan</label>
+            <div class="lesson-opts" id="lessonOpts">
+              <div class="skeleton" style="height:90px;border-radius:1px"></div>
+              <div class="skeleton" style="height:90px;border-radius:1px"></div>
+              <div class="skeleton" style="height:90px;border-radius:1px"></div>
+              <div class="skeleton" style="height:90px;border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="form-nav">
+            <button class="btn-back" onclick="prevStep(1)">← Back</button>
+            <button class="btn-next" onclick="nextStep(3)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Schedule (dynamic) -->
+        <div class="fs" id="fs3">
+          <div id="scheduleBlock"></div>
+          <div class="fg" id="startDateBlock"><label>Start Date</label><input type="date" id="fDate"></div>
+          <div class="fg"><label>Notes (optional)</label><textarea id="fNotes" placeholder="Goals, questions, anything we should know…"></textarea></div>
+          <div class="form-nav">
+            <button class="btn-back" onclick="prevStep(2)">← Back</button>
+            <button class="btn-next" onclick="nextStep(4)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Payment -->
+        <div class="fs" id="fs4">
+          <div class="order-summary">
+            <h4>Order Summary</h4>
+            <div class="order-row"><span id="sumPlan">—</span><span id="sumPrice">—</span></div>
+            <div class="order-row"><span id="sumType">—</span><span id="sumSchedule">—</span></div>
+            <div class="order-row order-total"><span>Total Due</span><span class="tot-amt" id="sumTotal" style="color:var(--muted);font-size:1.2rem">Select a plan above</span></div>
+          </div>
+          <div class="fg">
+            <label>Payment Method</label>
+            <div class="pay-tabs" id="payTabs">
+              <!-- Populated dynamically from Firebase payment config -->
+            </div>
+            <div class="pay-content active" id="pay-yoco">
+              <div class="fg"><label>Card Number</label><input type="text" id="cardNum" placeholder="4242 4242 4242 4242" maxlength="19" oninput="fmtCard(this)"></div>
+              <div class="two-col">
+                <div class="fg"><label>Expiry</label><input type="text" id="cardExp" placeholder="MM / YY" maxlength="7" oninput="fmtExp(this)"></div>
+                <div class="fg"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="4"></div>
+              </div>
+              <div class="fg"><label>Name on Card</label><input type="text" id="cardName" placeholder="Name Surname"></div>
+            </div>
+            <div class="pay-content" id="pay-eft">
+              <div class="eft-info" id="eftDetails">
+                <p>Transfer to Backstage Worship Music School</p>
+                <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted)">Email proof to <span id="eftEmail">info@backstage.co.za</span>. Confirmed within 24 hours.</p>
+              </div>
+            </div>
+            <div class="pay-content" id="pay-cash">
+              <div class="eft-info">
+                <p><strong>Cash Payment</strong></p>
+                <p style="margin-top:.75rem;color:var(--muted);font-size:.875rem;line-height:1.7">Please bring the exact cash amount to your first lesson. Your booking will be confirmed once payment is received in person.</p>
+                <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted)">Amount due: <strong id="cashAmountDue" style="color:var(--gold)">R 0</strong></p>
+              </div>
+            </div>
+            <div class="pay-content" id="pay-cardmachine">
+              <div class="eft-info">
+                <p><strong>Card Machine Payment</strong></p>
+                <p style="margin-top:.75rem;color:var(--muted);font-size:.875rem;line-height:1.7">We have a card machine available at the studio. Bring your bank card and we'll swipe it when you arrive for your first lesson.</p>
+                <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted)">Amount due: <strong id="cardMachineAmountDue" style="color:var(--gold)">R 0</strong></p>
+              </div>
+            </div>
+            <div class="pay-content" id="pay-online">
+              <div style="text-align:center;padding:2rem 1rem">
+                <div style="font-size:2rem;margin-bottom:1rem">🌐</div>
+                <p style="color:var(--muted);font-size:.88rem;margin-bottom:1.5rem">Pay securely via Stripe.</p>
+                <button class="btn-primary" onclick="goStripe()" style="max-width:260px">Pay via Stripe →</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-nav">
+            <button class="btn-back" onclick="prevStep(3)">← Back</button>
+            <button class="btn-submit" onclick="submitBooking()">Confirm &amp; Pay</button>
+          </div>
+        </div>
+
+        <div class="success-state" id="successMsg">
+          <div class="success-ring">✓</div>
+          <h3>You're <em style="color:var(--gold);font-style:italic">booked in!</em></h3>
+          <p>Thank you — your booking is confirmed.<br>Check your email and WhatsApp for lesson details.<br><br>We look forward to seeing you at Backstage.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo"><img src="New_Backstage_logo.png" class="footer-logo-img" alt="Backstage Worship"></div>
+  <p>Pretoria East · Worship Ministry Consulting</p>
+  <p>© 2026 Backstage Worship Music School</p>
+</footer>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, getDocs, addDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",authDomain:"backstage-music.firebaseapp.com",
+  databaseURL:"https://backstage-music-default-rtdb.firebaseio.com",projectId:"backstage-music",
+  storageBucket:"backstage-music.firebasestorage.app",messagingSenderId:"864389877971",
+  appId:"1:864389877971:web:c7d15ae843d54172c90426",measurementId:"G-DY40YLD9FM"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{} };
+
+// ── SITE CONFIG ──
+async function loadSiteConfig(retries=3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const snap = await getDoc(doc(db,'siteConfig','main'));
+      if (!snap.exists()) return;
+      const cfg = snap.data();
+      window._S.siteConfig = cfg;
+      if (cfg.promo?.active && cfg.promo?.text) {
+        const b=document.getElementById('promoBanner');
+        b.textContent=cfg.promo.text;
+        b.href = cfg.promo.linkTo === 'booking' ? '#book' : '#courses';
+        b.classList.add('show');
+      }
+      if (cfg.contact?.location) document.getElementById('contactLocation').textContent = cfg.contact.location;
+      if (cfg.contact?.phone)    document.getElementById('contactPhone').textContent    = cfg.contact.phone;
+      if (cfg.contact?.email)  { document.getElementById('contactEmail').textContent = cfg.contact.email; document.getElementById('eftEmail').textContent = cfg.contact.email; }
+      if (cfg.banking) {
+        document.getElementById('eftDetails').innerHTML = `
+          <p><strong>Account:</strong> ${cfg.banking.accountName||'—'}</p>
+          <p><strong>Bank:</strong> ${cfg.banking.bank||'—'}</p>
+          <p><strong>Acc No:</strong> ${cfg.banking.accountNumber||'—'}</p>
+          <p><strong>Branch:</strong> ${cfg.banking.branchCode||'—'}</p>
+          <p><strong>Reference:</strong> Your name + lesson type</p>
+          <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted)">Email proof to <strong>${cfg.contact?.email||'info@backstage.co.za'}</strong>. Confirmed within 24 hours.</p>`;
+      }
+      // Build payment tabs from config
+      buildPaymentTabs(cfg.payments || {});
+      return; // success
+    } catch(e) {
+      console.warn(`Config load attempt ${attempt} failed:`, e.message);
+      if (attempt < retries) await new Promise(r => setTimeout(r, attempt * 500));
+    }
+  }
+  // If all retries fail, show all payment tabs as fallback
+  buildPaymentTabs({});
+}
+
+function buildPaymentTabs(payments) {
+  const tabs = [
+    { key:'yoco',        label:'💳 Card (Yoco)',    def:true  },
+    { key:'eft',         label:'🏦 EFT',            def:true  },
+    { key:'cash',        label:'💵 Cash',           def:true  },
+    { key:'cardmachine', label:'🖥 Card Machine',   def:true  },
+    { key:'online',      label:'🌐 Stripe',         def:false }
+  ];
+
+  // Filter to enabled tabs — if no config, show all except Stripe
+  const enabled = tabs.filter(t => {
+    if (!payments || Object.keys(payments).length === 0) return t.def;
+    const cfg = payments[t.key];
+    // If key exists in config, respect its enabled flag; otherwise use default
+    return cfg ? cfg.enabled !== false : t.def;
+  });
+
+  if (!enabled.length) {
+    // Fallback — always show at least EFT and cash
+    enabled.push({ key:'eft', label:'🏦 EFT' });
+    enabled.push({ key:'cash', label:'💵 Cash' });
+  }
+
+  const container = document.getElementById('payTabs');
+  if (!container) return;
+  container.innerHTML = enabled.map((t, i) =>
+    `<button class="pay-tab ${i===0?'active':''}" onclick="switchPay('${t.key}',this)">${t.label}</button>`
+  ).join('');
+
+  // Activate first enabled content panel
+  document.querySelectorAll('.pay-content').forEach(c => c.classList.remove('active'));
+  const firstKey = enabled[0]?.key;
+  if (firstKey) {
+    const panel = document.getElementById('pay-'+firstKey);
+    if (panel) panel.classList.add('active');
+    window._S.payMethod = firstKey;
+  }
+}
+
+// ── PRICING ──
+async function loadPricing(retries=3) {
+  // Show skeletons while loading
+  document.getElementById('pricingGrid').innerHTML = `
+    <div class="skeleton" style="height:280px;border-radius:2px"></div>
+    <div class="skeleton" style="height:280px;border-radius:2px"></div>
+    <div class="skeleton" style="height:280px;border-radius:2px"></div>
+    <div class="skeleton" style="height:280px;border-radius:2px"></div>`;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const snap = await getDoc(doc(db,'siteConfig','pricing'));
+
+      if (!snap.exists() || !(snap.data().plans||[]).length) {
+        document.getElementById('pricingGrid').innerHTML =
+          '<div class="price-loading">Pricing coming soon — contact us directly to enquire.</div>';
+        document.getElementById('lessonOpts').innerHTML =
+          '<div style="color:var(--muted);font-size:.88rem;padding:.5rem 0">No lesson plans available yet.</div>';
+        return;
+      }
+
+      const plans = snap.data().plans;
+      window._plans = plans;
+      renderPricingCards(plans);
+      renderLessonOpts(plans);
+      return; // success — stop retrying
+
+    } catch(e) {
+      console.warn(`Pricing load attempt ${attempt} failed:`, e.message);
+      if (attempt < retries) {
+        // Wait before retrying (500ms, 1500ms, 3000ms)
+        await new Promise(r => setTimeout(r, attempt * 500));
+      } else {
+        // All retries exhausted — show friendly message with retry button
+        document.getElementById('pricingGrid').innerHTML = `
+          <div class="price-loading" style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:3rem 1rem">
+            <span>Could not load pricing. Please check your connection.</span>
+            <button onclick="loadPricing()" style="background:var(--gold);color:#000;border:none;padding:.6rem 1.5rem;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:1px">
+              Try Again
+            </button>
+          </div>`;
+      }
+    }
+  }
+}
+
+function renderPricingCards(plans) {
+  document.getElementById('pricingGrid').innerHTML = plans.map(p => {
+    const dur = p.duration || ((p.name||p.label||'').includes('30') ? 30 : 60);
+    return `
+    <div class="price-card ${p.featured?'featured':''}"
+      onclick="window.selectPlan('${p.id}',${p.price},'${encodeURIComponent(p.name||p.label||'')}',${dur})">
+      ${p.featured ? '<div class="feat-tag">Most Popular</div>' : ''}
+      <div class="price-label">${p.label||p.name||''}</div>
+      <div class="price-amount"><sup>R</sup>${Number(p.price).toLocaleString()}</div>
+      <div class="price-period">${p.period||''}</div>
+      <ul class="price-features">${(p.features||[]).map(f=>`<li>${f}</li>`).join('')}</ul>
+      <button class="enroll-btn"
+        onclick="event.stopPropagation();window.selectPlan('${p.id}',${p.price},'${encodeURIComponent(p.name||p.label||'')}',${dur});document.getElementById('book').scrollIntoView({behavior:'smooth'})">
+        Book Now
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function renderLessonOpts(plans) {
+  document.getElementById('lessonOpts').innerHTML = plans.map(p => {
+    const dur = p.duration || ((p.name||p.label||'').includes('30') ? 30 : 60);
+    return `
+    <label class="lesson-opt" id="lo-${p.id}"
+      onclick="window.pickPlan('${p.id}',${p.price},'${encodeURIComponent(p.name||p.label||'')}',${dur})">
+      <input type="radio" name="plan" value="${p.id}">
+      <div class="lo-name">${p.name||p.label||''}</div>
+      <div class="lo-price">R${Number(p.price).toLocaleString()}</div>
+      <div class="lo-period">${p.period||''}</div>
+    </label>`;
+  }).join('');
+}
+
+// ── COURSES ──
+// Slot counts are loaded separately so a bookings permission error never blocks course display
+async function loadCourses(retries=3) {
+  document.getElementById('coursesGrid').innerHTML = `
+    <div class="skeleton" style="height:380px;border-radius:2px"></div>
+    <div class="skeleton" style="height:380px;border-radius:2px"></div>
+    <div class="skeleton" style="height:380px;border-radius:2px"></div>`;
+
+  let courses = [];
+
+  // Step 1: Load courses (publicly readable — should always work)
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const snap = await getDocs(collection(db,'courses'));
+      snap.forEach(d => courses.push({id:d.id,...d.data()}));
+      break; // success
+    } catch(e) {
+      console.warn(`Courses attempt ${attempt} failed:`, e.message);
+      if (attempt < retries) await new Promise(r => setTimeout(r, attempt * 500));
+      else {
+        document.getElementById('coursesGrid').innerHTML = `
+          <div class="price-loading" style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:3rem 1rem">
+            <span>Could not load courses. Please check your connection.</span>
+            <button onclick="loadCourses()" style="background:var(--gold);color:#000;border:none;padding:.6rem 1.5rem;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:1px">Try Again</button>
+          </div>`;
+        return;
+      }
+    }
+  }
+
+  if (!courses.length) {
+    document.getElementById('coursesGrid').innerHTML =
+      '<div class="price-loading">Courses coming soon.</div>';
+    return;
+  }
+
+  // Step 2: Try to get slot counts from bookings — silently skip if permission denied
+  // Slot counts are a nice-to-have; courses display regardless
+  const slotCounts = {};
+  try {
+    const bookSnap = await getDocs(collection(db,'bookings'));
+    bookSnap.forEach(d => {
+      const b = d.data();
+      if (!b.courseId) return;
+      if (!slotCounts[b.courseId]) slotCounts[b.courseId] = {};
+      const slotKey = b.chosenSlot || '__total__';
+      slotCounts[b.courseId][slotKey] = (slotCounts[b.courseId][slotKey] || 0) + 1;
+    });
+  } catch(e) {
+    // Bookings read denied (correct — public users can't read bookings)
+    // Courses still render, just without live slot counts
+    console.info('Slot counts unavailable for public users — courses will display without live availability');
+  }
+
+  // Step 3: Render courses with whatever slot data we have
+  renderCourses(courses, slotCounts);
+}
+
+function renderCourses(courses, slotCounts) {
+  document.getElementById('coursesGrid').innerHTML = courses.map(c => {
+    const max       = c.maxParticipants ? Number(c.maxParticipants) : null;
+    const slots     = c.slotOptions?.length ? c.slotOptions : (c.fixedSchedule ? [c.fixedSchedule] : []);
+    const schedType = c.scheduleType || 'free';
+    const counts    = slotCounts[c.id] || {};
+
+    let schedHtml = '';
+    let allFull   = false;
+
+    if (schedType === 'fixed' && c.fixedSchedule) {
+      const taken = counts[c.fixedSchedule] || counts['__total__'] || 0;
+      const left  = max ? max - taken : null;
+      const full  = max && left <= 0;
+      allFull     = !!full;
+      schedHtml   = `<div class="slot-row">
+        <span class="slot-time">📅 ${c.fixedSchedule}</span>
+        ${max ? `<span class="${full?'spots-full':'spots-left'}">${full?'Full':left+' spot'+(left===1?'':'s')+' left'}</span>` : ''}
+      </div>`;
+
+    } else if (schedType === 'options' && slots.length) {
+      const slotRows = slots.map(slot => {
+        const taken = counts[slot] || 0;
+        const left  = max ? max - taken : null;
+        const full  = max && left <= 0;
+        return `<div class="slot-row">
+          <span class="slot-time">📅 ${slot}</span>
+          ${max ? `<span class="${full?'spots-full':'spots-left'}">${full?'Full':left+' spot'+(left===1?'':'s')+' left'}</span>` : ''}
+        </div>`;
+      });
+      allFull   = max ? slots.every(s => (counts[s]||0) >= max) : false;
+      schedHtml = slotRows.join('');
+    }
+
+    const slotCountsEnc = encodeURIComponent(JSON.stringify(counts));
+
+    return `<div class="course-card">
+      <div class="course-head">
+        <div>
+          <div class="course-badges">
+            <span class="badge">${c.category||'Guitar'}</span>
+            <span class="badge">${c.level||'Beginner'}</span>
+            ${allFull ? '<span class="badge badge-full">Full</span>' : ''}
+          </div>
+          <h3>${c.title}</h3>
+        </div>
+        <div class="course-price-block">
+          <span class="amt">R${Number(c.price).toLocaleString()}</span>
+          <span class="dur">${c.duration||'—'} weeks</span>
+        </div>
+      </div>
+      <div class="course-body">
+        <p>${c.description||''}</p>
+        <ul class="module-list">${(c.modules||[]).slice(0,6).map(m=>`<li>${m}</li>`).join('')}</ul>
+      </div>
+      <div class="course-foot">
+        <div class="course-slots">${schedHtml}</div>
+        <button class="enroll-btn" ${allFull?'disabled':''}
+          onclick="window.enrollCourse(
+            '${c.id}',
+            '${encodeURIComponent(c.title)}',
+            ${c.price},
+            '${encodeURIComponent(schedType)}',
+            '${encodeURIComponent(c.fixedSchedule||'')}',
+            '${encodeURIComponent(JSON.stringify(c.slotOptions||[]))}',
+            ${max||0},
+            '${slotCountsEnc}'
+          )">
+          ${allFull ? 'Course Full' : 'Enroll — R'+Number(c.price).toLocaleString()}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── GLOBAL ──
+window.selectPlan = (id,price,nameEnc,dur) => { const n=decodeURIComponent(nameEnc); window._S.plan=id; window._S.price=price; window._S.planName=n; window._S.isCourse=false; window._S.courseData=null; window._S.lessonDuration=dur||( n.includes('30')?30:60); };
+window.pickPlan   = (id,price,nameEnc,dur) => {
+  const n=decodeURIComponent(nameEnc);
+  window._S.plan=id; window._S.price=price; window._S.planName=n; window._S.isCourse=false; window._S.courseData=null;
+  window._S.lessonDuration = dur || (n.includes('30') ? 30 : 60);
+  document.querySelectorAll('.lesson-opt').forEach(el=>el.classList.remove('selected'));
+  const el=document.getElementById('lo-'+id); if(el) el.classList.add('selected');
+};
+window.enrollCourse = (id,titleEnc,price,schedTypeEnc,schedEnc,slotsEnc,maxP,slotCountsEnc) => {
+  const title        = decodeURIComponent(titleEnc);
+  const scheduleType = decodeURIComponent(schedTypeEnc||'free');
+  const fixedSchedule= decodeURIComponent(schedEnc||'');
+  const slotOptions  = JSON.parse(decodeURIComponent(slotsEnc||'[]'));
+  const maxParticipants = Number(maxP)||0;
+  const slotCounts   = JSON.parse(decodeURIComponent(slotCountsEnc||'{}'));
+
+  window._S.plan     = 'course-'+id;
+  window._S.planName = title+' (Course)';
+  window._S.price    = price;
+  window._S.isCourse = true;
+  window._S.selectedSlot = null;
+  window._S.courseData = {id, title, price, scheduleType, fixedSchedule, slotOptions, maxParticipants, slotCounts};
+
+  document.getElementById('instrumentBlock').style.display='none';
+  document.getElementById('planLabel').textContent='Selected Course';
+  document.getElementById('lessonOpts').innerHTML=`
+    <label class="lesson-opt selected" style="grid-column:1/-1">
+      <div class="lo-name">${title}</div>
+      <div class="lo-price">R${Number(price).toLocaleString()}</div>
+      <div class="lo-period">Course enrolment</div>
+    </label>`;
+  document.getElementById('book').scrollIntoView({behavior:'smooth'});
+};
+
+window.submitBooking = async () => {
+  const method = window._S.payMethod;
+  if (method==='yoco') {
+    if (!document.getElementById('cardNum').value || !document.getElementById('cardExp').value || !document.getElementById('cardCvv').value) { alert('Please enter your card details.'); return; }
+  }
+  // cash and cardmachine: no validation needed, payment happens in person
+  const dayEl=document.getElementById('fDay'), timeEl=document.getElementById('fTime');
+  const booking = {
+    firstName: document.getElementById('fName').value, lastName: document.getElementById('lName').value,
+    email: document.getElementById('fEmail').value, phone: document.getElementById('fPhone').value,
+    ageGroup: document.getElementById('fAge').value,
+    instrument: window._S.isCourse ? 'Course' : document.getElementById('fInstrument').value,
+    level: window._S.isCourse ? '—' : document.getElementById('fLevel').value,
+    plan: window._S.planName, price: window._S.price, courseId: window._S.courseData?.id||null,
+    chosenSlot: window._S.selectedSlot || window._S.courseData?.fixedSchedule || '',
+    prefDay: window._S.isCourse ? '' : (dayEl?.value||''),
+    prefTime: window._S.isCourse ? '' : (timeEl?.value||''),
+    startDate: window._S.isCourse ? '' : document.getElementById('fDate').value,
+    notes: document.getElementById('fNotes').value,
+    payMethod: window._S.payMethod, status:'pending', createdAt:new Date().toISOString()
+  };
+  try {
+    await addDoc(collection(db,'bookings'), booking);
+    document.getElementById('stepsBar').style.display='none';
+    document.querySelectorAll('.fs').forEach(s=>s.style.display='none');
+    document.getElementById('successMsg').classList.add('show');
+  } catch(err) { alert('Error saving booking. Please try again.'); console.error(err); }
+};
+
+window.goStripe = () => { const url=window._S.siteConfig?.payments?.stripeCheckoutUrl; if(url) window.open(url,'_blank'); else alert('Stripe not configured yet.'); };
+
+// Stagger loads slightly so Firebase SDK is fully ready
+loadSiteConfig();
+setTimeout(() => loadPricing(), 100);
+setTimeout(() => loadCourses(), 200);
+
+// Pre-load bookings for slot blocking on private lessons
+(async () => {
+  try {
+    const snap = await getDocs(collection(db,'bookings'));
+    window._existingBookings = [];
+    snap.forEach(d => window._existingBookings.push({id:d.id,...d.data()}));
+  } catch(e) {
+    window._existingBookings = [];
+  }
+})();
+
+// Pre-load course sessions for slot blocking (courses are publicly readable)
+(async () => {
+  try {
+    window._courseSessions = [];
+    const snap = await getDocs(collection(db,'courses'));
+    snap.forEach(d => {
+      const c = d.data();
+      if (c.schedDay && c.schedStartTime) {
+        window._courseSessions.push({
+          day: c.schedDay,
+          startTime: c.schedStartTime,
+          endTime: c.schedEndTime,
+          courseTitle: c.title
+        });
+      }
+      // Also handle slot options
+      (c.slotOptions||[]).forEach(slot => {
+        const parts = slot.split(' ');
+        if (parts[0] && parts[1]) {
+          window._courseSessions.push({day:parts[0], startTime:parts[1], courseTitle:c.title});
+        }
+      });
+    });
+  } catch(e) { window._courseSessions = []; }
+})();
+</script>
+
+<script>
+function nextStep(n) { if (!validate(window._S.step)) return; setStep(n); }
+function prevStep(n) { setStep(n); }
+function setStep(n) {
+  const c=window._S.step;
+  document.getElementById('fs'+c).classList.remove('active');
+  document.getElementById('st'+c).classList.remove('active');
+  document.getElementById('st'+c).classList.add('done');
+  window._S.step=n;
+  document.getElementById('fs'+n).classList.add('active');
+  document.getElementById('st'+n).classList.add('active');
+  document.getElementById('st'+n).classList.remove('done');
+  if (n===3) buildSchedule();
+  if (n===4) buildSummary();
+  document.getElementById('book').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pickSlot(slot, idx) {
+  window._S.selectedSlot = slot;
+  document.querySelectorAll('[id^="slot-opt-"]').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('slot-opt-'+idx)?.classList.add('selected');
+}
+function validate(n) {
+  if (n===1) { if (!document.getElementById('fName').value||!document.getElementById('fEmail').value||!document.getElementById('fPhone').value) { alert('Please fill in your name, email, and WhatsApp number.'); return false; } }
+  if (n===2) {
+    if (!window._S.plan) { alert('Please select a lesson plan or course.'); return false; }
+    if (!window._S.isCourse && !document.getElementById('fInstrument').value) { alert('Please select guitar or vocals.'); return false; }
+  }
+  if (n===3) {
+    const S=window._S, c=S.courseData;
+    const slots = c?.slotOptions?.length ? c.slotOptions : (c?.fixedSchedule ? [c.fixedSchedule] : []);
+    if (S.isCourse && slots.length === 1) {
+      // single slot auto-selected — nothing to validate
+    } else if (S.isCourse && slots.length > 1) {
+      if (!S.selectedSlot) { alert('Please choose one of the available time slots.'); return false; }
+    } else {
+      const d=document.getElementById('fDay'), t=document.getElementById('fTime');
+      if (d && !d.value) { alert('Please choose a preferred day.'); return false; }
+      if (t && !t.value) { alert('Please choose a preferred time.'); return false; }
+    }
+  }
+  return true;
+}
+function buildSchedule() {
+  const S=window._S, block=document.getElementById('scheduleBlock');
+  const c=S.courseData;
+
+  // Hide start date picker for courses — the course has its own schedule
+  const startDateBlock = document.getElementById('startDateBlock');
+  if (startDateBlock) startDateBlock.style.display = S.isCourse ? 'none' : 'block';
+
+  if (S.isCourse && c) {
+    const max    = c.maxParticipants || 0;
+    const counts = c.slotCounts || {};
+    const slots  = (c.slotOptions && c.slotOptions.length) ? c.slotOptions
+                 : (c.fixedSchedule ? [c.fixedSchedule] : []);
+
+    if (slots.length === 1) {
+      // Single slot — confirm only, auto-select
+      const slot  = slots[0];
+      const taken = counts[slot] || counts['__total__'] || 0;
+      const left  = max ? max - taken : null;
+      const full  = max && left <= 0;
+      window._S.selectedSlot = slot;
+      block.innerHTML = `
+        <div class="fixed-schedule-notice">
+          <strong>Fixed Schedule</strong><br>
+          This course runs at:<br>
+          <strong style="font-size:1.05rem;display:block;margin:.5rem 0">${slot}</strong>
+          ${left !== null
+            ? `<span class="${full?'spots-full':'spots-left'}" style="font-size:.82rem;display:block;margin-bottom:.5rem">${full?'No spots remaining':left+' spot'+(left===1?'':'s')+' remaining'}</span>`
+            : ''}
+          By enrolling you confirm you are available for this session.
+        </div>`;
+
+    } else if (slots.length > 1) {
+      // Multiple slots — student picks one, see per-slot availability
+      const cols = slots.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr';
+      const opts = slots.map((slot, i) => {
+        const taken = counts[slot] || 0;
+        const left  = max ? max - taken : null;
+        const full  = max && left <= 0;
+        const safeSlot = slot.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `
+          <label class="lesson-opt${full?' slot-full':''}" id="slot-opt-${i}"
+            onclick="${full?'event.preventDefault()':'pickSlot(\''+safeSlot+"\', "+i+")"}">
+            <input type="radio" name="slotChoice" value="${slot}" ${full?'disabled':''}>
+            <div class="lo-name" style="font-size:.75rem;margin-bottom:.3rem">Option ${i+1}</div>
+            <div class="lo-price" style="font-size:.95rem;line-height:1.35;white-space:normal">${slot}</div>
+            ${left !== null
+              ? `<div class="lo-period ${full?'spots-full':'spots-left'}" style="margin-top:.3rem">${full?'Full':left+' spot'+(left===1?'':'s')+' left'}</div>`
+              : ''}
+          </label>`;
+      }).join('');
+      block.innerHTML = `
+        <div class="fg">
+          <label>Choose Your Time Slot</label>
+          <div class="lesson-opts" style="grid-template-columns:${cols};gap:.6rem">${opts}</div>
+        </div>`;
+
+    } else {
+      block.innerHTML = freePickHtml();
+    }
+
+  } else {
+    block.innerHTML = freePickHtml();
+  }
+}
+
+function freePickHtml() {
+  const duration = window._S.lessonDuration || 60;
+
+  // Generate slots from 09:00 to 18:00 in the right interval
+  function makeSlots(mins) {
+    const slots = [];
+    let h = 9, m = 0;
+    const endH = 18;
+    while (h < endH || (h === endH && m === 0)) {
+      const startStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      let eh = h, em = m + mins;
+      if (em >= 60) { eh += Math.floor(em/60); em = em % 60; }
+      if (eh > 18 || (eh === 18 && em > 0)) break;
+      const endStr = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+      slots.push(`${startStr} – ${endStr}`);
+      m += mins;
+      if (m >= 60) { h += Math.floor(m/60); m = m % 60; }
+    }
+    return slots;
+  }
+
+  const allSlots = makeSlots(duration);
+
+  // Get taken slots for the chosen day from existing bookings
+  function getTakenSlots(day) {
+    const taken = new Set();
+    (window._existingBookings || []).forEach(b => {
+      if (!b.courseId && b.prefDay === day && b.prefTime) taken.add(b.prefTime);
+    });
+    return taken;
+  }
+
+  const slotOptionsHtml = (day) => {
+    const taken = getTakenSlots(day);
+    return allSlots.map(s => {
+      const isTaken = taken.has(s);
+      return `<option value="${s}" ${isTaken ? 'disabled' : ''}>${s}${isTaken ? ' (taken)' : ''}</option>`;
+    }).join('');
+  };
+
+  // Initial render with no day selected
+  const initialOptions = allSlots.map(s => `<option value="${s}">${s}</option>`).join('');
+
+  return `<div class="two-col">
+    <div class="fg"><label>Preferred Day</label>
+      <select id="fDay" onchange="updateTimeSlots()">
+        <option value="">Select day</option>
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+        <option>Thursday</option><option>Friday</option><option>Saturday</option>
+      </select>
+    </div>
+    <div class="fg"><label>Preferred Time <span id="slotHint" style="color:var(--muted);font-size:.75rem;font-weight:400;text-transform:none;letter-spacing:0">(${duration}-min slots)</span></label>
+      <select id="fTime">
+        <option value="">Select day first</option>
+        ${initialOptions}
+      </select>
+    </div>
+  </div>`;
+}
+
+// Called when day changes — refreshes time slot availability
+function updateTimeSlots() {
+  const dayEl  = document.getElementById('fDay');
+  const timeEl = document.getElementById('fTime');
+  if (!dayEl || !timeEl) return;
+  const day      = dayEl.value;
+  const duration = window._S.lessonDuration || 60;
+
+  function makeSlots(mins) {
+    const slots = [];
+    let h = 9, m = 0;
+    while (h < 18 || (h === 18 && m === 0)) {
+      const s = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      let eh = h, em = m + mins;
+      if (em >= 60) { eh += Math.floor(em/60); em = em % 60; }
+      if (eh > 18 || (eh === 18 && em > 0)) break;
+      const e = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+      slots.push(`${s} – ${e}`);
+      m += mins; if (m >= 60) { h += Math.floor(m/60); m = m % 60; }
+    }
+    return slots;
+  }
+
+  const allSlots = makeSlots(duration);
+  const taken = new Set();
+  // Block slots taken by existing private lesson bookings
+  (window._existingBookings || []).forEach(b => {
+    if (!b.courseId && b.prefDay === day && b.prefTime) taken.add(b.prefTime);
+  });
+  // Block slots taken by course sessions on this day
+  (window._courseSessions || []).forEach(cs => {
+    if (cs.day && cs.day.toLowerCase() === day.toLowerCase() && cs.startTime) {
+      // Find all slots that overlap with this course session
+      allSlots.forEach(slot => {
+        const slotStart = slot.split(' – ')[0];
+        if (slotStart === cs.startTime) taken.add(slot);
+      });
+    }
+  });
+
+  timeEl.innerHTML = `<option value="">Select slot</option>` +
+    allSlots.map(s => {
+      const isTaken = taken.has(s);
+      return `<option value="${s}" ${isTaken?'disabled':''}>${s}${isTaken?' (taken)':''}</option>`;
+    }).join('');
+}
+function buildSummary() {
+  const S=window._S, c=S.courseData;
+  const inst = S.isCourse ? 'Course' : (document.getElementById('fInstrument')?.value||'—');
+  let sched = '—';
+  if (S.isCourse) sched = S.selectedSlot || c?.fixedSchedule || '—';
+  else sched = `${document.getElementById('fDay')?.value||'—'} · ${document.getElementById('fTime')?.value||'—'}`;
+  document.getElementById('sumPlan').textContent     = S.planName||'—';
+  document.getElementById('sumPrice').textContent    = S.price ? `R ${Number(S.price).toLocaleString()}` : '—';
+  document.getElementById('sumType').textContent     = inst;
+  document.getElementById('sumSchedule').textContent = sched;
+  document.getElementById('sumTotal').textContent    = S.price ? `R ${Number(S.price).toLocaleString()}` : 'R 0';
+  const _amt = S.price ? 'R '+Number(S.price).toLocaleString() : 'R 0';
+  const _c = document.getElementById('cashAmountDue'); if(_c) _c.textContent = _amt;
+  const _m = document.getElementById('cardMachineAmountDue'); if(_m) _m.textContent = _amt;
+}
+function switchPay(method,btn) {
+  window._S.payMethod=method;
+  document.querySelectorAll('.pay-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.pay-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pay-'+method).classList.add('active');
+}
+function fmtCard(el) { let v=el.value.replace(/\D/g,'').substring(0,16); el.value=v.replace(/(.{4})/g,'$1 ').trim(); }
+function fmtExp(el)  { let v=el.value.replace(/\D/g,'').substring(0,4); if(v.length>=2) v=v.slice(0,2)+' / '+v.slice(2); el.value=v; }
+window.addEventListener('scroll',()=>document.getElementById('mainNav').classList.toggle('scrolled',window.scrollY>60));
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});}));
+document.getElementById('fDate').min = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
