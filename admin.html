@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backstage Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C9911A;--gold-light:#e8b040;--gold-dim:rgba(201,145,26,.12);--black:#090805;--surface:#111009;--surface2:#1a1810;--surface3:#232116;--border:rgba(201,145,26,.16);--text:#f0ead8;--muted:#7a7060;--danger:#c0392b;--success:#27ae60}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{position:fixed;inset:0;background:var(--black);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem}
+#loginScreen.hidden{display:none}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
+.login-logo{width:80px;height:80px;object-fit:contain;margin-bottom:1.5rem}
+.login-box h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;margin-bottom:.4rem}
+.login-box h2 em{font-style:italic;color:var(--gold)}
+.login-box p{font-size:.85rem;color:var(--muted);margin-bottom:2rem}
+.login-error{color:var(--danger);font-size:.85rem;margin-bottom:1rem;min-height:1.2rem}
+
+/* ── TOP BAR ── */
+.topbar{background:linear-gradient(90deg,#0f0d07,#1a1810);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-logo{display:flex;align-items:center;gap:.75rem}
+.tb-logo img{width:40px;height:40px;object-fit:contain;border-radius:3px}
+.tb-logo-text{display:flex;flex-direction:column;line-height:1.1}
+.tb-logo-text span:first-child{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)}
+.tb-logo-text span:last-child{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:1rem}
+.tb-status{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:.3rem .8rem;border-radius:100px;background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
+.tb-link{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:1px;transition:all .3s;background:transparent;cursor:pointer}
+.tb-link:hover{color:var(--gold);border-color:var(--gold)}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
+.sidebar-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:.5rem 1.5rem;margin-top:1rem;display:block}
+.sidebar-label:first-child{margin-top:0}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.5rem;color:var(--muted);cursor:pointer;transition:all .3s;font-size:.9rem;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--gold);background:var(--gold-dim);border-left-color:var(--gold)}
+.nav-item .icon{font-size:1rem;width:20px;text-align:center}
+.main{flex:1;overflow-y:auto;padding:2rem}
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.page-header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300}
+.page-header h1 em{font-style:italic;color:var(--gold)}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.5rem;text-align:center}
+.stat-val{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:300;color:var(--gold);line-height:1;margin-bottom:.25rem}
+.stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.75rem;margin-bottom:1.5rem}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between}
+
+/* ── FORM ELEMENTS ── */
+.fg{margin-bottom:1.25rem}
+.fg label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.75rem .9rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;transition:border-color .3s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold)}
+.fg textarea{resize:vertical;min-height:80px;font-family:'Barlow',sans-serif}
+.fg select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23C9911A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .8rem center;-webkit-appearance:none;padding-right:2rem;cursor:pointer}
+.fg select option{background:var(--surface2)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:700px){.two-col,.three-col{grid-template-columns:1fr}}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;border-top:1px solid rgba(255,255,255,.04)}
+.toggle-row:first-of-type{border-top:none}
+.toggle-label{font-size:.9rem;color:var(--text)}
+.toggle-label small{display:block;font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.toggle{position:relative;display:inline-block;width:44px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:22px;transition:.3s;cursor:pointer}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--gold)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(22px)}
+
+/* ── BUTTONS ── */
+.btn{padding:.7rem 1.5rem;border:none;border-radius:1px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-gold{background:var(--gold);color:#000}
+.btn-gold:hover{background:var(--gold-light);box-shadow:0 4px 12px rgba(201,145,26,.3)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#a93226}
+.btn-sm{padding:.4rem .9rem;font-size:.72rem}
+.btn-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1rem 1.5rem;font-size:.9rem;z-index:9999;transform:translateY(80px);opacity:0;transition:all .4s;pointer-events:none;min-width:260px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+
+/* ── LIST ITEMS ── */
+.list-item{background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.li-content{flex:1}
+.li-title{font-weight:500;margin-bottom:.2rem;font-size:.95rem}
+.li-meta{font-size:.8rem;color:var(--muted)}
+.li-actions{display:flex;gap:.5rem;flex-shrink:0}
+
+/* ── PLAN ROW ── */
+.plan-row{background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:.75rem}
+.plan-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:1rem}
+.plan-row-header h4{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text)}
+
+/* ── STATUS BADGES ── */
+.status-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:2px}
+.status-pending{background:rgba(201,145,26,.15);color:var(--gold);border:1px solid rgba(201,145,26,.3)}
+.status-confirmed{background:rgba(39,174,96,.15);color:var(--success);border:1px solid rgba(39,174,96,.3)}
+.status-cancelled{background:rgba(192,57,43,.15);color:var(--danger);border:1px solid rgba(192,57,43,.3)}
+
+/* ── CALENDAR ── */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.cal-header h2{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;color:var(--gold)}
+.cal-nav{display:flex;gap:.5rem}
+.cal-nav button{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.4rem .9rem;border-radius:1px;cursor:pointer;font-size:1rem;transition:all .3s}
+.cal-nav button:hover{border-color:var(--gold);color:var(--gold)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.cal-day-header{background:var(--surface);padding:.6rem;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.cal-day{background:var(--surface2);min-height:90px;padding:.5rem;position:relative;transition:background .2s}
+.cal-day:hover{background:var(--surface3)}
+.cal-day.today{background:rgba(201,145,26,.08);border-left:2px solid var(--gold)}
+.cal-day.other-month{opacity:.35}
+.cal-day-num{font-size:.78rem;color:var(--muted);margin-bottom:.3rem;font-family:'Barlow Condensed',sans-serif}
+.cal-day.today .cal-day-num{color:var(--gold);font-weight:600}
+.cal-event{background:var(--gold-dim);border-left:2px solid var(--gold);border-radius:1px;padding:.15rem .4rem;font-size:.7rem;color:var(--text);margin-bottom:.2rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .2s}
+.cal-event:hover{background:rgba(201,145,26,.25)}
+.cal-event.course{border-left-color:#4a9eff;background:rgba(74,158,255,.12);color:#7ec8ff}
+.cal-event.pending{border-left-color:var(--gold)}
+.cal-event.confirmed{border-left-color:var(--success);background:rgba(39,174,96,.12);color:#5dca8a}
+/* ── STUDENTS ── */
+.student-search{display:flex;gap:.75rem;margin-bottom:1.5rem}
+.student-search input{flex:1;padding:.75rem 1rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem}
+.student-search input:focus{outline:none;border-color:var(--gold)}
+.student-card{background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-bottom:1rem;overflow:hidden}
+.student-card-header{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:background .2s}
+.student-card-header:hover{background:var(--surface2)}
+.student-name{font-size:1rem;font-weight:500;margin-bottom:.2rem}
+.student-meta{font-size:.8rem;color:var(--muted)}
+.student-body{display:none;padding:1.25rem;border-top:1px solid var(--border);background:var(--surface2)}
+.student-body.open{display:block;animation:fadeIn .2s ease}
+.notes-list{margin-bottom:1rem}
+.note-item{background:var(--black);border:1px solid var(--border);border-radius:1px;padding:.85rem 1rem;margin-bottom:.6rem;position:relative}
+.note-date{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.35rem}
+.note-text{font-size:.875rem;color:var(--text);line-height:1.65}
+.note-del{position:absolute;top:.6rem;right:.75rem;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:.2rem .4rem;transition:color .2s}
+.note-del:hover{color:var(--danger)}
+.note-input{width:100%;padding:.75rem 1rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.875rem;resize:vertical;min-height:80px;margin-bottom:.75rem}
+.note-input:focus{outline:none;border-color:var(--gold)}
+.wa-btn{display:inline-flex;align-items:center;gap:.5rem;background:#25d366;color:#000;border:none;padding:.5rem 1rem;border-radius:1px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;cursor:pointer;text-decoration:none;transition:all .3s}
+.wa-btn:hover{background:#1ebe5a;transform:translateY(-1px)}
+/* ── ATTENDANCE ── */
+.att-grid{overflow-x:auto;margin-top:1rem}
+.att-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:600px}
+.att-table th{background:var(--surface);padding:.6rem .75rem;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);white-space:nowrap}
+.att-table th.student-col{text-align:left;min-width:160px}
+.att-table td{padding:.5rem .75rem;border:1px solid var(--border);text-align:center;background:var(--surface2)}
+.att-table td.student-name-cell{text-align:left;color:var(--text);background:var(--surface);font-weight:500}
+.att-cell{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;font-size:.9rem;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;background:transparent}
+.att-cell:hover{transform:scale(1.2)}
+.att-present{background:rgba(39,174,96,.2);color:var(--success)}
+.att-absent{background:rgba(192,57,43,.2);color:var(--danger)}
+.att-unmarked{background:var(--surface3);color:var(--muted)}
+.att-legend{display:flex;gap:1.5rem;font-size:.8rem;color:var(--muted);margin-bottom:1rem;flex-wrap:wrap}
+.att-legend span{display:flex;align-items:center;gap:.4rem}
+/* ── MISC ── */
+.loading-text{color:var(--muted);font-size:.9rem;padding:1.5rem 0}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:1px;height:60px;margin-bottom:.6rem}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.hint{font-size:.8rem;color:var(--muted);margin-top:.4rem;line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="New_Backstage_logo.png" class="login-logo" alt="Backstage Worship">
+    <h2>Admin <em>Login</em></h2>
+    <p>Backstage Worship Music School</p>
+    <div class="login-error" id="loginError"></div>
+    <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()"></div>
+    <div class="fg"><label>Password</label><input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter') doLogin()"></div>
+    <button class="btn btn-gold" style="width:100%" id="loginBtn" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ── TOP BAR ── -->
+<div class="topbar">
+  <div class="tb-logo">
+    <img src="New_Backstage_logo.png" alt="Backstage Worship">
+    <div class="tb-logo-text">
+      <span>Backstage Worship</span>
+      <span>Admin Dashboard</span>
+    </div>
+  </div>
+  <div class="tb-right">
+    <span class="tb-status" id="fbStatus">Connecting…</span>
+    <a href="index.html" target="_blank" class="tb-link">↗ View Site</a>
+    <button class="tb-link" onclick="doLogout()">Sign Out</button>
+  </div>
+</div>
+
+<div class="app">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <span class="sidebar-label">Overview</span>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon">📅</span> Bookings</div>
+    <div class="nav-item" onclick="showPanel('calendar',this)"><span class="icon">🗓</span> Calendar</div>
+    <div class="nav-item" onclick="showPanel('students',this)"><span class="icon">🎓</span> Students</div>
+    <span class="sidebar-label">Content</span>
+    <div class="nav-item" onclick="showPanel('courses',this)"><span class="icon">🎓</span> Courses</div>
+    <div class="nav-item" onclick="showPanel('pricing',this)"><span class="icon">💰</span> Pricing</div>
+    <div class="nav-item" onclick="showPanel('promo',this)"><span class="icon">🎯</span> Promotion</div>
+    <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
+    <span class="sidebar-label">Finance</span>
+    <div class="nav-item" onclick="showPanel('quotes',this)"><span class="icon">📄</span> Quotes</div>
+    <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
+    <span class="sidebar-label">Settings</span>
+    <div class="nav-item" onclick="showPanel('terms',this)"><span class="icon">🗓</span> School Terms</div>
+    <div class="nav-item" onclick="showPanel('payments',this)"><span class="icon">💳</span> Payments</div>
+    <div class="nav-item" onclick="showPanel('contact',this)"><span class="icon">📍</span> Contact & Bank</div>
+    <div class="nav-item" onclick="showPanel('alerts',this)"><span class="icon">🔔</span> Alerts</div>
+    <div class="nav-item" onclick="showPanel('config',this)"><span class="icon">⚙️</span> Firebase Setup</div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header"><h1>Good day, <em>Willem</em></h1></div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val" id="statBookings">—</div><div class="stat-lbl">Total Bookings</div></div>
+        <div class="stat"><div class="stat-val" id="statPending">—</div><div class="stat-lbl">Pending</div></div>
+        <div class="stat"><div class="stat-val" id="statCourses">—</div><div class="stat-lbl">Courses</div></div>
+        <div class="stat"><div class="stat-val" id="statStudents">—</div><div class="stat-lbl">Students</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Bookings</div>
+        <div id="recentBookings"><div class="loading-text">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <div class="panel" id="panel-bookings">
+      <div class="page-header">
+        <h1><em>Bookings</em></h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('all')">All</button>
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('pending')">Pending</button>
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('confirmed')">Confirmed</button>
+        </div>
+      </div>
+      <div class="student-search" style="margin-bottom:1rem">
+        <input type="text" id="bookingSearch" placeholder="Search by name, email, or lesson plan…" oninput="searchBookings(this.value)">
+      </div>
+      <div id="bookingsList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+
+    <!-- COURSES -->
+    <div class="panel" id="panel-courses">
+      <div class="page-header">
+        <h1><em>Courses</em></h1>
+        <button class="btn btn-gold btn-sm" onclick="toggleCourseForm()">+ Add Course</button>
+      </div>
+      <div class="card" id="courseFormCard" style="display:none">
+        <div class="card-title" id="courseFormTitle">New Course</div>
+        <div class="fg"><label>Course Title</label><input type="text" id="cTitle" placeholder="e.g. Beginner Guitar Fundamentals"></div>
+        <div class="fg"><label>Description</label><textarea id="cDesc" placeholder="What students will learn…"></textarea></div>
+        <div class="three-col">
+          <div class="fg"><label>Category</label>
+            <select id="cCat"><option value="Guitar">Guitar</option><option value="Vocals">Vocals</option><option value="Theory">Theory</option><option value="Worship">Worship</option></select>
+          </div>
+          <div class="fg"><label>Level</label>
+            <select id="cLevel"><option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option><option value="Advanced">Advanced</option></select>
+          </div>
+          <div class="fg"><label>Duration (weeks)</label><input type="number" id="cDuration" placeholder="8" min="1"></div>
+        </div>
+        <div class="two-col">
+          <div class="fg"><label>Price (ZAR)</label><input type="number" id="cPrice" placeholder="1200" min="0"></div>
+          <div class="fg">
+            <label>Max Participants</label>
+            <input type="number" id="cMaxParticipants" placeholder="Leave empty = unlimited" min="1">
+            <div class="hint">Set a number to limit enrolments. The website will show spots remaining and mark the course as Full automatically.</div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Schedule Type</label>
+          <select id="cScheduleType" onchange="toggleScheduleFields()">
+            <option value="free">Free choice — student picks their own day &amp; time</option>
+            <option value="fixed">Fixed — one set time, student confirms</option>
+            <option value="options">Options — you provide 2–3 slots, student picks one</option>
+          </select>
+        </div>
+
+        <!-- FIXED schedule fields -->
+        <div id="schedFixedBlock" style="display:none">
+          <div class="three-col">
+            <div class="fg">
+              <label>Day</label>
+              <select id="cDay">
+                <option value="">Select day</option>
+                <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+                <option>Thursday</option><option>Friday</option><option>Saturday</option>
+              </select>
+            </div>
+            <div class="fg"><label>Start Time</label><input type="time" id="cStartTime"></div>
+            <div class="fg"><label>End Time</label><input type="time" id="cEndTime"></div>
+          </div>
+          <div class="three-col">
+            <div class="fg"><label>Start Date</label><input type="date" id="cStartDate"></div>
+            <div class="fg">
+              <label>Repeats Every</label>
+              <select id="cRepeatType">
+                <option value="weekly">Weekly</option>
+                <option value="daily">Daily</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Number of Sessions</label>
+              <input type="number" id="cNumSessions" placeholder="e.g. 8" min="1">
+            </div>
+          </div>
+          <div class="hint" style="margin-bottom:1.25rem">The calendar will show each session on its exact date. Those slots will be blocked from private lesson booking.</div>
+        </div>
+
+        <!-- OPTIONS schedule fields -->
+        <div id="schedOptionsBlock" style="display:none">
+          <div class="hint" style="margin-bottom:1rem">For each slot option, give it a name, set the schedule, and add a short description. Students will choose one during booking.</div>
+          <div id="slotOptionsContainer">
+            <div class="slot-option-row" data-slot="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1rem">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Option 1</div>
+              <div class="two-col">
+                <div class="fg"><label>Slot Name / Label</label><input type="text" class="slot-name" placeholder="e.g. Beginner Group"></div>
+                <div class="fg"><label>Duration Description</label><input type="text" class="slot-duration" placeholder="e.g. Monday to Friday · 5 days"></div>
+              </div>
+              <div class="three-col">
+                <div class="fg"><label>Day</label>
+                  <select class="slot-day"><option value="">Day</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+                </div>
+                <div class="fg"><label>Start Time</label><input type="time" class="slot-start"></div>
+                <div class="fg"><label>End Time</label><input type="time" class="slot-end"></div>
+              </div>
+              <div class="fg"><label>Description</label><textarea class="slot-desc" rows="2" placeholder="e.g. For primary school learners, complete beginners welcome." style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+            </div>
+            <div class="slot-option-row" data-slot="1" style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1rem">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Option 2</div>
+              <div class="two-col">
+                <div class="fg"><label>Slot Name / Label</label><input type="text" class="slot-name" placeholder="e.g. Intermediate Group"></div>
+                <div class="fg"><label>Duration Description</label><input type="text" class="slot-duration" placeholder="e.g. Tuesdays for 8 weeks"></div>
+              </div>
+              <div class="three-col">
+                <div class="fg"><label>Day</label>
+                  <select class="slot-day"><option value="">Day</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+                </div>
+                <div class="fg"><label>Start Time</label><input type="time" class="slot-start"></div>
+                <div class="fg"><label>End Time</label><input type="time" class="slot-end"></div>
+              </div>
+              <div class="fg"><label>Description</label><textarea class="slot-desc" rows="2" placeholder="e.g. For high school learners with some prior experience." style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+            </div>
+            <div class="slot-option-row" data-slot="2" style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1rem">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Option 3 <span style="color:var(--muted);font-weight:300">(optional)</span></div>
+              <div class="two-col">
+                <div class="fg"><label>Slot Name / Label</label><input type="text" class="slot-name" placeholder="e.g. Advanced Group"></div>
+                <div class="fg"><label>Duration Description</label><input type="text" class="slot-duration" placeholder="e.g. Saturdays for 6 weeks"></div>
+              </div>
+              <div class="three-col">
+                <div class="fg"><label>Day</label>
+                  <select class="slot-day"><option value="">Day</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+                </div>
+                <div class="fg"><label>Start Time</label><input type="time" class="slot-start"></div>
+                <div class="fg"><label>End Time</label><input type="time" class="slot-end"></div>
+              </div>
+              <div class="fg"><label>Description</label><textarea class="slot-desc" rows="2" placeholder="e.g. For adult learners, intermediate to advanced level." style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+            </div>
+          </div>
+          <div class="three-col">
+            <div class="fg"><label>Start Date</label><input type="date" id="cOptionsStartDate"></div>
+            <div class="fg">
+              <label>Repeats Every</label>
+              <select id="cOptionsRepeatType">
+                <option value="weekly">Weekly</option>
+                <option value="daily">Daily</option>
+              </select>
+            </div>
+            <div class="fg"><label>Number of Sessions</label><input type="number" id="cOptionsNumSessions" placeholder="e.g. 8" min="1"></div>
+          </div>
+        </div>
+        <div class="fg"><label>Modules (one per line)</label><textarea id="cModules" rows="6" placeholder="Module 1: Introduction&#10;Module 2: Basic Chords&#10;Module 3: Strumming"></textarea></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" id="saveCourseBtn" onclick="saveCourse()">Save Course → Live Instantly</button>
+          <button class="btn btn-outline" onclick="toggleCourseForm()">Cancel</button>
+        </div>
+      </div>
+      <div id="coursesList"><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+
+    <!-- PRICING -->
+    <div class="panel" id="panel-pricing">
+      <div class="page-header">
+        <h1><em>Pricing</em> Plans</h1>
+        <button class="btn btn-gold btn-sm" onclick="addPlanRow()">+ Add Plan</button>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          Lesson Plans
+          <span style="color:var(--muted);font-size:.7rem;font-weight:400;text-transform:none;letter-spacing:0">Fill in all fields, then click Save</span>
+        </div>
+        <div id="planRows"><div class="loading-text">Loading pricing…</div></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="savePricing()">Save All Pricing → Live Instantly</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMOTION -->
+    <div class="panel" id="panel-promo">
+      <div class="page-header"><h1><em>Promotion</em> Banner</h1></div>
+      <div class="card">
+        <div class="card-title">Promo Banner (shown at top of website)</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Banner Active<small>Shows the gold banner on the website</small></div>
+          <label class="toggle"><input type="checkbox" id="promoActive"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg" style="margin-top:1.25rem"><label>Banner Text</label><input type="text" id="promoText" placeholder="April Special — First month 50% off all guitar lessons!"></div>
+        <div class="fg">
+          <label>Banner Links To</label>
+          <select id="promoLinkTo">
+            <option value="courses">Courses section</option>
+            <option value="booking">Booking / sign-up form</option>
+          </select>
+        </div>
+        <div class="two-col">
+          <div class="fg"><label>Discount %</label><input type="number" id="promoDiscount" placeholder="50"></div>
+          <div class="fg"><label>Valid Until</label><input type="date" id="promoEnd"></div>
+        </div>
+        <div class="btn-row"><button class="btn btn-gold" onclick="savePromo()">Save → Live Instantly</button></div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="panel" id="panel-payments">
+      <div class="page-header"><h1><em>Payment</em> Settings</h1></div>
+      <div class="card">
+        <div class="card-title">Yoco (In-Person Card Payments)</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Yoco<small>Show card payment tab on booking form</small></div>
+          <label class="toggle"><input type="checkbox" id="yocoEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg" style="margin-top:1rem"><label>Yoco Public Key</label><input type="text" id="yocoPublicKey" placeholder="pk_live_…"></div>
+        <div class="fg"><label>Yoco Secret Key</label><input type="password" id="yocoSecretKey" placeholder="sk_live_…"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Stripe (Online Payments)</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Stripe<small>Show online payment tab on booking form</small></div>
+          <label class="toggle"><input type="checkbox" id="stripeEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg" style="margin-top:1rem"><label>Stripe Checkout URL</label><input type="text" id="stripeUrl" placeholder="https://buy.stripe.com/…"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">EFT / Bank Transfer</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable EFT<small>Show EFT tab on booking form</small></div>
+          <label class="toggle"><input type="checkbox" id="eftEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">💵 Cash</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Cash<small>Student pays cash at first lesson</small></div>
+          <label class="toggle"><input type="checkbox" id="cashEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🖥 Card Machine</div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Card Machine<small>Student pays via card machine at the studio</small></div>
+          <label class="toggle"><input type="checkbox" id="cardMachineEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-gold" onclick="savePayments()">Save Payment Settings → Live Instantly</button></div>
+    </div>
+
+    <!-- CONTACT & BANK -->
+    <div class="panel" id="panel-contact">
+      <div class="page-header"><h1>Contact &amp; <em>Banking</em></h1></div>
+      <div class="card">
+        <div class="card-title">Contact Information (shown on website)</div>
+        <div class="two-col">
+          <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="contactPhone" placeholder="+27 82 XXX XXXX"></div>
+          <div class="fg"><label>Email</label><input type="email" id="contactEmail" placeholder="info@backstage.co.za"></div>
+        </div>
+        <div class="fg"><label>Location Description</label><input type="text" id="contactLocation" placeholder="Pretoria East, South Africa"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Banking Details (shown in EFT tab)</div>
+        <div class="fg"><label>Account Name</label><input type="text" id="bankName" placeholder="Backstage Worship Music School"></div>
+        <div class="two-col">
+          <div class="fg"><label>Bank</label><input type="text" id="bankBank" placeholder="FNB"></div>
+          <div class="fg"><label>Account Number</label><input type="text" id="bankAccNo" placeholder="XXXX XXXX XXX"></div>
+        </div>
+        <div class="fg"><label>Branch Code</label><input type="text" id="bankBranch" placeholder="250655"></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-gold" onclick="saveContact()">Save → Live Instantly</button></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="panel" id="panel-alerts">
+      <div class="page-header"><h1>Booking <em>Alerts</em></h1></div>
+      <div class="card">
+        <div class="card-title">Email Notifications</div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7">
+          When a student submits a booking, an alert will be sent to your email address. This uses <strong style="color:var(--gold)">EmailJS</strong> — a free service that sends emails directly from the browser, no server needed.
+        </p>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Email Alerts<small>Send you an email every time a new booking is made</small></div>
+          <label class="toggle"><input type="checkbox" id="alertEnabled"><span class="toggle-slider"></span></label>
+        </div>
+        <div style="margin-top:1.5rem">
+          <div class="fg"><label>Your Email (to receive alerts)</label><input type="email" id="alertEmail" placeholder="willem@backstage.co.za"></div>
+          <div class="fg"><label>EmailJS Service ID</label><input type="text" id="alertServiceId" placeholder="service_xxxxxxx">
+            <div class="hint">Sign up free at <strong style="color:var(--gold)">emailjs.com</strong> → Email Services → Add New Service → copy Service ID</div>
+          </div>
+          <div class="fg"><label>EmailJS Template ID</label><input type="text" id="alertTemplateId" placeholder="template_xxxxxxx">
+            <div class="hint">In EmailJS → Email Templates → create a template, paste this in the body:<br><br>
+            <code style="font-size:.78rem;color:var(--gold);background:var(--black);padding:.5rem .75rem;display:block;margin-top:.5rem;border-radius:1px;line-height:1.8">New booking from: {{student_name}}<br>Email: {{student_email}}<br>Phone: {{student_phone}}<br>Plan: {{plan}}<br>Schedule: {{schedule}}<br>Payment: {{payment_method}}</code>
+            </div>
+          </div>
+          <div class="fg"><label>EmailJS Public Key</label><input type="text" id="alertPublicKey" placeholder="xxxxxxxxxxxxxxxxxxxxxx">
+            <div class="hint">In EmailJS → Account → General → Public Key</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="saveAlerts()">Save Alert Settings</button>
+          <button class="btn btn-outline" onclick="testAlert()">Send Test Email</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Admin Account</div>
+        <p style="font-size:.875rem;color:var(--muted);line-height:1.7">Your admin account is secured with <strong style="color:var(--gold)">Firebase Authentication</strong>. To change your password, go to:<br><br>
+        <strong style="color:var(--gold)">console.firebase.google.com → backstage-music → Authentication → Users</strong><br><br>
+        Click on your email address and select "Reset password" to send yourself a reset link.</p>
+      </div>
+    </div>
+
+    <!-- SCHOOL TERMS -->
+    <div class="panel" id="panel-terms">
+      <div class="page-header"><h1>School <em>Terms</em></h1></div>
+      <div class="card">
+        <div class="card-title">Gauteng School Terms — Edit as Needed</div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7">
+          Private lesson bookings recur weekly within school terms only. Holidays between terms are automatically skipped.
+          Update these dates each year.
+        </p>
+        <div id="termsContainer"></div>
+        <div class="btn-row" style="margin-top:1rem">
+          <button class="btn btn-gold" onclick="saveTerms()">Save Terms → Applied to All Bookings</button>
+          <button class="btn btn-outline" onclick="addTerm()">+ Add Term</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIREBASE SETUP -->
+    <div class="panel" id="panel-config">
+      <div class="page-header"><h1>Firebase <em>Setup</em></h1></div>
+      <div class="card">
+        <div class="card-title">Firestore Rules</div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1rem;line-height:1.7">Go to <strong style="color:var(--gold)">console.firebase.google.com → backstage-music → Firestore → Rules</strong>, delete everything, and paste:</p>
+        <pre style="background:var(--black);border:1px solid var(--border);padding:1.25rem;font-size:.82rem;color:#a0c08a;line-height:1.8;border-radius:1px;overflow-x:auto">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public: anyone can create a booking, nobody can read/edit/delete
+    match /bookings/{b} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Public: anyone can read courses and pricing/config
+    // Only authenticated admin can write
+    match /courses/{c} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /siteConfig/{d} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Private: only authenticated admin
+    match /quotes/{q} {
+      allow read, write: if request.auth != null;
+    }
+    match /invoices/{i} {
+      allow read, write: if request.auth != null;
+    }
+    match /studentNotes/{n} {
+      allow read, write: if request.auth != null;
+    }
+    match /attendance/{a} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- QUOTES -->
+    <div class="panel" id="panel-quotes">
+      <div class="page-header">
+        <h1><em>Quotes</em></h1>
+        <button class="btn btn-gold btn-sm" onclick="showQuoteForm()">+ New Quote</button>
+      </div>
+
+      <!-- Quote form -->
+      <div class="card" id="quoteFormCard" style="display:none">
+        <div class="card-title" id="quoteFormTitle">New Quote</div>
+        <div class="two-col">
+          <div class="fg"><label>Client Name</label><input type="text" id="qClientName" placeholder="Full name"></div>
+          <div class="fg"><label>Client Email</label><input type="email" id="qClientEmail" placeholder="email@example.com"></div>
+        </div>
+        <div class="two-col">
+          <div class="fg"><label>Client Phone</label><input type="tel" id="qClientPhone" placeholder="+27 82 XXX XXXX"></div>
+          <div class="fg"><label>Valid Until</label><input type="date" id="qValidUntil"></div>
+        </div>
+        <div class="fg"><label>Payment Terms</label>
+          <select id="qTerms">
+            <option value="Due on receipt">Due on receipt</option>
+            <option value="7 days">7 days</option>
+            <option value="14 days">14 days</option>
+            <option value="30 days">30 days</option>
+          </select>
+        </div>
+
+        <!-- Line items -->
+        <div class="card-title" style="margin-top:1.5rem">Line Items</div>
+        <div id="lineItemsContainer"></div>
+        <button class="btn btn-outline btn-sm" onclick="addLineItem()" style="margin-bottom:1.5rem">+ Add Item</button>
+
+        <!-- Totals -->
+        <div style="background:var(--black);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1.5rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;font-size:.9rem;color:var(--muted)">
+            <span>Subtotal</span><span id="qSubtotal">R 0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Total</span>
+            <span id="qTotal" style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold)">R 0</span>
+          </div>
+        </div>
+
+        <div class="fg"><label>Notes</label><textarea id="qNotes" placeholder="e.g. Includes 8-week beginner guitar course. Prices valid for 30 days."></textarea></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" id="saveQuoteBtn" onclick="saveQuote()">Save Quote</button>
+          <button class="btn btn-outline" onclick="hideQuoteForm()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Quote list -->
+      <div id="quotesList"><div class="loading-text">Loading quotes…</div></div>
+    </div>
+
+    <!-- INVOICES -->
+    <div class="panel" id="panel-invoices">
+      <div class="page-header"><h1><em>Invoices</em></h1></div>
+      <div id="invoicesList"><div class="loading-text">Loading invoices…</div></div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="panel" id="panel-attendance">
+      <div class="page-header"><h1><em>Attendance</em></h1></div>
+      <div class="card">
+        <div class="card-title">Select Course or Student</div>
+        <div class="two-col">
+          <div class="fg">
+            <label>View Mode</label>
+            <select id="attMode" onchange="loadAttendanceView()">
+              <option value="course">By Course (grid view)</option>
+              <option value="student">By Student (individual lessons)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label id="attSelectLabel">Select Course</label>
+            <select id="attSelect" onchange="loadAttendanceView()">
+              <option value="">— Loading —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="attendanceView"><div class="loading-text">Select a course or student above</div></div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="panel" id="panel-calendar">
+      <div class="page-header"><h1><em>Calendar</em></h1></div>
+      <div class="card">
+        <div class="cal-header">
+          <div class="cal-nav">
+            <button onclick="calPrev()">‹</button>
+            <button onclick="calToday()">Today</button>
+            <button onclick="calNext()">›</button>
+          </div>
+          <h2 id="calMonthLabel">—</h2>
+          <div style="font-size:.8rem;color:var(--muted);display:flex;gap:1.25rem;align-items:center">
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--gold-dim);border-left:2px solid var(--gold);margin-right:.4rem"></span>Pending</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:rgba(39,174,96,.12);border-left:2px solid var(--success);margin-right:.4rem"></span>Confirmed</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:rgba(74,158,255,.12);border-left:2px solid #4a9eff;margin-right:.4rem"></span>Course</span>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="panel" id="panel-students">
+      <div class="page-header"><h1><em>Students</em></h1></div>
+      <div class="student-search">
+        <input type="text" id="studentSearch" placeholder="Search by name or email…" oninput="filterStudents(this.value)">
+      </div>
+      <div id="studentsList"><div class="loading-text">Loading students…</div></div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",
+  authDomain:"backstage-music.firebaseapp.com",
+  databaseURL:"https://backstage-music-default-rtdb.firebaseio.com",
+  projectId:"backstage-music",
+  storageBucket:"backstage-music.firebasestorage.app",
+  messagingSenderId:"864389877971",
+  appId:"1:864389877971:web:c7d15ae843d54172c90426",
+  measurementId:"G-DY40YLD9FM"
+};
+
+const app = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+window._db = db;
+
+// ── AUTH STATE — drives everything ──
+onAuthStateChanged(auth, user => {
+  if (user) {
+    // Signed in — show dashboard, hide login
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('fbStatus').textContent = `● ${user.email}`;
+    document.getElementById('fbStatus').style.color = '#27ae60';
+    // Load initial data
+    loadDashboard();
+    loadPricing();
+    loadPromo();
+    loadPayments();
+    loadContact();
+    loadAlerts();
+    loadQuotes();
+    loadInvoices();
+  } else {
+    // Signed out — show login screen
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('fbStatus').textContent = '○ Not signed in';
+    document.getElementById('fbStatus').style.color = 'var(--muted)';
+  }
+});
+
+function showBanner(msg) {
+  const b = document.createElement('div');
+  b.style.cssText='position:fixed;top:57px;left:0;right:0;background:var(--danger);color:#fff;padding:.75rem 2rem;font-size:.875rem;z-index:200;display:flex;justify-content:space-between;align-items:center;gap:1rem';
+  b.innerHTML=`<span>⚠️ ${msg}</span><button onclick="this.parentNode.remove()" style="background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:.25rem .75rem;cursor:pointer;border-radius:2px;font-size:.8rem;font-family:inherit">✕</button>`;
+  document.body.appendChild(b);
+}
+
+// ── LOAD DASHBOARD ──
+async function loadDashboard() {
+  try {
+    const [bSnap, cSnap] = await Promise.all([getDocs(collection(db,'bookings')), getDocs(collection(db,'courses'))]);
+    const bookings=[], courses=[];
+    bSnap.forEach(d=>bookings.push({id:d.id,...d.data()}));
+    cSnap.forEach(d=>courses.push({id:d.id,...d.data()}));
+    window._bookings = bookings;
+    window._courses  = courses;
+
+    document.getElementById('statBookings').textContent = bookings.length;
+    document.getElementById('statPending').textContent  = bookings.filter(b=>b.status==='pending').length;
+    document.getElementById('statCourses').textContent  = courses.length;
+    document.getElementById('statStudents').textContent = new Set(bookings.map(b=>b.email)).size;
+
+    const recent = [...bookings].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,8);
+    document.getElementById('recentBookings').innerHTML = recent.length
+      ? recent.map(b=>bookingRow(b)).join('')
+      : '<div class="loading-text">No bookings yet</div>';
+
+    renderBookingsList(bookings);
+    renderCoursesList(courses);
+  } catch(e) { console.warn('Dashboard error:',e); }
+}
+
+function bookingRow(b) {
+  const waNumber = (b.phone||'').replace(/[\s\+\-\(\)]/g,'');
+  const waClean  = waNumber.startsWith('0') ? '27'+waNumber.slice(1) : waNumber;
+  const waLink   = waClean ? `https://wa.me/${waClean}?text=${encodeURIComponent(`Hi ${b.firstName||''}! Just confirming your ${b.plan||'lesson'} booking at Backstage Worship.`)}` : '';
+  return `<div class="list-item">
+    <div class="li-content">
+      <div class="li-title">${b.firstName||''} ${b.lastName||''} <span class="status-badge status-${b.status||'pending'}" style="margin-left:.5rem">${b.status||'pending'}</span></div>
+      <div class="li-meta">${b.plan||'—'} · ${b.instrument||'—'} · ${b.prefDay||b.chosenSlot||'—'} ${b.prefTime||''} · ${b.email||''} · R${Number(b.price||0).toLocaleString()}${b.totalSessions?' · '+b.totalSessions+' sessions':''}</div>
+    </div>
+    <div class="li-actions">
+      ${waLink ? `<a href="${waLink}" target="_blank" class="wa-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> WhatsApp</a>` : ''}
+      <button class="btn btn-outline btn-sm" onclick="window.confirmBooking('${b.id}')">✓ Confirm</button>
+      <button class="btn btn-outline btn-sm" onclick="window.rescheduleBooking('${b.id}')">↔ Reschedule</button>
+      <button class="btn btn-danger btn-sm" onclick="window.deleteBooking('${b.id}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+window._allBookings = [];
+window.filterBookings = function(status) {
+  const list = status==='all' ? window._bookings : (window._bookings||[]).filter(b=>b.status===status);
+  renderBookingsList(list);
+};
+
+window.searchBookings = function(query) {
+  const q = query.toLowerCase();
+  const filtered = (window._bookings||[]).filter(b =>
+    (`${b.firstName||''} ${b.lastName||''}`).toLowerCase().includes(q) ||
+    (b.email||'').toLowerCase().includes(q) ||
+    (b.plan||'').toLowerCase().includes(q) ||
+    (b.phone||'').includes(q)
+  );
+  renderBookingsList(filtered);
+};
+
+function renderBookingsList(bookings) {
+  window._allBookings = bookings;
+  document.getElementById('bookingsList').innerHTML = bookings.length
+    ? bookings.map(b=>bookingRow(b)).join('')
+    : '<div class="loading-text">No bookings found</div>';
+}
+
+window.confirmBooking = async function(id) {
+  try {
+    const b = (window._bookings||[]).find(x=>x.id===id);
+    const updates = { status:'confirmed', confirmedAt:new Date().toISOString() };
+
+    // Generate recurring session dates within school terms for private lessons
+    if (b && !b.courseId && b.prefDay && b.startDate) {
+      const sessionDates = await generateTermDates(b.prefDay, b.startDate);
+      updates.sessionDates   = sessionDates;
+      updates.totalSessions  = sessionDates.length;
+    }
+
+    await updateDoc(doc(db,'bookings',id), updates);
+    const msg = updates.sessionDates?.length
+      ? `Booking confirmed! ${updates.sessionDates.length} sessions scheduled across school terms.`
+      : 'Booking confirmed!';
+    toast(msg,'success');
+    loadDashboard();
+    loadCalendar();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.deleteBooking = async function(id) {
+  if (!confirm('Delete this booking permanently?')) return;
+  try {
+    await deleteDoc(doc(db,'bookings',id));
+    toast('Booking deleted','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── COURSES ──
+// Tracks which course is being edited (null = new course)
+window._editingCourseId = null;
+
+window.toggleCourseForm = function(clear=true) {
+  const card = document.getElementById('courseFormCard');
+  const isHidden = card.style.display === 'none';
+  if (isHidden) {
+    if (clear) {
+      // Reset to blank Add mode
+      window._editingCourseId = null;
+      document.getElementById('courseFormTitle').textContent = 'New Course';
+      document.getElementById('saveCourseBtn').textContent   = 'Save Course → Live Instantly';
+      ['cTitle','cDesc','cDuration','cPrice','cMaxParticipants','cModules',
+       'cDay','cStartTime','cEndTime','cStartDate','cNumSessions',
+       'cOptionsStartDate','cOptionsNumSessions'].forEach(id=>{
+         const el=document.getElementById(id); if(el) el.value='';
+       });
+      document.getElementById('cScheduleType').value = 'free';
+      document.getElementById('cRepeatType').value = 'weekly';
+      document.getElementById('cOptionsRepeatType').value = 'weekly';
+      // Clear slot option rows
+      document.querySelectorAll('.slot-day,.slot-start,.slot-end,.slot-name,.slot-duration,.slot-desc').forEach(el=>el.value='');
+      document.getElementById('cCat').value   = 'Guitar';
+      document.getElementById('cLevel').value = 'Beginner';
+      toggleScheduleFields();
+    }
+    card.style.display = 'block';
+    card.scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    card.style.display = 'none';
+    window._editingCourseId = null;
+  }
+};
+
+window.editCourse = function(id) {
+  const course = (window._courses||[]).find(c=>c.id===id);
+  if (!course) { toast('Course not found','error'); return; }
+
+  window._editingCourseId = id;
+
+  // Fill form with existing values
+  document.getElementById('cTitle').value           = course.title||'';
+  document.getElementById('cDesc').value            = course.description||'';
+  document.getElementById('cCat').value             = course.category||'Guitar';
+  document.getElementById('cLevel').value           = course.level||'Beginner';
+  document.getElementById('cDuration').value        = course.duration||'';
+  document.getElementById('cPrice').value           = course.price||'';
+  document.getElementById('cMaxParticipants').value = course.maxParticipants||'';
+  document.getElementById('cModules').value         = (course.modules||[]).join('\n');
+  document.getElementById('cScheduleType').value = course.scheduleType||'free';
+
+  // Fixed schedule structured fields
+  if (document.getElementById('cDay'))          document.getElementById('cDay').value          = course.schedDay||'';
+  if (document.getElementById('cStartTime'))    document.getElementById('cStartTime').value    = course.schedStartTime||'';
+  if (document.getElementById('cEndTime'))      document.getElementById('cEndTime').value      = course.schedEndTime||'';
+  if (document.getElementById('cRepeatType'))   document.getElementById('cRepeatType').value   = course.schedRepeat||'weekly';
+  if (document.getElementById('cNumSessions'))  document.getElementById('cNumSessions').value  = course.schedSessions||'';
+  if (document.getElementById('cStartDate'))    document.getElementById('cStartDate').value    = course.schedStartDate||'';
+
+  // Options schedule
+  if (document.getElementById('cOptionsStartDate'))    document.getElementById('cOptionsStartDate').value    = course.schedStartDate||'';
+  if (document.getElementById('cOptionsRepeatType'))   document.getElementById('cOptionsRepeatType').value   = course.schedRepeat||'weekly';
+  if (document.getElementById('cOptionsNumSessions'))  document.getElementById('cOptionsNumSessions').value  = course.schedSessions||'';
+  const slots = course.slotOptions||[];
+  document.querySelectorAll('.slot-option-row').forEach((row,i) => {
+    const slot = slots[i];
+    if (!slot) return;
+    // Handle both object format (new) and string format (legacy)
+    if (typeof slot === 'object') {
+      const nameEl = row.querySelector('.slot-name');
+      const durEl  = row.querySelector('.slot-duration');
+      const descEl = row.querySelector('.slot-desc');
+      if (nameEl) nameEl.value = slot.name || slot.label || '';
+      if (durEl)  durEl.value  = slot.duration || '';
+      if (descEl) descEl.value = slot.description || '';
+      row.querySelector('.slot-day').value   = slot.day   || '';
+      row.querySelector('.slot-start').value = slot.start || '';
+      row.querySelector('.slot-end').value   = slot.end   || '';
+    } else {
+      // Legacy string "Monday 09:00 – 10:00"
+      const parts = slot.split(' ');
+      row.querySelector('.slot-day').value   = parts[0] || '';
+      row.querySelector('.slot-start').value = parts[1] || '';
+      row.querySelector('.slot-end').value   = parts[3] || '';
+    }
+  });
+  toggleScheduleFields();
+
+  // Update form header
+  document.getElementById('courseFormTitle').textContent = `Editing: ${course.title}`;
+  document.getElementById('saveCourseBtn').textContent   = 'Save Changes → Live Instantly';
+
+  // Show form
+  const card = document.getElementById('courseFormCard');
+  card.style.display = 'block';
+  card.scrollIntoView({behavior:'smooth', block:'start'});
+};
+
+window.toggleScheduleFields = function() {
+  const type = document.getElementById('cScheduleType').value;
+  document.getElementById('schedFixedBlock').style.display   = type === 'fixed'   ? 'block' : 'none';
+  document.getElementById('schedOptionsBlock').style.display = type === 'options' ? 'block' : 'none';
+};
+
+// Build a human-readable schedule label from structured fields
+function buildScheduleLabel() {
+  const type = document.getElementById('cScheduleType').value;
+  if (type === 'fixed') {
+    const day   = document.getElementById('cDay').value;
+    const start = document.getElementById('cStartTime').value;
+    const end   = document.getElementById('cEndTime').value;
+    const rep   = document.getElementById('cRepeatType').value;
+    const num   = document.getElementById('cNumSessions').value;
+    if (!day || !start) return '';
+    const repLabel = rep === 'daily' ? 'daily' : 'weekly';
+    return `${day}s ${start}${end?' – '+end:''} (${num||'?'} sessions, ${repLabel})`;
+  }
+  return '';
+}
+
+// Generate array of session dates from structured schedule
+function generateSessionDates(type, day, startTime, endTime, startDate, repeatType, numSessions) {
+  const sessions = [];
+  if (!startDate || !numSessions) return sessions;
+  const dayMap = {monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
+  const targetDay = dayMap[day?.toLowerCase()];
+  let current = new Date(startDate);
+
+  if (repeatType === 'weekly' && targetDay !== undefined) {
+    // Advance to first occurrence of target weekday on or after startDate
+    while (current.getDay() !== targetDay) {
+      current.setDate(current.getDate() + 1);
+    }
+    for (let i = 0; i < numSessions; i++) {
+      sessions.push({
+        date: current.toISOString().split('T')[0],
+        startTime, endTime,
+        label: current.toLocaleDateString('en-ZA', {weekday:'short',day:'numeric',month:'short'})
+      });
+      current.setDate(current.getDate() + 7);
+    }
+  } else if (repeatType === 'daily') {
+    for (let i = 0; i < numSessions; i++) {
+      sessions.push({
+        date: current.toISOString().split('T')[0],
+        startTime, endTime,
+        label: current.toLocaleDateString('en-ZA', {weekday:'short',day:'numeric',month:'short'})
+      });
+      current.setDate(current.getDate() + 1);
+    }
+  }
+  return sessions;
+}
+
+window.saveCourse = async function() {
+  const title = document.getElementById('cTitle').value.trim();
+  if (!title) { toast('Please enter a course title','error'); return; }
+  const maxP          = document.getElementById('cMaxParticipants').value;
+  const scheduleType = document.getElementById('cScheduleType').value;
+  let fixedSchedule = '', slotOptions = [], sessionDates = [];
+  let schedDay='', schedStartTime='', schedEndTime='', schedRepeat='weekly', schedSessions=0, schedStartDate='';
+
+  if (scheduleType === 'fixed') {
+    schedDay       = document.getElementById('cDay').value;
+    schedStartTime = document.getElementById('cStartTime').value;
+    schedEndTime   = document.getElementById('cEndTime').value;
+    schedRepeat    = document.getElementById('cRepeatType').value;
+    schedSessions  = Number(document.getElementById('cNumSessions').value)||0;
+    schedStartDate = document.getElementById('cStartDate').value;
+    if (!schedDay || !schedStartTime) { toast('Please set the day and start time','error'); return; }
+    if (!schedStartDate)              { toast('Please set the course start date','error'); return; }
+    if (!schedSessions)               { toast('Please enter number of sessions','error'); return; }
+    fixedSchedule  = buildScheduleLabel();
+    sessionDates   = generateSessionDates('fixed', schedDay, schedStartTime, schedEndTime, schedStartDate, schedRepeat, schedSessions);
+  }
+
+  if (scheduleType === 'options') {
+    const rows = document.querySelectorAll('#slotOptionsContainer .slot-option-row');
+    rows.forEach(row => {
+      const day   = row.querySelector('.slot-day').value;
+      const start = row.querySelector('.slot-start').value;
+      const end   = row.querySelector('.slot-end').value;
+      const name  = row.querySelector('.slot-name')?.value.trim() || '';
+      const dur   = row.querySelector('.slot-duration')?.value.trim() || '';
+      const desc  = row.querySelector('.slot-desc')?.value.trim() || '';
+      if (day && start) slotOptions.push({
+        label:    name || `${day} ${start}${end?' – '+end:''}`,
+        day, start, end, name, duration: dur, description: desc
+      });
+    });
+    if (slotOptions.length < 2) { toast('Please fill in at least 2 slot options','error'); return; }
+    // For options, generate sessions for each slot
+    const optRepeat  = document.getElementById('cOptionsRepeatType').value;
+    const optSess    = Number(document.getElementById('cOptionsNumSessions').value)||0;
+    const optStart   = document.getElementById('cOptionsStartDate').value;
+    schedRepeat    = optRepeat;
+    schedSessions  = optSess;
+    schedStartDate = optStart;
+  }
+
+  const course = {
+    title,
+    description:     document.getElementById('cDesc').value,
+    category:        document.getElementById('cCat').value,
+    level:           document.getElementById('cLevel').value,
+    duration:        Number(document.getElementById('cDuration').value)||8,
+    price:           Number(document.getElementById('cPrice').value)||0,
+    maxParticipants: maxP ? Number(maxP) : null,
+    scheduleType,
+    fixedSchedule,
+    slotOptions,
+    sessionDates,
+    schedDay, schedStartTime, schedEndTime,
+    schedRepeat, schedSessions,
+    schedStartDate,
+    modules:         document.getElementById('cModules').value.split('\n').map(s=>s.trim()).filter(Boolean),
+  };
+
+  try {
+    if (window._editingCourseId) {
+      // UPDATE existing course
+      course.updatedAt = new Date().toISOString();
+      await setDoc(doc(db,'courses', window._editingCourseId), course, {merge:true});
+      toast('Course updated! Live on website now.','success');
+    } else {
+      // ADD new course
+      course.createdAt = new Date().toISOString();
+      await addDoc(collection(db,'courses'), course);
+      toast('Course saved! Live on website now.','success');
+    }
+    window.toggleCourseForm(true);
+    loadDashboard();
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save course: ${e.message}`); }
+};
+
+window.deleteCourse = async function(id) {
+  const course = (window._courses||[]).find(c=>c.id===id);
+  if (!confirm(`Delete "${course?.title||'this course'}"? This cannot be undone.`)) return;
+  try {
+    await deleteDoc(doc(db,'courses',id));
+    toast('Course deleted','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+function renderCoursesList(courses) {
+  const schedLabel = c => {
+    if (c.scheduleType === 'fixed' && c.schedDay) {
+      const rep = c.schedRepeat === 'daily' ? 'daily' : 'weekly';
+      return `📅 ${c.schedDay}s ${c.schedStartTime||''}${c.schedEndTime?' – '+c.schedEndTime:''} · ${c.schedSessions||'?'} sessions (${rep}) · Starts ${c.schedStartDate||'TBC'}`;
+    }
+    if (c.scheduleType === 'fixed')   return `📅 ${c.fixedSchedule||'Fixed'}`;
+    if (c.scheduleType === 'options') {
+      const labels = (c.slotOptions||[]).map(s =>
+        typeof s === 'object' ? (s.name || s.label || `${s.day||''} ${s.start||''}`.trim()) : s
+      ).filter(Boolean);
+      return `📅 Options: ${labels.join(' / ')}`;
+    }
+    return '📅 Free choice';
+  };
+  document.getElementById('coursesList').innerHTML = courses.length
+    ? courses.map(c=>`
+      <div class="list-item">
+        <div class="li-content">
+          <div class="li-title">${c.title}</div>
+          <div class="li-meta">
+            ${c.category} · ${c.level} · ${c.duration} weeks · R${Number(c.price).toLocaleString()}
+            ${c.maxParticipants ? ` · Max ${c.maxParticipants} per slot` : ''}
+            · ${schedLabel(c)}
+          </div>
+        </div>
+        <div class="li-actions">
+          <button class="btn btn-outline btn-sm" onclick="window.editCourse('${c.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="window.deleteCourse('${c.id}')">Delete</button>
+        </div>
+      </div>`).join('')
+    : '<div class="loading-text">No courses yet — add one above</div>';
+}
+
+// ── PRICING ──
+let _plans = [];
+
+async function loadPricing() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','pricing'));
+    _plans = (snap.exists() && snap.data().plans?.length) ? snap.data().plans : getDefaultPlans();
+  } catch(e) { _plans = getDefaultPlans(); }
+  renderPlanRows();
+}
+
+function getDefaultPlans() {
+  return [
+    {id:'30m',name:'30-min Monthly',label:'30 Minutes · Monthly',price:800,period:'per month · 4 lessons',featured:false,features:['4 lessons/month','30 min per session','Guitar or vocals','Flexible scheduling']},
+    {id:'60m',name:'60-min Monthly',label:'60 Minutes · Monthly',price:1200,period:'per month · 4 lessons',featured:true,features:['4 lessons/month','60 min per session','Guitar or vocals','Theory included','Flexible scheduling']},
+    {id:'30a',name:'30-min Annual',label:'30 Minutes · Annual',price:8000,period:'per year · 48 lessons',featured:false,features:['48 lessons/year','30 min per session','Save R1,600','Priority scheduling']},
+    {id:'60a',name:'60-min Annual',label:'60 Minutes · Annual',price:12000,period:'per year · 48 lessons',featured:false,features:['48 lessons/year','60 min per session','Save R2,400','Theory included','Priority scheduling']}
+  ];
+}
+
+function renderPlanRows() {
+  if (!_plans.length) { document.getElementById('planRows').innerHTML='<div class="loading-text">No plans yet — click + Add Plan</div>'; return; }
+  document.getElementById('planRows').innerHTML = _plans.map((p,i)=>`
+    <div class="plan-row" data-idx="${i}">
+      <div class="plan-row-header"><h4>Plan ${i+1}</h4><button class="btn btn-danger btn-sm" onclick="removePlan(${i})">Remove</button></div>
+      <div class="two-col">
+        <div class="fg"><label>Plan Name (internal)</label><input class="plan-name" type="text" value="${p.name||''}" placeholder="60-min Monthly"></div>
+        <div class="fg"><label>Label (shown on website)</label><input class="plan-label" type="text" value="${p.label||''}" placeholder="60 Minutes · Monthly"></div>
+      </div>
+      <div class="two-col">
+        <div class="fg"><label>Price (ZAR)</label><input class="plan-price" type="number" value="${p.price||0}" min="0"></div>
+        <div class="fg"><label>Lesson Duration</label>
+          <select class="plan-duration">
+            <option value="60" ${(p.duration||60)==60?'selected':''}>60 minutes</option>
+            <option value="30" ${(p.duration||60)==30?'selected':''}>30 minutes</option>
+          </select>
+        </div>
+        <div class="fg"><label>Period (e.g. per month · 4 lessons)</label><input class="plan-period" type="text" value="${p.period||''}" placeholder="per month · 4 lessons"></div>
+      </div>
+      <div class="fg">
+        <label>Features (one per line)</label>
+        <textarea class="plan-features" rows="4" placeholder="4 lessons/month&#10;60 min per session&#10;Guitar or vocals">${(p.features||[]).join('\n')}</textarea>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label">Mark as "Most Popular"</div>
+        <label class="toggle"><input class="plan-featured" type="checkbox" ${p.featured?'checked':''}><span class="toggle-slider"></span></label>
+      </div>
+    </div>`).join('');
+}
+
+window.addPlanRow = function() {
+  _plans.push({id:'plan'+Date.now(),name:'',label:'',price:0,period:'',featured:false,features:[]});
+  renderPlanRows();
+  document.getElementById('planRows').lastElementChild?.scrollIntoView({behavior:'smooth'});
+};
+
+window.removePlan = function(i) {
+  if (!confirm('Remove this plan?')) return;
+  _plans.splice(i,1);
+  renderPlanRows();
+};
+
+window.savePricing = async function() {
+  const rows = document.querySelectorAll('#planRows .plan-row');
+  if (!rows.length) { toast('No plans to save — add at least one plan first','error'); return; }
+  const plans = Array.from(rows).map((row,i)=>({
+    id:       _plans[i]?.id || ('plan'+Date.now()+i),
+    name:     row.querySelector('.plan-name').value.trim(),
+    label:    row.querySelector('.plan-label').value.trim(),
+    price:    Number(row.querySelector('.plan-price').value)||0,
+    duration: Number(row.querySelector('.plan-duration').value)||60,
+    period:   row.querySelector('.plan-period').value.trim(),
+    features: row.querySelector('.plan-features').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    featured: row.querySelector('.plan-featured').checked
+  }));
+  // Validate
+  const invalid = plans.filter(p=>!p.name||!p.price);
+  if (invalid.length) { toast('Please fill in Plan Name and Price for all plans','error'); return; }
+  try {
+    await setDoc(doc(db,'siteConfig','pricing'), {plans});
+    _plans = plans;
+    toast(`Pricing saved! ${plans.length} plan${plans.length===1?'':'s'} now live on website.`,'success');
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save pricing: ${e.message}`); }
+};
+
+// ── PROMO ──
+async function loadPromo() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const p = snap.data().promo||{};
+    document.getElementById('promoActive').checked   = !!p.active;
+    document.getElementById('promoText').value       = p.text||'';
+    document.getElementById('promoDiscount').value   = p.discount||'';
+    document.getElementById('promoEnd').value        = p.validUntil||'';
+    document.getElementById('promoLinkTo').value     = p.linkTo||'courses';
+  } catch(e) {}
+}
+
+window.savePromo = async function() {
+  const promo = { active:document.getElementById('promoActive').checked, text:document.getElementById('promoText').value, discount:Number(document.getElementById('promoDiscount').value)||0, validUntil:document.getElementById('promoEnd').value, linkTo:document.getElementById('promoLinkTo').value };
+  try {
+    const ref=doc(db,'siteConfig','main');
+    const snap=await getDoc(ref);
+    await setDoc(ref,{...(snap.exists()?snap.data():{}),promo});
+    toast('Promo banner updated! Live on website now.','success');
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save promo: ${e.message}`); }
+};
+
+// ── PAYMENTS ──
+async function loadPayments() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const pay = snap.data().payments||{};
+    if (pay.yoco)        { document.getElementById('yocoEnabled').checked=!!pay.yoco.enabled; document.getElementById('yocoPublicKey').value=pay.yoco.publicKey||''; }
+    if (pay.stripe)      { document.getElementById('stripeEnabled').checked=!!pay.stripe.enabled; document.getElementById('stripeUrl').value=pay.stripe.checkoutUrl||''; }
+    if (pay.eft)         { document.getElementById('eftEnabled').checked=!!pay.eft.enabled; }
+    if (pay.cash)        { document.getElementById('cashEnabled').checked=!!pay.cash.enabled; }
+    if (pay.cardMachine) { document.getElementById('cardMachineEnabled').checked=!!pay.cardMachine.enabled; }
+  } catch(e) {}
+}
+
+window.savePayments = async function() {
+  const payments = {
+    yoco:        {enabled:document.getElementById('yocoEnabled').checked,       publicKey:document.getElementById('yocoPublicKey').value},
+    stripe:      {enabled:document.getElementById('stripeEnabled').checked,     checkoutUrl:document.getElementById('stripeUrl').value},
+    eft:         {enabled:document.getElementById('eftEnabled').checked},
+    cash:        {enabled:document.getElementById('cashEnabled').checked},
+    cardMachine: {enabled:document.getElementById('cardMachineEnabled').checked}
+  };
+  try {
+    const ref=doc(db,'siteConfig','main');
+    const snap=await getDoc(ref);
+    await setDoc(ref,{...(snap.exists()?snap.data():{}),payments});
+    toast('Payment settings saved!','success');
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save payments: ${e.message}`); }
+};
+
+// ── CONTACT ──
+async function loadContact() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const d = snap.data();
+    if (d.contact) { document.getElementById('contactPhone').value=d.contact.phone||''; document.getElementById('contactEmail').value=d.contact.email||''; document.getElementById('contactLocation').value=d.contact.location||''; }
+    if (d.banking)  { document.getElementById('bankName').value=d.banking.accountName||''; document.getElementById('bankBank').value=d.banking.bank||''; document.getElementById('bankAccNo').value=d.banking.accountNumber||''; document.getElementById('bankBranch').value=d.banking.branchCode||''; }
+  } catch(e) {}
+}
+
+window.saveContact = async function() {
+  const contact = {phone:document.getElementById('contactPhone').value, email:document.getElementById('contactEmail').value, location:document.getElementById('contactLocation').value};
+  const banking  = {accountName:document.getElementById('bankName').value, bank:document.getElementById('bankBank').value, accountNumber:document.getElementById('bankAccNo').value, branchCode:document.getElementById('bankBranch').value};
+  try {
+    const ref=doc(db,'siteConfig','main');
+    const snap=await getDoc(ref);
+    await setDoc(ref,{...(snap.exists()?snap.data():{}),contact,banking});
+    toast('Contact & banking updated! Live on website now.','success');
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save contact: ${e.message}`); }
+};
+
+// ── ALERTS ──
+async function loadAlerts() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const a = snap.data().alerts||{};
+    document.getElementById('alertEnabled').checked     = !!a.enabled;
+    document.getElementById('alertEmail').value         = a.email||'';
+    document.getElementById('alertServiceId').value     = a.serviceId||'';
+    document.getElementById('alertTemplateId').value    = a.templateId||'';
+    document.getElementById('alertPublicKey').value     = a.publicKey||'';
+  } catch(e) {}
+}
+
+window.saveAlerts = async function() {
+  const alerts = {enabled:document.getElementById('alertEnabled').checked, email:document.getElementById('alertEmail').value, serviceId:document.getElementById('alertServiceId').value, templateId:document.getElementById('alertTemplateId').value, publicKey:document.getElementById('alertPublicKey').value};
+  try {
+    const ref=doc(db,'siteConfig','main');
+    const snap=await getDoc(ref);
+    await setDoc(ref,{...(snap.exists()?snap.data():{}),alerts});
+    toast('Alert settings saved!','success');
+  } catch(e) { toast('Save failed','error'); }
+};
+
+window.testAlert = async function() {
+  const svcId  = document.getElementById('alertServiceId').value;
+  const tplId  = document.getElementById('alertTemplateId').value;
+  const pubKey = document.getElementById('alertPublicKey').value;
+  const toEmail= document.getElementById('alertEmail').value;
+  if (!svcId||!tplId||!pubKey||!toEmail) { toast('Please fill in all EmailJS fields first','error'); return; }
+  try {
+    if (!window.emailjs) { await loadEmailJS(pubKey); }
+    await window.emailjs.send(svcId, tplId, {student_name:'Test Student', student_email:toEmail, student_phone:'+27 00 000 0000', plan:'Test Plan', schedule:'Monday 10:00', payment_method:'Card'});
+    toast('Test email sent! Check your inbox.','success');
+  } catch(e) { toast('Email failed: '+e.text,'error'); }
+};
+
+function loadEmailJS(pubKey) {
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload=()=>{ window.emailjs.init(pubKey); res(); };
+    s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+
+
+// Data loading is triggered by onAuthStateChanged above
+
+// Expose for panel switching
+window._loaders = { dashboard:loadDashboard, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
+
+// ── ATTENDANCE ──
+async function loadAttendancePanel() {
+  try {
+    const snap = await getDocs(collection(db,'courses'));
+    const courses = [];
+    snap.forEach(d => courses.push({id:d.id,...d.data()}));
+    window._attCourses = courses;
+
+    const bSnap = await getDocs(collection(db,'bookings'));
+    window._allBookings = [];
+    bSnap.forEach(d => window._allBookings.push({id:d.id,...d.data()}));
+
+    // Populate course dropdown
+    const sel = document.getElementById('attSelect');
+    sel.innerHTML = '<option value="">— Select —</option>' +
+      courses.map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+  } catch(e) { console.warn('Attendance load error:',e); }
+}
+
+window.loadAttendanceView = async function() {
+  const mode   = document.getElementById('attMode').value;
+  const selVal = document.getElementById('attSelect').value;
+  const label  = document.getElementById('attSelectLabel');
+  const sel    = document.getElementById('attSelect');
+  const view   = document.getElementById('attendanceView');
+
+  if (mode === 'course') {
+    label.textContent = 'Select Course';
+    if (!window._attCourses?.length) { await loadAttendancePanel(); }
+    sel.innerHTML = '<option value="">— Select —</option>' +
+      (window._attCourses||[]).map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+    if (!selVal) { view.innerHTML = '<div class="loading-text">Select a course above</div>'; return; }
+    renderCourseAttendance(selVal);
+  } else {
+    label.textContent = 'Select Student';
+    // Build unique student list from bookings
+    const studentMap = {};
+    (window._allBookings||[]).forEach(b => {
+      const key = (b.email||b.id).toLowerCase();
+      if (!studentMap[key]) studentMap[key] = {email:b.email, name:`${b.firstName||''} ${b.lastName||''}`.trim(), bookings:[]};
+      studentMap[key].bookings.push(b);
+    });
+    const students = Object.values(studentMap).sort((a,b)=>a.name.localeCompare(b.name));
+    sel.innerHTML = '<option value="">— Select —</option>' +
+      students.map(s=>`<option value="${s.email}">${s.name} (${s.email})</option>`).join('');
+    if (!selVal) { view.innerHTML = '<div class="loading-text">Select a student above</div>'; return; }
+    renderStudentAttendance(selVal, students);
+  }
+};
+
+async function renderCourseAttendance(courseId) {
+  const view    = document.getElementById('attendanceView');
+  const course  = (window._attCourses||[]).find(c=>c.id===courseId);
+  if (!course) return;
+
+  // Get sessions — use sessionDates if available, else generate from schedule fields
+  let sessions = course.sessionDates || [];
+  if (!sessions.length && course.schedDay && course.schedStartDate && course.schedSessions) {
+    sessions = generateSessionDates('fixed', course.schedDay, course.schedStartTime, course.schedEndTime, course.schedStartDate, course.schedRepeat||'weekly', course.schedSessions);
+  }
+
+  if (!sessions.length) {
+    view.innerHTML = `<div class="card"><p style="color:var(--muted);font-size:.875rem">This course has no session dates set. Edit the course and add a start date and number of sessions.</p></div>`;
+    return;
+  }
+
+  // Get enrolled students (bookings for this course)
+  const enrolled = (window._allBookings||[]).filter(b => b.courseId === courseId);
+  if (!enrolled.length) {
+    view.innerHTML = `<div class="card"><p style="color:var(--muted);font-size:.875rem">No students enrolled in this course yet.</p></div>`;
+    return;
+  }
+
+  // Load attendance records
+  let attRecords = {};
+  try {
+    const snap = await getDocs(collection(db,'attendance'));
+    snap.forEach(d => {
+      const a = d.data();
+      if (a.courseId === courseId) {
+        const key = `${a.studentEmail}__${a.sessionDate}`;
+        attRecords[key] = {id:d.id, status:a.status};
+      }
+    });
+  } catch(e) { console.warn('Attendance records error:',e); }
+
+  window._attRecords  = attRecords;
+  window._attCourseId = courseId;
+  window._attSessions = sessions;
+  window._attEnrolled = enrolled;
+
+  // Build grid
+  const headerCols = sessions.map(s =>
+    `<th>${s.label||s.date}</th>`).join('');
+
+  const rows = enrolled.map(b => {
+    const email = b.email || b.id;
+    const name  = `${b.firstName||''} ${b.lastName||''}`.trim() || email;
+    const cells = sessions.map(s => {
+      const key    = `${email}__${s.date}`;
+      const record = attRecords[key];
+      const status = record?.status || 'unmarked';
+      const icon   = status==='present' ? '✓' : status==='absent' ? '✗' : '·';
+      const cls    = status==='present' ? 'att-present' : status==='absent' ? 'att-absent' : 'att-unmarked';
+      return `<td><button class="att-cell ${cls}"
+        onclick="toggleAttendance('${email}','${s.date}','${courseId}','${record?.id||''}')"
+        title="${name} — ${s.date}">${icon}</button></td>`;
+    }).join('');
+    return `<tr>
+      <td class="student-name-cell">${name}<div style="font-size:.75rem;color:var(--muted)">${email}</div></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  view.innerHTML = `
+    <div class="att-legend">
+      <span><span class="att-cell att-present" style="width:20px;height:20px">✓</span> Present</span>
+      <span><span class="att-cell att-absent" style="width:20px;height:20px">✗</span> Absent</span>
+      <span><span class="att-cell att-unmarked" style="width:20px;height:20px">·</span> Not marked</span>
+      <span style="margin-left:auto;color:var(--gold);font-size:.78rem">Click any cell to toggle</span>
+    </div>
+    <div class="att-grid">
+      <table class="att-table">
+        <thead><tr><th class="student-col">Student</th>${headerCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+async function renderStudentAttendance(email, students) {
+  const view    = document.getElementById('attendanceView');
+  const student = students.find(s => s.email === email);
+  if (!student) return;
+
+  // Load private lesson attendance for this student
+  let attRecords = [];
+  try {
+    const snap = await getDocs(collection(db,'attendance'));
+    snap.forEach(d => {
+      const a = d.data();
+      if ((a.studentEmail||'').toLowerCase() === email.toLowerCase() && !a.courseId) {
+        attRecords.push({id:d.id,...a});
+      }
+    });
+  } catch(e) {}
+  attRecords.sort((a,b) => (b.sessionDate||'').localeCompare(a.sessionDate||''));
+
+  const rows = attRecords.map(r => `
+    <div class="list-item">
+      <div class="li-content">
+        <div class="li-title">${r.sessionDate} — ${r.plan||'Private lesson'}</div>
+        <div class="li-meta">${r.status==='present'?'✓ Present':'✗ Absent'}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteAttRecord('${r.id}')">Delete</button>
+    </div>`).join('');
+
+  view.innerHTML = `
+    <div class="card">
+      <div class="card-title">${student.name} — Individual Lesson Attendance</div>
+      <div class="two-col" style="margin-bottom:1rem">
+        <div class="fg"><label>Session Date</label><input type="date" id="indivDate"></div>
+        <div class="fg"><label>Plan / Lesson</label><input type="text" id="indivPlan" placeholder="e.g. 60-min Guitar"></div>
+      </div>
+      <div style="display:flex;gap:.75rem;margin-bottom:1.5rem">
+        <button class="btn btn-gold btn-sm" onclick="addIndivAttendance('${email}','present')">✓ Mark Present</button>
+        <button class="btn btn-outline btn-sm" onclick="addIndivAttendance('${email}','absent')">✗ Mark Absent</button>
+      </div>
+      ${rows || '<div class="loading-text">No attendance records yet</div>'}
+    </div>`;
+}
+
+window.toggleAttendance = async function(email, date, courseId, existingId) {
+  const key    = `${email}__${date}`;
+  const current = window._attRecords?.[key]?.status || 'unmarked';
+  const next    = current === 'unmarked' ? 'present' : current === 'present' ? 'absent' : 'unmarked';
+
+  try {
+    if (existingId && next !== 'unmarked') {
+      await updateDoc(doc(db,'attendance',existingId), {status:next});
+      window._attRecords[key].status = next;
+    } else if (existingId && next === 'unmarked') {
+      await deleteDoc(doc(db,'attendance',existingId));
+      delete window._attRecords[key];
+    } else if (next !== 'unmarked') {
+      const ref = await addDoc(collection(db,'attendance'), {
+        courseId, studentEmail:email, sessionDate:date, status:next, updatedAt:new Date().toISOString()
+      });
+      if (!window._attRecords[key]) window._attRecords[key] = {};
+      window._attRecords[key] = {id:ref.id, status:next};
+    }
+    // Refresh grid
+    renderCourseAttendance(courseId);
+  } catch(e) { toast('Could not save: '+e.message,'error'); }
+};
+
+window.addIndivAttendance = async function(email, status) {
+  const date = document.getElementById('indivDate').value;
+  const plan = document.getElementById('indivPlan').value;
+  if (!date) { toast('Please select a date','error'); return; }
+  try {
+    await addDoc(collection(db,'attendance'), {
+      studentEmail:email, sessionDate:date, plan, status,
+      createdAt:new Date().toISOString()
+    });
+    toast('Attendance saved!','success');
+    window.loadAttendanceView();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.deleteAttRecord = async function(id) {
+  if (!confirm('Delete this record?')) return;
+  try {
+    await deleteDoc(doc(db,'attendance',id));
+    toast('Record deleted','success');
+    window.loadAttendanceView();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── SCHOOL TERMS ──
+const DEFAULT_TERMS_2026 = [
+  { name:'Term 1', start:'2026-01-14', end:'2026-03-20' },
+  { name:'Term 2', start:'2026-04-07', end:'2026-06-19' },
+  { name:'Term 3', start:'2026-07-07', end:'2026-09-18' },
+  { name:'Term 4', start:'2026-10-05', end:'2026-12-04' }
+];
+
+let _terms = [];
+
+async function loadTerms() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','schoolTerms'));
+    _terms = snap.exists() ? snap.data().terms : DEFAULT_TERMS_2026;
+  } catch(e) { _terms = DEFAULT_TERMS_2026; }
+  renderTerms();
+}
+
+function renderTerms() {
+  document.getElementById('termsContainer').innerHTML = _terms.map((t,i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 36px;gap:.75rem;margin-bottom:.75rem;align-items:end">
+      <div class="fg" style="margin:0">
+        <label>Term Name</label>
+        <input type="text" value="${t.name}" id="tName${i}" placeholder="Term 1"
+          style="padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;width:100%">
+      </div>
+      <div class="fg" style="margin:0">
+        <label>Start Date</label>
+        <input type="date" value="${t.start}" id="tStart${i}"
+          style="padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;width:100%">
+      </div>
+      <div class="fg" style="margin:0">
+        <label>End Date</label>
+        <input type="date" value="${t.end}" id="tEnd${i}"
+          style="padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;width:100%">
+      </div>
+      <button onclick="removeTerm(${i})"
+        style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;height:36px;width:36px;font-size:1rem">✕</button>
+    </div>`).join('');
+}
+
+window.addTerm = function() {
+  _terms.push({ name:`Term ${_terms.length+1}`, start:'', end:'' });
+  renderTerms();
+};
+
+window.removeTerm = function(i) {
+  _terms.splice(i,1);
+  renderTerms();
+};
+
+window.saveTerms = async function() {
+  // Read values from DOM
+  _terms = _terms.map((t,i) => ({
+    name:  document.getElementById(`tName${i}`).value,
+    start: document.getElementById(`tStart${i}`).value,
+    end:   document.getElementById(`tEnd${i}`).value
+  })).filter(t => t.start && t.end);
+
+  try {
+    await setDoc(doc(db,'siteConfig','schoolTerms'), { terms:_terms });
+    toast(`${_terms.length} terms saved! Used for recurring lesson scheduling.`,'success');
+    renderTerms();
+  } catch(e) { toast('Save failed: '+e.message,'error'); }
+};
+
+// Get terms from Firebase (cached)
+async function getTerms() {
+  if (_terms.length) return _terms;
+  await loadTerms();
+  return _terms;
+}
+
+// Generate all lesson dates within school terms for a given day of week
+// Returns array of date strings "YYYY-MM-DD"
+async function generateTermDates(prefDay, startDate) {
+  const terms  = await getTerms();
+  const dayMap = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+  const targetDay = dayMap[prefDay?.toLowerCase()];
+  if (targetDay === undefined) return [];
+
+  const dates  = [];
+  const start  = new Date(startDate);
+
+  terms.forEach(term => {
+    const tStart = new Date(term.start);
+    const tEnd   = new Date(term.end);
+    // Use whichever is later — term start or booking start date
+    let current  = new Date(Math.max(start.getTime(), tStart.getTime()));
+    // Advance to first target weekday
+    while (current.getDay() !== targetDay) current.setDate(current.getDate()+1);
+    while (current <= tEnd) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate()+7);
+    }
+  });
+
+  return dates.sort();
+}
+
+// ── RESCHEDULE ──
+window.rescheduleBooking = async function(bookingId) {
+  const b = (window._bookings||[]).find(x=>x.id===bookingId);
+  if (!b) return;
+
+  // Build modal
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:center;justify-content:center;padding:2rem';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:2rem;max-width:480px;width:100%">
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;margin-bottom:1.25rem;color:var(--gold)">
+        Reschedule — ${b.firstName||''} ${b.lastName||''}
+      </h3>
+      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem">Current: ${b.prefDay||'—'} ${b.prefTime||''}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+        <div class="fg">
+          <label>New Day</label>
+          <select id="reschedDay" style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>New Time</label>
+          <select id="reschedTime" style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif">
+            <option>09:00 – 09:30</option><option>09:30 – 10:00</option>
+            <option>10:00 – 10:30</option><option>10:30 – 11:00</option>
+            <option>11:00 – 11:30</option><option>11:30 – 12:00</option>
+            <option>12:00 – 12:30</option><option>12:30 – 13:00</option>
+            <option>14:00 – 14:30</option><option>14:30 – 15:00</option>
+            <option>15:00 – 15:30</option><option>15:30 – 16:00</option>
+            <option>16:00 – 16:30</option><option>16:30 – 17:00</option>
+            <option>17:00 – 17:30</option><option>17:30 – 18:00</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn btn-gold" style="flex:1" onclick="confirmReschedule('${bookingId}')">Confirm Reschedule</button>
+        <button class="btn btn-outline" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Pre-select current values
+  if (b.prefDay) { const el=document.getElementById('reschedDay'); for(let i=0;i<el.options.length;i++) if(el.options[i].value===b.prefDay) el.selectedIndex=i; }
+  if (b.prefTime){ const el=document.getElementById('reschedTime'); for(let i=0;i<el.options.length;i++) if(el.options[i].value===b.prefTime) el.selectedIndex=i; }
+};
+
+window.confirmReschedule = async function(bookingId) {
+  const newDay  = document.getElementById('reschedDay').value;
+  const newTime = document.getElementById('reschedTime').value;
+  // Check for conflicts
+  const conflict = (window._bookings||[]).find(b =>
+    b.id !== bookingId &&
+    b.prefDay === newDay &&
+    b.prefTime === newTime &&
+    b.status !== 'cancelled'
+  );
+  if (conflict) {
+    toast(`Conflict: ${conflict.firstName} ${conflict.lastName} already has that slot`,'error');
+    return;
+  }
+  try {
+    await updateDoc(doc(db,'bookings',bookingId), {
+      prefDay: newDay, prefTime: newTime,
+      rescheduledAt: new Date().toISOString()
+    });
+    document.querySelector('[style*="position:fixed"][style*="z-index:500"]')?.remove();
+    toast('Booking rescheduled!','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── CALENDAR ──
+let _calDate = new Date();
+
+async function loadCalendar() {
+  try {
+    const [bSnap, cSnap] = await Promise.all([
+      getDocs(collection(db,'bookings')),
+      getDocs(collection(db,'courses'))
+    ]);
+    window._calBookings = [];
+    window._calCourses  = [];
+    bSnap.forEach(d => window._calBookings.push({id:d.id,...d.data()}));
+    cSnap.forEach(d => window._calCourses.push({id:d.id,...d.data()}));
+    renderCalendar();
+  } catch(e) { console.warn('Calendar load error:',e); renderCalendar(); }
+}
+
+window.calPrev  = () => { _calDate.setMonth(_calDate.getMonth()-1); renderCalendar(); };
+window.calNext  = () => { _calDate.setMonth(_calDate.getMonth()+1); renderCalendar(); };
+window.calToday = () => { _calDate = new Date(); renderCalendar(); };
+
+function renderCalendar() {
+  const year  = _calDate.getFullYear();
+  const month = _calDate.getMonth();
+  const today = new Date();
+
+  document.getElementById('calMonthLabel').textContent =
+    _calDate.toLocaleString('en-ZA', {month:'long', year:'numeric'});
+
+  // Build day grid
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const daysInPrev  = new Date(year, month, 0).getDate();
+
+  const headers = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+    .map(d=>`<div class="cal-day-header">${d}</div>`).join('');
+
+  // Index private lesson recurring sessions by exact date
+  (window._calBookings||[]).forEach(b => {
+    if (b.courseId || !b.sessionDates?.length) return;
+    b.sessionDates.forEach(date => {
+      if (!bookingsByDate[date]) bookingsByDate[date] = [];
+      if (!bookingsByDate[date].find(x=>x.id===b.id)) {
+        bookingsByDate[date].push({...b, _isRecurring:true});
+      }
+    });
+  });
+
+  // Declare bookingsByDate FIRST before anything tries to write to it
+  const bookingsByDate = {};
+  const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+  // Index course sessions (generated on the fly if sessionDates not stored yet)
+  (window._calCourses||[]).forEach(c => {
+    let sessions = c.sessionDates || [];
+    // Fallback: generate from structured schedule if no sessionDates stored
+    if (!sessions.length && c.schedDay && c.schedStartDate && c.schedSessions) {
+      sessions = generateSessionDates(
+        'fixed', c.schedDay, c.schedStartTime||'', c.schedEndTime||'',
+        c.schedStartDate, c.schedRepeat||'weekly', Number(c.schedSessions)
+      );
+    }
+    sessions.forEach(s => {
+      const key = typeof s === 'object' ? s.date : s;
+      if (!key) return;
+      if (!bookingsByDate[key]) bookingsByDate[key] = [];
+      bookingsByDate[key].push({
+        _isCourseSession: true,
+        courseTitle: c.title,
+        startTime: typeof s === 'object' ? (s.startTime||c.schedStartTime||'') : (c.schedStartTime||''),
+        courseId: c.id
+      });
+    });
+  });
+
+  // Index private lesson recurring sessions
+  (window._calBookings||[]).forEach(b => {
+    if (!b.courseId && b.sessionDates?.length) {
+      b.sessionDates.forEach(date => {
+        if (!bookingsByDate[date]) bookingsByDate[date] = [];
+        if (!bookingsByDate[date].find(x=>x.id===b.id))
+          bookingsByDate[date].push({...b, _isRecurring:true});
+      });
+    }
+  });
+
+  // Index bookings by date or recurring weekday
+  (window._calBookings||[]).forEach(b => {
+    if (b.sessionDates?.length) return; // already handled above
+    if (b.startDate) {
+      if (!bookingsByDate[b.startDate]) bookingsByDate[b.startDate] = [];
+      bookingsByDate[b.startDate].push(b);
+    } else if (b.prefDay) {
+      const dayIdx = dayNames.indexOf(b.prefDay.toLowerCase());
+      if (dayIdx === -1) return;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month, d);
+        if (date.getDay() === dayIdx) {
+          const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          if (!bookingsByDate[key]) bookingsByDate[key] = [];
+          if (!bookingsByDate[key].find(x=>x.id===b.id)) bookingsByDate[key].push(b);
+          break;
+        }
+      }
+    }
+  });
+
+  let cells = '';
+
+  // Previous month padding
+  for (let i = firstDay-1; i >= 0; i--) {
+    cells += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev-i}</div></div>`;
+  }
+
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key  = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = d===today.getDate() && month===today.getMonth() && year===today.getFullYear();
+    const dayBookings = bookingsByDate[key] || [];
+
+    const events = dayBookings.slice(0,3).map(b => {
+      const isCourse = !!b._isCourseSession || !!b.courseId;
+      const cls  = isCourse ? 'course' : (b.status==='confirmed' ? 'confirmed' : 'pending');
+      const time = b.startTime ? b.startTime.split('–')[0].trim()
+                 : b.prefTime  ? b.prefTime.split('–')[0].trim() : '';
+      const name = b._isCourseSession
+        ? b.courseTitle
+        : (`${b.firstName||''} ${b.lastName||''}`.trim() || b.plan || '—');
+      return `<div class="cal-event ${cls}" title="${name}">${time ? time+' ' : ''}${name}</div>`;
+    }).join('');
+
+    const more = dayBookings.length > 3
+      ? `<div style="font-size:.68rem;color:var(--muted)">+${dayBookings.length-3} more</div>` : '';
+
+    cells += `<div class="cal-day ${isToday?'today':''}">
+      <div class="cal-day-num">${d}</div>
+      ${events}${more}
+    </div>`;
+  }
+
+  // Next month padding
+  const totalCells = firstDay + daysInMonth;
+  const remainder  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let d = 1; d <= remainder; d++) {
+    cells += `<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = headers + cells;
+}
+
+// ── STUDENTS ──
+async function loadStudents() {
+  try {
+    const snap = await getDocs(collection(db,'bookings'));
+    const bookings = [];
+    snap.forEach(d => bookings.push({id:d.id,...d.data()}));
+
+    // Group by email — one student record per unique email
+    const studentMap = {};
+    bookings.forEach(b => {
+      const key = (b.email||'').toLowerCase().trim() || b.id;
+      if (!studentMap[key]) {
+        studentMap[key] = {
+          name:  `${b.firstName||''} ${b.lastName||''}`.trim(),
+          email: b.email||'',
+          phone: b.phone||'',
+          bookings: []
+        };
+      }
+      studentMap[key].bookings.push(b);
+    });
+
+    window._students = Object.values(studentMap).sort((a,b)=>a.name.localeCompare(b.name));
+    renderStudentsList(window._students);
+  } catch(e) {
+    document.getElementById('studentsList').innerHTML = '<div class="loading-text">Could not load students</div>';
+  }
+}
+
+window.filterStudents = function(query) {
+  const q = query.toLowerCase();
+  const filtered = (window._students||[]).filter(s =>
+    s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+  );
+  renderStudentsList(filtered);
+};
+
+function renderStudentsList(students) {
+  if (!students.length) {
+    document.getElementById('studentsList').innerHTML = '<div class="loading-text">No students found</div>';
+    return;
+  }
+  document.getElementById('studentsList').innerHTML = students.map((s,i) => {
+    const waNumber = s.phone.replace(/[\s\+\-\(\)]/g,'');
+    const waLink   = `https://wa.me/${waNumber.startsWith('0') ? '27'+waNumber.slice(1) : waNumber}`;
+    const lastBook = s.bookings.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))[0];
+    return `
+    <div class="student-card">
+      <div class="student-card-header" onclick="toggleStudent('s${i}')">
+        <div>
+          <div class="student-name">${s.name||'Unknown'}</div>
+          <div class="student-meta">
+            ${s.email} · ${s.phone||'—'} ·
+            ${s.bookings.length} booking${s.bookings.length===1?'':'s'} ·
+            Last: ${lastBook?.plan||'—'}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          ${s.phone ? `<a href="${waLink}" target="_blank" class="wa-btn" onclick="event.stopPropagation()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WhatsApp
+          </a>` : ''}
+          <span style="color:var(--muted);font-size:1.1rem">▾</span>
+        </div>
+      </div>
+      <div class="student-body" id="s${i}">
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1.5rem">
+          <div>
+            <div style="font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">Bookings</div>
+            ${s.bookings.map(b=>`<div style="font-size:.82rem;color:var(--muted);padding:.2rem 0">${b.plan||'—'} · ${b.prefDay||b.chosenSlot||'—'} · <span class="status-badge status-${b.status||'pending'}">${b.status||'pending'}</span></div>`).join('')}
+          </div>
+        </div>
+        <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Progress Notes</div>
+        <div class="notes-list" id="notes-${i}">
+          <div style="font-size:.85rem;color:var(--muted)">Loading notes…</div>
+        </div>
+        <textarea class="note-input" id="noteInput-${i}" placeholder="Add a progress note — what was covered, improvements, goals for next lesson…"></textarea>
+        <button class="btn btn-gold btn-sm" onclick="addNote('${s.email}', ${i})">Save Note</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleStudent = function(id) {
+  const body = document.getElementById(id);
+  const isOpen = body.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.student-body').forEach(b => b.classList.remove('open'));
+  if (!isOpen) {
+    body.classList.add('open');
+    // Load notes for this student
+    const idx = id.replace('s','');
+    const student = window._students?.[idx];
+    if (student) loadNotes(student.email, idx);
+  }
+};
+
+async function loadNotes(email, idx) {
+  const container = document.getElementById(`notes-${idx}`);
+  try {
+    const snap = await getDocs(collection(db,'studentNotes'));
+    const notes = [];
+    snap.forEach(d => {
+      const n = d.data();
+      if ((n.studentEmail||'').toLowerCase() === email.toLowerCase()) notes.push({id:d.id,...n});
+    });
+    notes.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    if (!notes.length) {
+      container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">No notes yet — add your first note below.</div>';
+      return;
+    }
+    container.innerHTML = notes.map(n => `
+      <div class="note-item">
+        <div class="note-date">${new Date(n.createdAt).toLocaleDateString('en-ZA', {day:'numeric',month:'long',year:'numeric'})}</div>
+        <div class="note-text">${n.text}</div>
+        <button class="note-del" onclick="deleteNote('${n.id}','${email}',${idx})" title="Delete note">✕</button>
+      </div>`).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="font-size:.85rem;color:var(--muted)">Could not load notes</div>';
+  }
+}
+
+window.addNote = async function(email, idx) {
+  const input = document.getElementById(`noteInput-${idx}`);
+  const text  = input.value.trim();
+  if (!text) { toast('Please write a note first','error'); return; }
+  try {
+    await addDoc(collection(db,'studentNotes'), {
+      studentEmail: email,
+      text,
+      createdAt: new Date().toISOString()
+    });
+    input.value = '';
+    toast('Note saved!','success');
+    loadNotes(email, idx);
+  } catch(e) { toast('Could not save note: '+e.message,'error'); }
+};
+
+window.deleteNote = async function(noteId, email, idx) {
+  if (!confirm('Delete this note?')) return;
+  try {
+    await deleteDoc(doc(db,'studentNotes',noteId));
+    toast('Note deleted','success');
+    loadNotes(email, idx);
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// Expose auth methods to non-module script
+window._auth = {
+  signIn: (email, pass) => signInWithEmailAndPassword(auth, email, pass),
+  signOut: () => signOut(auth)
+};
+
+// ── QUOTES ──
+let _editingQuoteId = null;
+let _lineItems = [];
+
+window.showQuoteForm = function(quote=null) {
+  _editingQuoteId = quote?.id || null;
+  _lineItems = quote?.items ? quote.items.map(i=>({...i})) : [{desc:'',qty:1,unit:0}];
+  document.getElementById('qClientName').value  = quote?.clientName  || '';
+  document.getElementById('qClientEmail').value = quote?.clientEmail || '';
+  document.getElementById('qClientPhone').value = quote?.clientPhone || '';
+  document.getElementById('qValidUntil').value  = quote?.validUntil  || '';
+  document.getElementById('qTerms').value       = quote?.terms       || 'Due on receipt';
+  document.getElementById('qNotes').value       = quote?.notes       || '';
+  document.getElementById('quoteFormTitle').textContent = quote ? `Editing Quote — ${quote.clientName}` : 'New Quote';
+  document.getElementById('saveQuoteBtn').textContent   = quote ? 'Save Changes' : 'Save Quote';
+  renderLineItems();
+  document.getElementById('quoteFormCard').style.display = 'block';
+  document.getElementById('quoteFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+window.hideQuoteForm = function() {
+  document.getElementById('quoteFormCard').style.display = 'none';
+  _editingQuoteId = null;
+  _lineItems = [];
+};
+
+// ── LINE ITEMS — uses data-id per row, never re-indexes ──
+let _liCounter = 0; // unique ID per row, never reused
+
+window.addLineItem = function() {
+  const id = ++_liCounter;
+  _lineItems.push({_id:id, desc:'', qty:1, unit:0});
+  mountRow(id, '', 1, 0);
+  updateTotals();
+};
+
+function mountRow(id, desc, qty, unit) {
+  const S = 'padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:\'Barlow\',sans-serif;font-size:.88rem;width:100%;box-sizing:border-box';
+  const row = document.createElement('div');
+  row.className = 'li-row';
+  row.dataset.id = id;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 80px 120px 36px;gap:.6rem;margin-bottom:.6rem;align-items:center';
+  row.innerHTML =
+    '<input class="li-desc" type="text"   placeholder="Description" style="' + S + '">' +
+    '<input class="li-qty"  type="number" min="1"  placeholder="Qty"   style="' + S + ';text-align:center">' +
+    '<input class="li-unit" type="number" min="0"  placeholder="Price" style="' + S + ';text-align:right">' +
+    '<button class="li-del" style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;font-size:1rem;height:36px;width:36px">✕</button>';
+
+  // Set values after creating elements (avoids HTML-escaping issues)
+  row.querySelector('.li-desc').value = desc;
+  row.querySelector('.li-qty').value  = qty;
+  row.querySelector('.li-unit').value = unit;
+
+  // Listeners reference _lineItems by _id — immune to re-indexing
+  const find = () => _lineItems.find(x => x._id === id);
+  row.querySelector('.li-desc').addEventListener('input', e => { const it=find(); if(it) it.desc=e.target.value; });
+  row.querySelector('.li-qty').addEventListener('input',  e => { const it=find(); if(it){ it.qty=Number(e.target.value)||1;  updateTotals(); }});
+  row.querySelector('.li-unit').addEventListener('input', e => { const it=find(); if(it){ it.unit=Number(e.target.value)||0; updateTotals(); }});
+  row.querySelector('.li-del').addEventListener('click',  () => {
+    _lineItems = _lineItems.filter(x => x._id !== id);
+    row.remove();
+    updateTotals();
+  });
+
+  document.getElementById('lineItemsContainer').appendChild(row);
+}
+
+function renderLineItems() {
+  _liCounter = 0;
+  document.getElementById('lineItemsContainer').innerHTML = '';
+  _lineItems = _lineItems.map(item => {
+    const id = ++_liCounter;
+    const it = {...item, _id:id};
+    mountRow(id, it.desc||'', it.qty||1, it.unit||0);
+    return it;
+  });
+  updateTotals();
+}
+
+// Read DOM → _lineItems (called just before save)
+function syncLineItemsFromDOM() {
+  document.querySelectorAll('#lineItemsContainer .li-row').forEach(row => {
+    const id = Number(row.dataset.id);
+    const it = _lineItems.find(x => x._id === id);
+    if (it) {
+      it.desc = row.querySelector('.li-desc').value;
+      it.qty  = Number(row.querySelector('.li-qty').value)  || 1;
+      it.unit = Number(row.querySelector('.li-unit').value) || 0;
+    }
+  });
+}
+
+function updateTotals() {
+  const sub = _lineItems.reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.unit)||0),0);
+  document.getElementById('qSubtotal').textContent = `R ${sub.toLocaleString()}`;
+  document.getElementById('qTotal').textContent    = `R ${sub.toLocaleString()}`;
+}
+
+window.saveQuote = async function() {
+  const name = document.getElementById('qClientName').value.trim();
+  if (!name) { toast('Please enter a client name','error'); return; }
+  syncLineItemsFromDOM();
+  if (!_lineItems.length || _lineItems.every(i=>!i.desc)) { toast('Please add at least one line item','error'); return; }
+  const sub   = _lineItems.reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.unit)||0),0);
+  const quote = {
+    clientName:  name,
+    clientEmail: document.getElementById('qClientEmail').value,
+    clientPhone: document.getElementById('qClientPhone').value,
+    validUntil:  document.getElementById('qValidUntil').value,
+    terms:       document.getElementById('qTerms').value,
+    notes:       document.getElementById('qNotes').value,
+    items:       _lineItems.filter(i=>i.desc),
+    subtotal:    sub,
+    total:       sub,
+    status:      _editingQuoteId ? undefined : 'draft',
+    updatedAt:   new Date().toISOString()
+  };
+  // Remove undefined keys
+  Object.keys(quote).forEach(k => quote[k]===undefined && delete quote[k]);
+  try {
+    if (_editingQuoteId) {
+      await setDoc(doc(db,'quotes',_editingQuoteId), quote, {merge:true});
+      toast('Quote updated!','success');
+    } else {
+      // Get next quote number
+      const allQ = await getDocs(collection(db,'quotes'));
+      quote.quoteNumber = `QUO-${String(allQ.size+1).padStart(3,'0')}`;
+      quote.createdAt   = new Date().toISOString();
+      quote.status      = 'draft';
+      await addDoc(collection(db,'quotes'), quote);
+      toast(`Quote ${quote.quoteNumber} saved!`,'success');
+    }
+    hideQuoteForm();
+    loadQuotes();
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save quote: ${e.message}`); }
+};
+
+async function loadQuotes() {
+  try {
+    const snap = await getDocs(collection(db,'quotes'));
+    const quotes = [];
+    snap.forEach(d=>quotes.push({id:d.id,...d.data()}));
+    quotes.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    window._quotes = quotes;
+    renderQuotesList(quotes);
+  } catch(e) { document.getElementById('quotesList').innerHTML='<div class="loading-text">Could not load quotes</div>'; }
+}
+
+function renderQuotesList(quotes) {
+  const statusColors = {draft:'status-pending',sent:'status-pending',accepted:'status-confirmed',invoiced:'status-confirmed',declined:'status-cancelled'};
+  document.getElementById('quotesList').innerHTML = quotes.length
+    ? quotes.map(q=>`
+      <div class="list-item" style="flex-wrap:wrap;gap:.75rem">
+        <div class="li-content">
+          <div class="li-title">
+            ${q.quoteNumber||'—'} — ${q.clientName}
+            <span class="status-badge ${statusColors[q.status]||'status-pending'}" style="margin-left:.5rem">${q.status||'draft'}</span>
+          </div>
+          <div class="li-meta">${q.clientEmail||''} · R${Number(q.total||0).toLocaleString()} · ${q.items?.length||0} item${q.items?.length===1?'':'s'} · ${q.createdAt?new Date(q.createdAt).toLocaleDateString('en-ZA'):''}</div>
+        </div>
+        <div class="li-actions" style="flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="window.showQuoteForm(window._quotes.find(q=>q.id==='${q.id}'))">Edit</button>
+          <select class="btn btn-outline btn-sm" style="cursor:pointer" onchange="window.updateQuoteStatus('${q.id}',this.value)">
+            <option value="">Status…</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="window.printQuote('${q.id}')">🖨 Print</button>
+          ${q.status==='accepted'&&!q.invoiced ? `<button class="btn btn-gold btn-sm" onclick="window.convertToInvoice('${q.id}')">→ Invoice</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="window.deleteQuote('${q.id}')">Delete</button>
+        </div>
+      </div>`).join('')
+    : '<div class="loading-text">No quotes yet — create your first one above</div>';
+}
+
+window.updateQuoteStatus = async function(id, status) {
+  if (!status) return;
+  try {
+    await updateDoc(doc(db,'quotes',id),{status,updatedAt:new Date().toISOString()});
+    toast(`Status updated to ${status}`,'success');
+    loadQuotes();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.deleteQuote = async function(id) {
+  const q = window._quotes?.find(q=>q.id===id);
+  if (!confirm(`Delete ${q?.quoteNumber||'this quote'}?`)) return;
+  try {
+    await deleteDoc(doc(db,'quotes',id));
+    toast('Quote deleted','success');
+    loadQuotes();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.convertToInvoice = async function(quoteId) {
+  const q = window._quotes?.find(q=>q.id===quoteId);
+  if (!q) return;
+  if (!confirm(`Convert ${q.quoteNumber} to an invoice?`)) return;
+  try {
+    const allInv   = await getDocs(collection(db,'invoices'));
+    const invNumber = `INV-${String(allInv.size+1).padStart(3,'0')}`;
+    const invoice  = {
+      invoiceNumber: invNumber,
+      quoteId,
+      quoteNumber:   q.quoteNumber,
+      clientName:    q.clientName,
+      clientEmail:   q.clientEmail,
+      clientPhone:   q.clientPhone,
+      items:         q.items,
+      subtotal:      q.subtotal,
+      total:         q.total,
+      terms:         q.terms,
+      notes:         q.notes,
+      status:        'unpaid',
+      createdAt:     new Date().toISOString()
+    };
+    await addDoc(collection(db,'invoices'), invoice);
+    await updateDoc(doc(db,'quotes',quoteId),{invoiced:true,invoiceNumber:invNumber,status:'invoiced'});
+    toast(`Invoice ${invNumber} created!`,'success');
+    loadQuotes();
+    loadInvoices();
+  } catch(e) { toast('Error: '+e.message,'error'); showBanner(e.message); }
+};
+
+// ── INVOICES ──
+async function loadInvoices() {
+  try {
+    const snap = await getDocs(collection(db,'invoices'));
+    const invoices = [];
+    snap.forEach(d=>invoices.push({id:d.id,...d.data()}));
+    invoices.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    window._invoices = invoices;
+    renderInvoicesList(invoices);
+  } catch(e) { document.getElementById('invoicesList').innerHTML='<div class="loading-text">Could not load invoices</div>'; }
+}
+
+function renderInvoicesList(invoices) {
+  document.getElementById('invoicesList').innerHTML = invoices.length
+    ? invoices.map(inv=>`
+      <div class="list-item" style="flex-wrap:wrap;gap:.75rem">
+        <div class="li-content">
+          <div class="li-title">
+            ${inv.invoiceNumber} — ${inv.clientName}
+            <span class="status-badge ${inv.status==='paid'?'status-confirmed':'status-pending'}" style="margin-left:.5rem">${inv.status||'unpaid'}</span>
+          </div>
+          <div class="li-meta">
+            ${inv.clientEmail||''} · R${Number(inv.total||0).toLocaleString()}
+            · From ${inv.quoteNumber||'—'}
+            · ${inv.createdAt?new Date(inv.createdAt).toLocaleDateString('en-ZA'):''}
+            ${inv.paidAt ? ` · Paid ${new Date(inv.paidAt).toLocaleDateString('en-ZA')}` : ''}
+          </div>
+        </div>
+        <div class="li-actions" style="flex-wrap:wrap">
+          ${inv.status!=='paid'
+            ? `<button class="btn btn-gold btn-sm" onclick="window.markPaid('${inv.id}')">✓ Mark Paid</button>`
+            : `<span style="font-size:.78rem;color:var(--success)">✓ Paid</span>`}
+          <button class="btn btn-outline btn-sm" onclick="window.printInvoice('${inv.id}')">🖨 Print</button>
+          <button class="btn btn-danger btn-sm" onclick="window.deleteInvoice('${inv.id}')">Delete</button>
+        </div>
+      </div>`).join('')
+    : '<div class="loading-text">No invoices yet — convert an accepted quote to create one</div>';
+}
+
+window.markPaid = async function(id) {
+  try {
+    await updateDoc(doc(db,'invoices',id),{status:'paid',paidAt:new Date().toISOString()});
+    toast('Invoice marked as paid!','success');
+    loadInvoices();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.deleteInvoice = async function(id) {
+  const inv = window._invoices?.find(i=>i.id===id);
+  if (!confirm(`Delete ${inv?.invoiceNumber||'this invoice'}?`)) return;
+  try {
+    await deleteDoc(doc(db,'invoices',id));
+    toast('Invoice deleted','success');
+    loadInvoices();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── PRINT ──
+function buildPrintDoc(data, type) {
+  const biz = window._siteConfig?.contact || {};
+  const bank = window._siteConfig?.banking || {};
+  const rows = (data.items||[]).map(i=>`
+    <tr>
+      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a">${i.desc}</td>
+      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:center">${i.qty}</td>
+      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:right">R ${Number(i.unit).toLocaleString()}</td>
+      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#C9911A;text-align:right;font-weight:600">R ${Number((i.qty||0)*(i.unit||0)).toLocaleString()}</td>
+    </tr>`).join('');
+  const isInvoice = type === 'invoice';
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${isInvoice?data.invoiceNumber:data.quoteNumber}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Georgia',serif;background:#fff;color:#1a1a1a;padding:3rem;max-width:800px;margin:0 auto}
+    .gold{color:#C9911A}
+    .muted{color:#666;font-size:.85rem}
+    @media print{.no-print{display:none}}
+    table{width:100%;border-collapse:collapse;margin:2rem 0}
+    th{font-family:'Arial',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#666;padding:.6rem 1rem;border-bottom:2px solid #C9911A;text-align:left}
+    th:nth-child(2){text-align:center}th:nth-child(3),th:nth-child(4){text-align:right}
+  </style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid #e0e0e0">
+    <div>
+      <img src="data:image/png;base64,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9fVElJWV9fvf//7ZZ59dvXo1EZ06dSovL+/BBx9UZVNVKC4unjdv3osvvvjHP/7xpZde2rVrl/nQXbt2vfLKK88999yf/vSnRYsW1dXVEdHu3buDFZN64l//+ld1y3/+53+qKlyk6dq2bbtkyRKV3ufzLVu27NVXX33rrbd27NihTr777rtnz5594YUXAEDXdQBo1arVAw88sG/fPrNsmzdvfuGFF1566aU///nPL7/88gcffHDw4EF1afbs2RcpwzUhlvpx7tw5wzAMw3j99deDBfIrr7yiDCwi+ulPf3peDaWapnv37g0NDT6fj4jeeeedC+kydXLy5Mm1tbUq29dee02Rw8SECRPKysqUbXffffcFt8iKFStUOXNzc02Wqx+c8507dxLRr371qyaPGzx4sKqF6mMTo0aNqq6uJqL7779fndm5c+f+/fsjIyODk91+++2GYfh8PsMwevXqFXypdevWOTk5hw8fbtKk4eHhubm5Qggp5c6dO5touiZN169fv4KCAtUaixYtSk1NDU7Tp0+f3bt3q6u//vWvm/Bj2LBhhmF4vV7DMEaPHt38ETNmzDAM49VXX73q1sUPEIsxxjlXckJxgnNus9lUIXRdP3funGqgM2fOKK3fpI1UyldeeYWIDMOQUpaXl8fHn2dHOdWOAwYMqK+vVz395ptvmplomqZpmkrTt2/fyspKKeXIkSPVVV3XOecffPCBKueBAwdUyTnniOhyuTZs2GCySlPLKhql5sKFC4loz549qgzqQWrcjxs3joh+9rOfqWIcOnRoxowZAGC32zVNU39HjRpFREIIIho6dKh53m63K12cl5dnrvlRvX7//fercqqmGzJkSPN+VWxLTU1VrBJCrFmzxhwkwa0RHR194MABIcSTTz5pEkvVvXfv3lJKVbapU6eaZVM/1BM3b968dOnSyyPWFWy81gjTdxCNYIwZhvHtt9+q6iUkJDSni/KzQkNDH3jggUOHDlVWVqqGmD59epOaKDvAbrfPnTvXbrcTUW5u7tNPP634IYRQokhKabPZdu/ePWfOHEQ0jSrVfGY51W/VeZzz+fPnZ2ZmPvPMM6+++qry9ZQxIYTgnHfu3JmITGNLnTcMQ9O0lStXHjp0qH379kpCM8YOHz6MiH6/32hEsGUppTTP+/1+xtjWrVttNpsy+Mz8H3/88dzc3JMnT6qK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" style="width:120px;height:120px;object-fit:contain;display:block;margin-bottom:.5rem" alt="Backstage Worship">
+      <div style="font-size:.8rem;color:#555;line-height:1.8">
+        Music School · ${biz.location||'Pretoria East'}<br>
+        ${biz.phone||''} · ${biz.email||''}
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:1.8rem;font-weight:300;color:#C9911A">${isInvoice?'INVOICE':'QUOTE'}</div>
+      <div style="font-size:1.1rem;margin:.25rem 0">${isInvoice?data.invoiceNumber:data.quoteNumber}</div>
+      <div class="muted">${isInvoice?'Issue':'Quote'} date: ${new Date(data.createdAt).toLocaleDateString('en-ZA')}</div>
+      ${data.validUntil?`<div class="muted">Valid until: ${new Date(data.validUntil).toLocaleDateString('en-ZA')}</div>`:''}
+    </div>
+  </div>
+  <div style="margin-bottom:2rem">
+    <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;margin-bottom:.5rem">Bill To</div>
+    <div style="font-size:1.05rem;margin-bottom:.2rem">${data.clientName}</div>
+    <div class="muted">${data.clientEmail||''}</div>
+    <div class="muted">${data.clientPhone||''}</div>
+  </div>
+  <table>
+    <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+    <div style="min-width:250px">
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-top:1px solid #e0e0e0;font-size:.9rem;color:#555"><span>Subtotal</span><span>R ${Number(data.subtotal||0).toLocaleString()}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.75rem 0;border-top:2px solid #C9911A;font-size:1.2rem;color:#C9911A"><span>Total</span><span>R ${Number(data.total||0).toLocaleString()}</span></div>
+    </div>
+  </div>
+  ${data.terms?`<div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #2a2a2a"><span style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A">Payment Terms</span><div style="margin-top:.4rem;font-size:.9rem;color:#7a7060">${data.terms}</div></div>`:''}
+  ${isInvoice&&bank.accountName?`<div style="margin-top:1.5rem;padding:1.25rem;border:1px solid #e0e0e0;border-radius:2px">
+    <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;margin-bottom:.75rem">Banking Details</div>
+    <div style="font-size:.88rem;color:#555;line-height:2">
+      <strong style="color:#1a1a1a">Account:</strong> ${bank.accountName}<br>
+      <strong style="color:#1a1a1a">Bank:</strong> ${bank.bank}<br>
+      <strong style="color:#1a1a1a">Acc No:</strong> ${bank.accountNumber}<br>
+      <strong style="color:#1a1a1a">Branch:</strong> ${bank.branchCode}<br>
+      <strong style="color:#1a1a1a">Reference:</strong> ${data.invoiceNumber}
+    </div></div>`:''}
+  ${data.notes?`<div style="margin-top:1.5rem;font-size:.85rem;color:#555;line-height:1.7;border-top:1px solid #e0e0e0;padding-top:1.25rem">${data.notes}</div>`:''}
+  <div class="no-print" style="margin-top:3rem;text-align:center">
+    <button onclick="window.print()" style="background:#C9911A;color:#000;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:1px;margin-right:1rem">Print / Save as PDF</button>
+    <button onclick="window.close()" style="background:transparent;color:#7a7060;border:1px solid #2a2a2a;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:1px">Close</button>
+  </div>
+  </body></html>`;
+}
+
+window.printQuote = function(id) {
+  const q = window._quotes?.find(q=>q.id===id);
+  if (!q) return;
+  const w = window.open('','_blank');
+  w.document.write(buildPrintDoc(q,'quote'));
+  w.document.close();
+  w.onload = () => w.focus();
+};
+
+window.printInvoice = function(id) {
+  const inv = window._invoices?.find(i=>i.id===id);
+  if (!inv) return;
+  const w = window.open('','_blank');
+  w.document.write(buildPrintDoc(inv,'invoice'));
+  w.document.close();
+  w.onload = () => w.focus();
+};
+
+// Load site config for print header
+(async()=>{
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (snap.exists()) window._siteConfig = snap.data();
+  } catch(e){}
+})();
+</script>
+
+<script>
+// ── LOGIN — uses Firebase Auth ──
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('loginBtn');
+  const err   = document.getElementById('loginError');
+
+  if (!email || !pass) { err.textContent = 'Please enter your email and password.'; return; }
+
+  btn.textContent = 'Signing in…';
+  btn.disabled    = true;
+  err.textContent = '';
+
+  try {
+    // getAuth is available via the module — access via window._auth
+    await window._auth.signIn(email, pass);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    let msg = 'Sign in failed. Please try again.';
+    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'Incorrect email or password.';
+    if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait a few minutes.';
+    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+    err.textContent = msg;
+    btn.textContent = 'Sign In →';
+    btn.disabled    = false;
+  }
+}
+
+async function doLogout() {
+  await window._auth.signOut();
+}
+
+// Focus email field on load
+setTimeout(() => document.getElementById('loginEmail')?.focus(), 100);
+
+// ── PANEL SWITCHING ──
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  el.classList.add('active');
+  if (window._loaders?.[name]) window._loaders[name]();
+}
+
+// ── TOAST ──
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✓ ':'✕ ')+msg;
+  t.className = 'toast '+type+' show';
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+window.toast = toast;
+</script>
+</body>
+</html>
