@@ -506,6 +506,14 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <button class="btn btn-outline btn-sm" onclick="addGalleryItem()">+ Add Photo</button>
         <div class="btn-row" style="margin-top:1rem"><button class="btn btn-gold" onclick="saveContent()">Save Gallery</button></div>
       </div>
+
+      <!-- SOCIAL LINKS -->
+      <div class="card">
+        <div class="card-title">Social Links <small style="font-weight:400;color:var(--muted)">Shown below the gallery</small></div>
+        <div class="fg"><label>Instagram URL</label><input type="url" id="socialInstagram" placeholder="https://instagram.com/yourpage"></div>
+        <div class="fg"><label>Facebook URL</label><input type="url" id="socialFacebook" placeholder="https://facebook.com/yourpage"></div>
+        <div class="btn-row"><button class="btn btn-gold" onclick="saveContent()">Save Social Links</button></div>
+      </div>
     </div>
 
     <!-- PAYMENTS -->
@@ -1393,6 +1401,12 @@ async function loadContent() {
     document.getElementById('instructorBio').value   = _contentInstructor.bio||'';
     document.getElementById('instructorCreds').value = Array.isArray(_contentInstructor.creds) ? _contentInstructor.creds.join(', ') : '';
 
+    // Social links
+    const si = document.getElementById('socialInstagram');
+    const sf = document.getElementById('socialFacebook');
+    if (si) si.value = c.socialInstagram||'';
+    if (sf) sf.value = c.socialFacebook||'';
+
     // Toggle states
     const te = document.getElementById('testimonialsEnabled');
     const ge = document.getElementById('galleryEnabled');
@@ -1527,6 +1541,9 @@ window.saveContent = async function() {
     bio:   document.getElementById('instructorBio').value.trim(),
     creds: document.getElementById('instructorCreds').value.split(',').map(s=>s.trim()).filter(Boolean)
   };
+  // Social links
+  const socialInstagram = document.getElementById('socialInstagram').value.trim();
+  const socialFacebook  = document.getElementById('socialFacebook').value.trim();
   // Toggle states
   const testimonialsEnabled = document.getElementById('testimonialsEnabled').checked;
   const galleryEnabled      = document.getElementById('galleryEnabled').checked;
@@ -1542,7 +1559,9 @@ window.saveContent = async function() {
         testimonials: _contentTestimonials,
         gallery:     _contentGallery,
         testimonialsEnabled,
-        galleryEnabled
+        galleryEnabled,
+        socialInstagram,
+        socialFacebook
       }
     });
     toast('Website content saved!','success');
