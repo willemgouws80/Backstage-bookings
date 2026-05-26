@@ -471,7 +471,13 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
           <div class="fg"><label>Full Name</label><input type="text" id="instructorName" placeholder="Willem Gouws"></div>
           <div class="fg"><label>Role / Title</label><input type="text" id="instructorRole" placeholder="Founder · Worship Guitar & Vocal Instructor"></div>
         </div>
-        <div class="fg"><label>Photo URL</label><input type="url" id="instructorPhoto" placeholder="https://images.unsplash.com/..."></div>
+        <div class="fg"><label>Photo</label>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <input type="url" id="instructorPhoto" placeholder="https://..." style="flex:1">
+            <button class="btn btn-outline btn-sm" onclick="uploadFile('instructorPhoto')" style="white-space:nowrap">Upload</button>
+          </div>
+          <small style="color:var(--muted);font-size:.72rem">Paste a URL or click Upload to pick a file</small>
+        </div>
         <div class="fg"><label>Bio</label><textarea id="instructorBio" rows="4" placeholder="Tell your story…" style="width:100%;padding:.8rem 1rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;resize:vertical"></textarea></div>
         <div class="fg"><label>Credentials <small style="font-weight:400;color:var(--muted)">comma-separated</small></label><input type="text" id="instructorCreds" placeholder="10+ years teaching, Worship leader, Guitar & vocals"></div>
         <div class="btn-row"><button class="btn btn-gold" onclick="saveContent()">Save Instructor</button></div>
@@ -791,6 +797,7 @@ service cloud.firestore {
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",
@@ -806,6 +813,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 window._db = db;
 
 // ── AUTH STATE — drives everything ──
@@ -1387,6 +1395,39 @@ async function loadContent() {
   } catch(e) { console.warn('Content load error:',e); }
 }
 
+// Upload a file to Firebase Storage and set the URL on the given input
+window.uploadFile = async function(targetId, index) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop();
+    const path = targetId === 'gallery'
+      ? `content/gallery/${Date.now()}_${index}.${ext}`
+      : targetId === 'instructorPhoto'
+      ? `content/instructor_photo.${ext}`
+      : `content/testimonials/${Date.now()}_${index}.${ext}`;
+    try {
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      if (targetId === 'instructorPhoto') {
+        document.getElementById('instructorPhoto').value = url;
+      } else if (targetId === 'gallery') {
+        _contentGallery[index].src = url;
+        renderGallery();
+      } else {
+        _contentTestimonials[index].photo = url;
+        renderTestimonials();
+      }
+      toast('Image uploaded!','success');
+    } catch(e) { toast('Upload failed: '+e.message,'error'); }
+  };
+  input.click();
+};
+
 function renderTestimonials() {
   const container = document.getElementById('testimonialsList');
   if (!container) return;
@@ -1410,7 +1451,10 @@ function renderTestimonials() {
       </div>
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Photo URL</label>
-        <input value="${(t.photo||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].photo=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+        <div style="display:flex;gap:.3rem">
+          <input value="${(t.photo||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].photo=this.value" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+          <button class="btn btn-outline btn-sm" onclick="uploadFile(null,${i})" style="font-size:.7rem;padding:.3rem .5rem">📁</button>
+        </div>
       </div>
       <button onclick="removeTestimonial(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;height:36px;width:36px;font-size:1rem;margin-bottom:0">✕</button>
     </div>`).join('');
@@ -1441,7 +1485,10 @@ function renderGallery() {
       </div>
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Image URL</label>
-        <input value="${(g.src||'').replace(/"/g,'&quot;')}" oninput="_contentGallery[${i}].src=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+        <div style="display:flex;gap:.3rem">
+          <input value="${(g.src||'').replace(/"/g,'&quot;')}" oninput="_contentGallery[${i}].src=this.value" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+          <button class="btn btn-outline btn-sm" onclick="uploadFile('gallery',${i})" style="font-size:.7rem;padding:.3rem .5rem">📁</button>
+        </div>
       </div>
       <button onclick="removeGalleryItem(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;height:36px;width:36px;font-size:1rem;margin-bottom:0">✕</button>
     </div>`).join('');
