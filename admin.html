@@ -228,6 +228,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
     <div class="nav-item" onclick="showPanel('courses',this)"><span class="icon">🎓</span> Courses</div>
     <div class="nav-item" onclick="showPanel('pricing',this)"><span class="icon">💰</span> Pricing</div>
     <div class="nav-item" onclick="showPanel('promo',this)"><span class="icon">🎯</span> Promotion</div>
+    <div class="nav-item" onclick="showPanel('content',this)"><span class="icon">🎨</span> Website Content</div>
     <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
     <span class="sidebar-label">Finance</span>
     <div class="nav-item" onclick="showPanel('quotes',this)"><span class="icon">📄</span> Quotes</div>
@@ -456,6 +457,40 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
           <div class="fg"><label>Valid Until</label><input type="date" id="promoEnd"></div>
         </div>
         <div class="btn-row"><button class="btn btn-gold" onclick="savePromo()">Save → Live Instantly</button></div>
+      </div>
+    </div>
+
+    <!-- WEBSITE CONTENT -->
+    <div class="panel" id="panel-content">
+      <div class="page-header"><h1><em>Website</em> Content</h1></div>
+
+      <!-- INSTRUCTOR -->
+      <div class="card">
+        <div class="card-title">Instructor Profile <small style="font-weight:400;color:var(--muted)">Shown on the website</small></div>
+        <div class="two-col">
+          <div class="fg"><label>Full Name</label><input type="text" id="instructorName" placeholder="Willem Gouws"></div>
+          <div class="fg"><label>Role / Title</label><input type="text" id="instructorRole" placeholder="Founder · Worship Guitar & Vocal Instructor"></div>
+        </div>
+        <div class="fg"><label>Photo URL</label><input type="url" id="instructorPhoto" placeholder="https://images.unsplash.com/..."></div>
+        <div class="fg"><label>Bio</label><textarea id="instructorBio" rows="4" placeholder="Tell your story…" style="width:100%;padding:.8rem 1rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;resize:vertical"></textarea></div>
+        <div class="fg"><label>Credentials <small style="font-weight:400;color:var(--muted)">comma-separated</small></label><input type="text" id="instructorCreds" placeholder="10+ years teaching, Worship leader, Guitar & vocals"></div>
+        <div class="btn-row"><button class="btn btn-gold" onclick="saveContent()">Save Instructor</button></div>
+      </div>
+
+      <!-- TESTIMONIALS -->
+      <div class="card">
+        <div class="card-title">Testimonials <small style="font-weight:400;color:var(--muted)">Student quotes on the website</small></div>
+        <div id="testimonialsList"></div>
+        <button class="btn btn-outline btn-sm" onclick="addTestimonial()">+ Add Testimonial</button>
+        <div class="btn-row" style="margin-top:1rem"><button class="btn btn-gold" onclick="saveContent()">Save Testimonials</button></div>
+      </div>
+
+      <!-- GALLERY -->
+      <div class="card">
+        <div class="card-title">Gallery <small style="font-weight:400;color:var(--muted)">Photos on the website</small></div>
+        <div id="galleryList"></div>
+        <button class="btn btn-outline btn-sm" onclick="addGalleryItem()">+ Add Photo</button>
+        <div class="btn-row" style="margin-top:1rem"><button class="btn btn-gold" onclick="saveContent()">Save Gallery</button></div>
       </div>
     </div>
 
@@ -1323,6 +1358,130 @@ window.savePromo = async function() {
   } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save promo: ${e.message}`); }
 };
 
+// ── WEBSITE CONTENT ──
+let _contentInstructor  = { name:'', role:'', photo:'', bio:'', creds:[] };
+let _contentTestimonials = [];
+let _contentGallery      = [];
+
+async function loadContent() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const c = snap.data().content||{};
+
+    // Instructor
+    _contentInstructor = c.instructor||{ name:'', role:'', photo:'', bio:'', creds:[] };
+    document.getElementById('instructorName').value  = _contentInstructor.name||'';
+    document.getElementById('instructorRole').value  = _contentInstructor.role||'';
+    document.getElementById('instructorPhoto').value = _contentInstructor.photo||'';
+    document.getElementById('instructorBio').value   = _contentInstructor.bio||'';
+    document.getElementById('instructorCreds').value = Array.isArray(_contentInstructor.creds) ? _contentInstructor.creds.join(', ') : '';
+
+    // Testimonials
+    _contentTestimonials = Array.isArray(c.testimonials) ? c.testimonials : [];
+    renderTestimonials();
+
+    // Gallery
+    _contentGallery = Array.isArray(c.gallery) ? c.gallery : [];
+    renderGallery();
+  } catch(e) { console.warn('Content load error:',e); }
+}
+
+function renderTestimonials() {
+  const container = document.getElementById('testimonialsList');
+  if (!container) return;
+  if (!_contentTestimonials.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0;margin-bottom:.75rem">No testimonials yet.</div>';
+    return;
+  }
+  container.innerHTML = _contentTestimonials.map((t,i) => `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 36px;gap:.5rem;align-items:end;margin-bottom:.5rem;padding:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:1px">
+      <div class="fg" style="margin:0">
+        <label style="font-size:.65rem">Quote</label>
+        <textarea oninput="_contentTestimonials[${i}].text=this.value" rows="2" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem;resize:vertical">${(t.text||'').replace(/"/g,'&quot;')}</textarea>
+      </div>
+      <div class="fg" style="margin:0">
+        <label style="font-size:.65rem">Name</label>
+        <input value="${(t.name||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].name=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+      </div>
+      <div class="fg" style="margin:0">
+        <label style="font-size:.65rem">Meta</label>
+        <input value="${(t.meta||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].meta=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+      </div>
+      <div class="fg" style="margin:0">
+        <label style="font-size:.65rem">Photo URL</label>
+        <input value="${(t.photo||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].photo=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+      </div>
+      <button onclick="removeTestimonial(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;height:36px;width:36px;font-size:1rem;margin-bottom:0">✕</button>
+    </div>`).join('');
+}
+
+window.addTestimonial = function() {
+  _contentTestimonials.push({ text:'', name:'', meta:'', photo:'' });
+  renderTestimonials();
+};
+
+window.removeTestimonial = function(i) {
+  _contentTestimonials.splice(i,1);
+  renderTestimonials();
+};
+
+function renderGallery() {
+  const container = document.getElementById('galleryList');
+  if (!container) return;
+  if (!_contentGallery.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0;margin-bottom:.75rem">No gallery photos yet.</div>';
+    return;
+  }
+  container.innerHTML = _contentGallery.map((g,i) => `
+    <div style="display:grid;grid-template-columns:1fr 2fr 36px;gap:.5rem;align-items:end;margin-bottom:.5rem;padding:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:1px">
+      <div class="fg" style="margin:0">
+        <label style="font-size:.65rem">Label</label>
+        <input value="${(g.label||'').replace(/"/g,'&quot;')}" oninput="_contentGallery[${i}].label=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+      </div>
+      <div class="fg" style="margin:0">
+        <label style="font-size:.65rem">Image URL</label>
+        <input value="${(g.src||'').replace(/"/g,'&quot;')}" oninput="_contentGallery[${i}].src=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+      </div>
+      <button onclick="removeGalleryItem(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;height:36px;width:36px;font-size:1rem;margin-bottom:0">✕</button>
+    </div>`).join('');
+}
+
+window.addGalleryItem = function() {
+  _contentGallery.push({ src:'', label:'' });
+  renderGallery();
+};
+
+window.removeGalleryItem = function(i) {
+  _contentGallery.splice(i,1);
+  renderGallery();
+};
+
+window.saveContent = async function() {
+  // Read instructor fields
+  _contentInstructor = {
+    name:  document.getElementById('instructorName').value.trim(),
+    role:  document.getElementById('instructorRole').value.trim(),
+    photo: document.getElementById('instructorPhoto').value.trim(),
+    bio:   document.getElementById('instructorBio').value.trim(),
+    creds: document.getElementById('instructorCreds').value.split(',').map(s=>s.trim()).filter(Boolean)
+  };
+  try {
+    const ref  = doc(db,'siteConfig','main');
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? snap.data() : {};
+    await setDoc(ref, {
+      ...existing,
+      content: {
+        instructor:  _contentInstructor,
+        testimonials: _contentTestimonials,
+        gallery:     _contentGallery
+      }
+    });
+    toast('Website content saved!','success');
+  } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save content: ${e.message}`); }
+};
+
 // ── PAYMENTS ──
 async function loadPayments() {
   try {
@@ -1427,7 +1586,7 @@ function loadEmailJS(pubKey) {
 // Data loading is triggered by onAuthStateChanged above
 
 // Expose for panel switching
-window._loaders = { dashboard:loadDashboard, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
+window._loaders = { dashboard:loadDashboard, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
 
 // ── ATTENDANCE ──
 async function loadAttendancePanel() {

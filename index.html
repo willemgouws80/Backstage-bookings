@@ -274,24 +274,8 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
     <div class="section-label">Your Instructor</div>
     <h2 class="section-title">Meet your <em>teacher</em></h2>
     <div class="rule"></div>
-    <div class="instructor-grid">
-      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop&crop=face" alt="Instructor" class="instructor-img" loading="lazy">
-      <div>
-        <div class="instructor-name">Willem Gouws</div>
-        <div class="instructor-role">Founder · Worship Guitar &amp; Vocal Instructor</div>
-        <div class="instructor-bio">
-          With over a decade of experience leading worship and teaching music in Pretoria, Willem combines technical training with a heart for ministry. His approach meets every student where they are — whether you're strumming your first open chord or leading a full worship set on Sunday.
-          <br><br>
-          Every lesson is built around real songs and real ministry contexts. You won't just learn theory — you'll learn how to play, sing, and lead with confidence.
-        </div>
-        <div class="instructor-creds">
-          <span>10+ years teaching</span>
-          <span>Worship leader</span>
-          <span>Guitar &amp; vocals</span>
-          <span>Ministry consulting</span>
-          <span>Pretoria East</span>
-        </div>
-      </div>
+    <div class="instructor-grid" id="instructorContent">
+      <div class="loading-text" style="grid-column:1/-1;text-align:center">Loading…</div>
     </div>
   </div>
 </div>
@@ -302,28 +286,8 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
     <div class="section-label">Student Stories</div>
     <h2 class="section-title">What our students <em>say</em></h2>
     <div class="rule"></div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <p class="testimonial-text">I started not knowing a single chord, and within a few months I was playing on the worship team at church. The lessons are practical, patient, and focused on real progress.</p>
-        <div class="testimonial-author">
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80&fit=crop&crop=face" alt="" class="testimonial-avatar" loading="lazy">
-          <div><div class="testimonial-name">Sarah</div><div class="testimonial-meta">Guitar student · 8 months</div></div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">The worship ministry consulting completely transformed how our team rehearses and leads. Practical, biblical, and immediately applicable. Highly recommend.</p>
-        <div class="testimonial-author">
-          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80&fit=crop&crop=face" alt="" class="testimonial-avatar" loading="lazy">
-          <div><div class="testimonial-name">David</div><div class="testimonial-meta">Worship team leader</div></div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <p class="testimonial-text">My daughter looks forward to every lesson. She's grown so much in confidence, not just in her playing but in using her gift at church. Thank you for creating such a welcoming space.</p>
-        <div class="testimonial-author">
-          <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80&fit=crop&crop=face" alt="" class="testimonial-avatar" loading="lazy">
-          <div><div class="testimonial-name">Leigh</div><div class="testimonial-meta">Parent of teen student</div></div>
-        </div>
-      </div>
+    <div class="testimonials-grid" id="testimonialsContent">
+      <div class="loading-text" style="grid-column:1/-1;text-align:center">Loading…</div>
     </div>
   </div>
 </div>
@@ -334,35 +298,8 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
     <div class="section-label">Behind the Scenes</div>
     <h2 class="section-title">Studio &amp; <em>moments</em></h2>
     <div class="rule"></div>
-    <div class="gallery-grid">
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&q=80" alt="Studio session" loading="lazy">
-        <div class="overlay"><span>Studio sessions</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80" alt="Guitar lesson" loading="lazy">
-        <div class="overlay"><span>One-on-one teaching</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1525201548942-d8732f6617a0?w=600&q=80" alt="Playing guitar" loading="lazy">
-        <div class="overlay"><span>Learning in action</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&q=80" alt="Worship guitar" loading="lazy">
-        <div class="overlay"><span>Worship leading</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600&q=80" alt="Vocal lesson" loading="lazy">
-        <div class="overlay"><span>Vocal coaching</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&q=80" alt="Worship team" loading="lazy">
-        <div class="overlay"><span>Worship ministry</span></div>
-      </div>
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=600&q=80" alt="Music studio" loading="lazy">
-        <div class="overlay"><span>The studio space</span></div>
-      </div>
+    <div class="gallery-grid" id="galleryContent">
+      <div class="loading-text" style="grid-column:1/-1;text-align:center">Loading…</div>
     </div>
     <div class="social-bar">
       <a href="#" class="social-link" target="_blank">
@@ -928,6 +865,7 @@ window.goStripe = () => { const url=window._S.siteConfig?.payments?.stripeChecko
 // Stagger loads slightly so Firebase SDK is fully ready
 loadSiteConfig();
 setTimeout(() => loadPricing(), 100);
+setTimeout(() => loadContent(), 200);
 setTimeout(() => loadCourses(), 200);
 
 // Pre-load bookings for slot blocking on private lessons
@@ -1233,6 +1171,65 @@ function fmtExp(el)  { let v=el.value.replace(/\D/g,'').substring(0,4); if(v.len
 window.addEventListener('scroll',()=>document.getElementById('mainNav').classList.toggle('scrolled',window.scrollY>60));
 document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});}));
 document.getElementById('fDate').min = new Date().toISOString().split('T')[0];
+
+// ── DYNAMIC CONTENT (Instructor, Testimonials, Gallery) ──
+async function loadContent() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const c = snap.data().content;
+    if (!c) return;
+
+    // Instructor
+    const inst = c.instructor;
+    const instContainer = document.getElementById('instructorContent');
+    if (instContainer && inst?.name) {
+      const photo = inst.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop&crop=face';
+      const creds = Array.isArray(inst.creds) ? inst.creds.map(cr => `<span>${cr}</span>`).join('') : '';
+      instContainer.innerHTML = `
+        <img src="${photo.replace(/"/g,'&quot;')}" alt="${(inst.name||'').replace(/"/g,'&quot;')}" class="instructor-img" loading="lazy">
+        <div>
+          <div class="instructor-name">${(inst.name||'').replace(/</g,'&lt;')}</div>
+          <div class="instructor-role">${(inst.role||'').replace(/</g,'&lt;')}</div>
+          <div class="instructor-bio">${(inst.bio||'').replace(/\n/g,'<br>').replace(/</g,'&lt;')}</div>
+          ${creds ? `<div class="instructor-creds">${creds}</div>` : ''}
+        </div>`;
+    }
+
+    // Testimonials
+    const tests = Array.isArray(c.testimonials) ? c.testimonials : [];
+    const testContainer = document.getElementById('testimonialsContent');
+    if (testContainer) {
+      if (!tests.length) {
+        testContainer.innerHTML = '';
+      } else {
+        testContainer.innerHTML = tests.map(t => `
+          <div class="testimonial-card">
+            <p class="testimonial-text">${(t.text||'').replace(/</g,'&lt;')}</p>
+            <div class="testimonial-author">
+              <img src="${(t.photo||'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80&fit=crop&crop=face').replace(/"/g,'&quot;')}" alt="" class="testimonial-avatar" loading="lazy">
+              <div><div class="testimonial-name">${(t.name||'').replace(/</g,'&lt;')}</div><div class="testimonial-meta">${(t.meta||'').replace(/</g,'&lt;')}</div></div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // Gallery
+    const gallery = Array.isArray(c.gallery) ? c.gallery : [];
+    const galleryContainer = document.getElementById('galleryContent');
+    if (galleryContainer) {
+      if (!gallery.length) {
+        galleryContainer.innerHTML = '';
+      } else {
+        galleryContainer.innerHTML = gallery.map((g,i) => `
+          <div class="gallery-item">
+            <img src="${(g.src||'').replace(/"/g,'&quot;')}" alt="${(g.label||'').replace(/"/g,'&quot;')}" loading="lazy">
+            ${g.label ? `<div class="overlay"><span>${g.label.replace(/</g,'&lt;')}</span></div>` : ''}
+          </div>`).join('');
+      }
+    }
+  } catch(e) { console.warn('Could not load content:',e); }
+}
 </script>
 </body>
 </html>
