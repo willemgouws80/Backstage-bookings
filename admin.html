@@ -1123,6 +1123,14 @@ window.saveCourse = async function() {
     schedRepeat    = optRepeat;
     schedSessions  = optSess;
     schedStartDate = optStart;
+    
+    // Generate session dates for each slot option
+    slotOptions.forEach(slot => {
+      if (slot.day && optStart && optSess) {
+        const slotSessions = generateSessionDates('fixed', slot.day, slot.start||'', slot.end||'', optStart, optRepeat, optSess);
+        sessionDates.push(...slotSessions);
+      }
+    });
   }
 
   const course = {
@@ -1478,12 +1486,27 @@ async function renderCourseAttendance(courseId) {
 
   // Get sessions — use sessionDates if available, else generate from schedule fields
   let sessions = course.sessionDates || [];
+  
+  // Try fixed schedule
   if (!sessions.length && course.schedDay && course.schedStartDate && course.schedSessions) {
     sessions = generateSessionDates('fixed', course.schedDay, course.schedStartTime, course.schedEndTime, course.schedStartDate, course.schedRepeat||'weekly', course.schedSessions);
   }
+  
+  // Try options schedule (each slot generates its own sessions)
+  if (!sessions.length && course.scheduleType === 'options' && course.slotOptions?.length && course.schedStartDate && course.schedSessions) {
+    course.slotOptions.forEach(slot => {
+      const day   = typeof slot === 'object' ? slot.day   : (slot.split(' ')[0]||'');
+      const start = typeof slot === 'object' ? slot.start : (slot.split(' ')[1]||'');
+      const end   = typeof slot === 'object' ? slot.end   : '';
+      if (day) {
+        const slotSessions = generateSessionDates('fixed', day, start||'', end||'', course.schedStartDate, course.schedRepeat||'weekly', Number(course.schedSessions));
+        sessions.push(...slotSessions);
+      }
+    });
+  }
 
   if (!sessions.length) {
-    view.innerHTML = `<div class="card"><p style="color:var(--muted);font-size:.875rem">This course has no session dates set. Edit the course and add a start date and number of sessions.</p></div>`;
+    view.innerHTML = `<div class="card"><p style="color:var(--muted);font-size:.875rem">This course has no session dates set. Edit the course, add a start date and number of sessions.</p></div>`;
     return;
   }
 
@@ -1715,30 +1738,21 @@ async function getTerms() {
 // Sanitize date string to ensure YYYY-MM-DD format
 function sanitizeDate(dateStr) {
   if (!dateStr) return '';
-  
-  // Already valid format
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   
-  // Try to extract year, month, day from various malformed formats
-  // Handle cases like: 202620/07/06, 2026-07-06, 20262026-07-06, etc.
+  // Remove everything except digits and common separators
+  let cleaned = dateStr.replace(/[^\d/-]/g, '');
   
-  // First, remove any non-digit and non-dash characters
-  let cleaned = dateStr.replace(/[^\d-]/g, '');
+  // Try YYYY-MM-DD or YYYY/MM/DD (with or without separators)
+  let match = cleaned.match(/^(\d{4})[-/]?(\d{2})[-/]?(\d{2})/);
+  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
   
-  // Try pattern: YYYYMMDD or YYYY-MM-DD with extra digits
-  let match = cleaned.match(/^(\d{4})\d*[-/]?(\d{2})[-/]?(\d{2})/);
-  if (match) {
-    return `${match[1]}-${match[2]}-${match[3]}`;
-  }
-  
-  // Try to extract just the first 4 digits as year, next 2 as month, next 2 as day
-  match = cleaned.replace(/-/g, '').match(/^(\d{4})(\d{2})(\d{2})/);
-  if (match) {
-    return `${match[1]}-${match[2]}-${match[3]}`;
-  }
+  // Try DD/MM/YYYY (common in South Africa)
+  match = cleaned.match(/^(\d{2})[-/]?(\d{2})[-/]?(\d{4})/);
+  if (match) return `${match[3]}-${match[1]}-${match[2]}`;
   
   console.warn('Could not sanitize date:', dateStr);
-  return ''; // Can't parse it, return empty
+  return '';
 }
 
 // Load courses into window._courses (for attendance, etc.)
