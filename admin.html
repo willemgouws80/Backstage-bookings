@@ -1420,6 +1420,7 @@ async function loadContent() {
 
     // Gallery
     _contentGallery = Array.isArray(c.gallery) ? c.gallery : [];
+    console.log('loadContent: gallery items loaded:', _contentGallery.length, JSON.stringify(_contentGallery));
     renderGallery();
   } catch(e) { console.warn('Content load error:',e); }
 }

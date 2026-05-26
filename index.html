@@ -1240,8 +1240,9 @@ async function loadContent() {
     }
   }
 
-  // Gallery — hide section if disabled
-  if (c.galleryEnabled === false && gallerySection) {
+    // Gallery — hide section if disabled
+    console.log('loadContent: gallery data', JSON.stringify(c.gallery), 'enabled:', c.galleryEnabled);
+    if (c.galleryEnabled === false && gallerySection) {
     gallerySection.style.display = 'none';
   } else {
     if (gallerySection) gallerySection.style.display = '';
