@@ -1194,69 +1194,68 @@ async function loadContent() {
   }
   if (!c) { console.warn('loadContent: siteConfig.content not available after 3s'); return; }
 
-    // Social links
-    if (c.socialInstagram) {
-      const el = document.getElementById('socialInstagramLink');
-      if (el) { el.href = c.socialInstagram; el.style.display = ''; }
-    }
-    if (c.socialFacebook) {
-      const el = document.getElementById('socialFacebookLink');
-      if (el) { el.href = c.socialFacebook; el.style.display = ''; }
-    }
+  // Social links
+  if (c.socialInstagram) {
+    const el = document.getElementById('socialInstagramLink');
+    if (el) { el.href = c.socialInstagram; el.style.display = ''; }
+  }
+  if (c.socialFacebook) {
+    const el = document.getElementById('socialFacebookLink');
+    if (el) { el.href = c.socialFacebook; el.style.display = ''; }
+  }
 
-    // Instructor
-    const inst = c.instructor;
-    if (inst) console.log('loadContent: instructor data', JSON.stringify(inst));
-    if (instContainer && inst?.name) {
-      const photo = inst.photo || '';
-      const creds = Array.isArray(inst.creds) ? inst.creds.map(cr => `<span>${cr.replace(/</g,'&lt;')}</span>`).join('') : '';
-      instContainer.innerHTML = `
-        ${photo ? `<img src="${photo.replace(/"/g,'&quot;')}" alt="${(inst.name||'').replace(/"/g,'&quot;')}" class="instructor-img" loading="lazy">` : ''}
-        <div>
-          <div class="instructor-name">${(inst.name||'').replace(/</g,'&lt;')}</div>
-          <div class="instructor-role">${(inst.role||'').replace(/</g,'&lt;')}</div>
-          <div class="instructor-bio">${(inst.bio||'').replace(/\n/g,'<br>').replace(/</g,'&lt;')}</div>
-          ${creds ? `<div class="instructor-creds">${creds}</div>` : ''}
-        </div>`;
-    }
+  // Instructor
+  const inst = c.instructor;
+  if (inst) console.log('loadContent: instructor data', JSON.stringify(inst));
+  if (instContainer && inst?.name) {
+    const photo = inst.photo || '';
+    const creds = Array.isArray(inst.creds) ? inst.creds.map(cr => `<span>${cr.replace(/</g,'&lt;')}</span>`).join('') : '';
+    instContainer.innerHTML = `
+      ${photo ? `<img src="${photo.replace(/"/g,'&quot;')}" alt="${(inst.name||'').replace(/"/g,'&quot;')}" class="instructor-img" loading="lazy">` : ''}
+      <div>
+        <div class="instructor-name">${(inst.name||'').replace(/</g,'&lt;')}</div>
+        <div class="instructor-role">${(inst.role||'').replace(/</g,'&lt;')}</div>
+        <div class="instructor-bio">${(inst.bio||'').replace(/\n/g,'<br>').replace(/</g,'&lt;')}</div>
+        ${creds ? `<div class="instructor-creds">${creds}</div>` : ''}
+      </div>`;
+  }
 
-    // Testimonials — hide section if disabled
-    if (c.testimonialsEnabled === false && testSection) {
-      testSection.style.display = 'none';
-    } else {
-      if (testSection) testSection.style.display = '';
-      if (testContainer) {
-        const tests = Array.isArray(c.testimonials) ? c.testimonials : [];
-        testContainer.innerHTML = tests.length
-          ? tests.map(t => `
-              <div class="testimonial-card">
-                <p class="testimonial-text">${(t.text||'').replace(/</g,'&lt;')}</p>
-                <div class="testimonial-author">
-                  ${t.photo ? `<img src="${t.photo.replace(/"/g,'&quot;')}" alt="" class="testimonial-avatar" loading="lazy">` : ''}
-                  <div><div class="testimonial-name">${(t.name||'').replace(/</g,'&lt;')}</div><div class="testimonial-meta">${(t.meta||'').replace(/</g,'&lt;')}</div></div>
-                </div>
-              </div>`).join('')
-          : '';
-      }
+  // Testimonials — hide section if disabled
+  if (c.testimonialsEnabled === false && testSection) {
+    testSection.style.display = 'none';
+  } else {
+    if (testSection) testSection.style.display = '';
+    if (testContainer) {
+      const tests = Array.isArray(c.testimonials) ? c.testimonials : [];
+      testContainer.innerHTML = tests.length
+        ? tests.map(t => `
+            <div class="testimonial-card">
+              <p class="testimonial-text">${(t.text||'').replace(/</g,'&lt;')}</p>
+              <div class="testimonial-author">
+                ${t.photo ? `<img src="${t.photo.replace(/"/g,'&quot;')}" alt="" class="testimonial-avatar" loading="lazy">` : ''}
+                <div><div class="testimonial-name">${(t.name||'').replace(/</g,'&lt;')}</div><div class="testimonial-meta">${(t.meta||'').replace(/</g,'&lt;')}</div></div>
+              </div>
+            </div>`).join('')
+        : '';
     }
+  }
 
-    // Gallery — hide section if disabled
-    if (c.galleryEnabled === false && gallerySection) {
-      gallerySection.style.display = 'none';
-    } else {
-      if (gallerySection) gallerySection.style.display = '';
-      if (galleryContainer) {
-        const gallery = Array.isArray(c.gallery) ? c.gallery : [];
-        galleryContainer.innerHTML = gallery.length
-          ? gallery.map((g,i) => `
-              <div class="gallery-item">
-                <img src="${(g.src||'').replace(/"/g,'&quot;')}" alt="${(g.label||'').replace(/"/g,'&quot;')}" loading="lazy">
-                ${g.label ? `<div class="overlay"><span>${g.label.replace(/</g,'&lt;')}</span></div>` : ''}
-              </div>`).join('')
-          : '';
-      }
+  // Gallery — hide section if disabled
+  if (c.galleryEnabled === false && gallerySection) {
+    gallerySection.style.display = 'none';
+  } else {
+    if (gallerySection) gallerySection.style.display = '';
+    if (galleryContainer) {
+      const gallery = Array.isArray(c.gallery) ? c.gallery : [];
+      galleryContainer.innerHTML = gallery.length
+        ? gallery.map((g,i) => `
+            <div class="gallery-item">
+              <img src="${(g.src||'').replace(/"/g,'&quot;')}" alt="${(g.label||'').replace(/"/g,'&quot;')}" loading="lazy">
+              ${g.label ? `<div class="overlay"><span>${g.label.replace(/</g,'&lt;')}</span></div>` : ''}
+            </div>`).join('')
+        : '';
     }
-  } catch(e) { console.warn('Could not load content:',e); }
+  }
 }
 </script>
 </body>
