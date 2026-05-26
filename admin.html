@@ -486,6 +486,10 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
       <!-- TESTIMONIALS -->
       <div class="card">
         <div class="card-title">Testimonials <small style="font-weight:400;color:var(--muted)">Student quotes on the website</small></div>
+        <div class="toggle-row" style="margin-bottom:1rem">
+          <div class="toggle-label">Show Testimonials section<small>Hide while you're setting it up</small></div>
+          <label class="toggle"><input type="checkbox" id="testimonialsEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
         <div id="testimonialsList"></div>
         <button class="btn btn-outline btn-sm" onclick="addTestimonial()">+ Add Testimonial</button>
         <div class="btn-row" style="margin-top:1rem"><button class="btn btn-gold" onclick="saveContent()">Save Testimonials</button></div>
@@ -494,6 +498,10 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
       <!-- GALLERY -->
       <div class="card">
         <div class="card-title">Gallery <small style="font-weight:400;color:var(--muted)">Photos on the website</small></div>
+        <div class="toggle-row" style="margin-bottom:1rem">
+          <div class="toggle-label">Show Gallery section<small>Hide while you're setting it up</small></div>
+          <label class="toggle"><input type="checkbox" id="galleryEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
         <div id="galleryList"></div>
         <button class="btn btn-outline btn-sm" onclick="addGalleryItem()">+ Add Photo</button>
         <div class="btn-row" style="margin-top:1rem"><button class="btn btn-gold" onclick="saveContent()">Save Gallery</button></div>
@@ -1385,6 +1393,12 @@ async function loadContent() {
     document.getElementById('instructorBio').value   = _contentInstructor.bio||'';
     document.getElementById('instructorCreds').value = Array.isArray(_contentInstructor.creds) ? _contentInstructor.creds.join(', ') : '';
 
+    // Toggle states
+    const te = document.getElementById('testimonialsEnabled');
+    const ge = document.getElementById('galleryEnabled');
+    if (te) te.checked = c.testimonialsEnabled !== false;
+    if (ge) ge.checked = c.galleryEnabled !== false;
+
     // Testimonials
     _contentTestimonials = Array.isArray(c.testimonials) ? c.testimonials : [];
     renderTestimonials();
@@ -1513,6 +1527,10 @@ window.saveContent = async function() {
     bio:   document.getElementById('instructorBio').value.trim(),
     creds: document.getElementById('instructorCreds').value.split(',').map(s=>s.trim()).filter(Boolean)
   };
+  // Toggle states
+  const testimonialsEnabled = document.getElementById('testimonialsEnabled').checked;
+  const galleryEnabled      = document.getElementById('galleryEnabled').checked;
+
   try {
     const ref  = doc(db,'siteConfig','main');
     const snap = await getDoc(ref);
@@ -1522,7 +1540,9 @@ window.saveContent = async function() {
       content: {
         instructor:  _contentInstructor,
         testimonials: _contentTestimonials,
-        gallery:     _contentGallery
+        gallery:     _contentGallery,
+        testimonialsEnabled,
+        galleryEnabled
       }
     });
     toast('Website content saved!','success');

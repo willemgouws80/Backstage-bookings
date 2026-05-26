@@ -1174,6 +1174,17 @@ document.getElementById('fDate').min = new Date().toISOString().split('T')[0];
 
 // ── DYNAMIC CONTENT (Instructor, Testimonials, Gallery) ──
 async function loadContent() {
+  const instContainer   = document.getElementById('instructorContent');
+  const testContainer   = document.getElementById('testimonialsContent');
+  const galleryContainer = document.getElementById('galleryContent');
+  const testSection      = document.getElementById('testimonials');
+  const gallerySection   = document.getElementById('gallery');
+
+  // Show nothing until data loads — then we populate
+  if (instContainer)   instContainer.innerHTML   = '';
+  if (testContainer)   testContainer.innerHTML   = '';
+  if (galleryContainer) galleryContainer.innerHTML = '';
+
   try {
     const snap = await getDoc(doc(db,'siteConfig','main'));
     if (!snap.exists()) return;
@@ -1182,12 +1193,11 @@ async function loadContent() {
 
     // Instructor
     const inst = c.instructor;
-    const instContainer = document.getElementById('instructorContent');
     if (instContainer && inst?.name) {
-      const photo = inst.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop&crop=face';
-      const creds = Array.isArray(inst.creds) ? inst.creds.map(cr => `<span>${cr}</span>`).join('') : '';
+      const photo = inst.photo || '';
+      const creds = Array.isArray(inst.creds) ? inst.creds.map(cr => `<span>${cr.replace(/</g,'&lt;')}</span>`).join('') : '';
       instContainer.innerHTML = `
-        <img src="${photo.replace(/"/g,'&quot;')}" alt="${(inst.name||'').replace(/"/g,'&quot;')}" class="instructor-img" loading="lazy">
+        ${photo ? `<img src="${photo.replace(/"/g,'&quot;')}" alt="${(inst.name||'').replace(/"/g,'&quot;')}" class="instructor-img" loading="lazy">` : ''}
         <div>
           <div class="instructor-name">${(inst.name||'').replace(/</g,'&lt;')}</div>
           <div class="instructor-role">${(inst.role||'').replace(/</g,'&lt;')}</div>
@@ -1196,36 +1206,40 @@ async function loadContent() {
         </div>`;
     }
 
-    // Testimonials
-    const tests = Array.isArray(c.testimonials) ? c.testimonials : [];
-    const testContainer = document.getElementById('testimonialsContent');
-    if (testContainer) {
-      if (!tests.length) {
-        testContainer.innerHTML = '';
-      } else {
-        testContainer.innerHTML = tests.map(t => `
-          <div class="testimonial-card">
-            <p class="testimonial-text">${(t.text||'').replace(/</g,'&lt;')}</p>
-            <div class="testimonial-author">
-              <img src="${(t.photo||'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80&fit=crop&crop=face').replace(/"/g,'&quot;')}" alt="" class="testimonial-avatar" loading="lazy">
-              <div><div class="testimonial-name">${(t.name||'').replace(/</g,'&lt;')}</div><div class="testimonial-meta">${(t.meta||'').replace(/</g,'&lt;')}</div></div>
-            </div>
-          </div>`).join('');
+    // Testimonials — hide section if disabled
+    if (c.testimonialsEnabled === false && testSection) {
+      testSection.style.display = 'none';
+    } else {
+      if (testSection) testSection.style.display = '';
+      if (testContainer) {
+        const tests = Array.isArray(c.testimonials) ? c.testimonials : [];
+        testContainer.innerHTML = tests.length
+          ? tests.map(t => `
+              <div class="testimonial-card">
+                <p class="testimonial-text">${(t.text||'').replace(/</g,'&lt;')}</p>
+                <div class="testimonial-author">
+                  ${t.photo ? `<img src="${t.photo.replace(/"/g,'&quot;')}" alt="" class="testimonial-avatar" loading="lazy">` : ''}
+                  <div><div class="testimonial-name">${(t.name||'').replace(/</g,'&lt;')}</div><div class="testimonial-meta">${(t.meta||'').replace(/</g,'&lt;')}</div></div>
+                </div>
+              </div>`).join('')
+          : '';
       }
     }
 
-    // Gallery
-    const gallery = Array.isArray(c.gallery) ? c.gallery : [];
-    const galleryContainer = document.getElementById('galleryContent');
-    if (galleryContainer) {
-      if (!gallery.length) {
-        galleryContainer.innerHTML = '';
-      } else {
-        galleryContainer.innerHTML = gallery.map((g,i) => `
-          <div class="gallery-item">
-            <img src="${(g.src||'').replace(/"/g,'&quot;')}" alt="${(g.label||'').replace(/"/g,'&quot;')}" loading="lazy">
-            ${g.label ? `<div class="overlay"><span>${g.label.replace(/</g,'&lt;')}</span></div>` : ''}
-          </div>`).join('');
+    // Gallery — hide section if disabled
+    if (c.galleryEnabled === false && gallerySection) {
+      gallerySection.style.display = 'none';
+    } else {
+      if (gallerySection) gallerySection.style.display = '';
+      if (galleryContainer) {
+        const gallery = Array.isArray(c.gallery) ? c.gallery : [];
+        galleryContainer.innerHTML = gallery.length
+          ? gallery.map((g,i) => `
+              <div class="gallery-item">
+                <img src="${(g.src||'').replace(/"/g,'&quot;')}" alt="${(g.label||'').replace(/"/g,'&quot;')}" loading="lazy">
+                ${g.label ? `<div class="overlay"><span>${g.label.replace(/</g,'&lt;')}</span></div>` : ''}
+              </div>`).join('')
+          : '';
       }
     }
   } catch(e) { console.warn('Could not load content:',e); }
