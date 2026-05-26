@@ -1807,7 +1807,7 @@ window.rescheduleBooking = async function(bookingId) {
       <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;margin-bottom:1.25rem;color:var(--gold)">
         Reschedule — ${b.firstName||''} ${b.lastName||''}
       </h3>
-      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem">Current: ${b.prefDay||'—'} ${b.prefTime||''}${b.startDate?' · starts '+b.startDate:''}</p>
+      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem">Current: ${b.prefDay||'—'} ${b.prefTime||''}${b.startDate?' · starts '+sanitizeDate(b.startDate):''}</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
         <div class="fg">
           <label>New Day</label>
@@ -1832,7 +1832,7 @@ window.rescheduleBooking = async function(bookingId) {
       </div>
       <div class="fg" style="margin-bottom:1.25rem">
         <label>New Start Date</label>
-        <input type="date" id="reschedDate" value="${b.startDate||''}"
+        <input type="date" id="reschedDate" value="${sanitizeDate(b.startDate||'')}"
           style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem">
       </div>
       <div style="display:flex;gap:.75rem">
