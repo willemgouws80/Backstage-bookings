@@ -26,7 +26,7 @@ nav.scrolled{background:rgba(9,8,5,0.92);backdrop-filter:blur(12px);border-botto
 #promoBanner.show{display:block}
 #promoBanner:hover{opacity:.88}
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 5rem;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -10%,rgba(201,145,26,.11) 0%,transparent 65%);background-color:var(--black)}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -10%,rgba(201,145,26,.11) 0%,transparent 65%),linear-gradient(rgba(9,8,5,.55),rgba(9,8,5,.7)),url('https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=1600&q=80');background-size:cover;background-position:center 30%;background-color:var(--black)}
 .hero-ring{position:absolute;left:50%;top:0;transform:translateX(-50%);width:900px;height:900px;border-radius:50%;border:1px solid rgba(201,145,26,.12);margin-top:-350px;animation:breathe 7s ease-in-out infinite}
 .hero-ring2{position:absolute;left:50%;top:0;transform:translateX(-50%);width:1400px;height:1400px;border-radius:50%;border:1px solid rgba(201,145,26,.06);margin-top:-620px;animation:breathe 7s ease-in-out infinite .8s}
 @keyframes breathe{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.015)}}
@@ -166,23 +166,64 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:3.5r
 footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 .skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:2px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── INSTRUCTOR ── */
+.instructor-wrap{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.instructor-grid{display:grid;grid-template-columns:300px 1fr;gap:4rem;align-items:center}
+@media(max-width:768px){.instructor-grid{grid-template-columns:1fr;gap:2rem}}
+.instructor-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:2px;border:1px solid var(--border);background:var(--surface2)}
+.instructor-name{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--text);margin-bottom:.25rem}
+.instructor-role{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem}
+.instructor-bio{font-size:.92rem;line-height:1.8;color:var(--muted);margin-bottom:1.5rem}
+.instructor-creds{display:flex;flex-wrap:wrap;gap:.6rem}
+.instructor-creds span{font-size:.78rem;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:.3rem .8rem;border-radius:2px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em}
+.instructor-creds span::before{content:'▸ ';color:var(--gold)}
+
+/* ── TESTIMONIALS ── */
+.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
+.testimonial-card{background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:2rem;position:relative}
+.testimonial-card::before{content:'"';position:absolute;top:.75rem;left:1.25rem;font-size:4rem;font-family:'Cormorant Garamond',serif;color:var(--gold);opacity:.15;line-height:1}
+.testimonial-text{font-size:.88rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem;font-style:italic}
+.testimonial-author{display:flex;align-items:center;gap:.85rem}
+.testimonial-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--surface3);border:1px solid var(--border)}
+.testimonial-name{font-size:.85rem;color:var(--text);font-weight:500}
+.testimonial-meta{font-size:.72rem;color:var(--muted);font-family:'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase}
+
+/* ── GALLERY ── */
+.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+@media(max-width:900px){.gallery-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.gallery-grid{grid-template-columns:1fr}}
+.gallery-item{position:relative;overflow:hidden;border-radius:2px;border:1px solid var(--border);cursor:pointer;aspect-ratio:1}
+.gallery-item:nth-child(2){grid-column:span 2;grid-row:span 2}
+.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease,filter .5s ease}
+.gallery-item:hover img{transform:scale(1.06);filter:brightness(1.15)}
+.gallery-item .overlay{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.7));opacity:0;transition:opacity .4s;display:flex;align-items:flex-end;padding:1rem}
+.gallery-item:hover .overlay{opacity:1}
+.gallery-item .overlay span{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+
+/* ── INSTAGRAM / SOCIAL BAR ── */
+.social-bar{display:flex;justify-content:center;gap:1rem;margin-top:2rem}
+.social-link{display:flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;border:1px solid var(--border);border-radius:2px;color:var(--muted);text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;transition:all .3s}
+.social-link:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
 </style>
 </head>
 <body>
 
-<a id="promoBanner" href="#courses"></a>
+<a id="promoBanner" href="#book"></a>
 
 <nav id="mainNav">
   <a href="#home" class="nav-logo">
     <img src="New_Backstage_logo.png" class="nav-logo-img" alt="Backstage Worship">
   </a>
   <div class="nav-links">
-    <a href="#offerings">Offerings</a>
     <a href="#courses">Courses</a>
     <a href="#pricing">Pricing</a>
-    <a href="#courses" class="nav-book">Book Now</a>
+    <a href="#offerings">Offerings</a>
+    <a href="#instructor">Instructor</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#book" class="nav-book">Book Now</a>
   </div>
-  <a href="#courses" class="nav-book nav-mobile-book" style="display:none">Book Now</a>
+  <a href="#book" class="nav-book nav-mobile-book" style="display:none">Book Now</a>
 </nav>
 
 <section class="hero" id="home">
@@ -223,6 +264,115 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
       <div class="offering"><div class="offering-icon">🎸</div><h3>Guitar Lessons</h3><p>From first chord to worship leading. Open chords, slash chords, descending bass lines, and full worship song application.</p></div>
       <div class="offering"><div class="offering-icon">🎤</div><h3>Vocal Coaching</h3><p>Technique, tone, and stage presence. Individual coaching that develops your unique voice for worship and performance.</p></div>
       <div class="offering"><div class="offering-icon">⛪</div><h3>Worship Ministry</h3><p>Ministry-focused consulting and training for church worship teams. Equipping leaders and musicians for the local church.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── INSTRUCTOR ── -->
+<div class="instructor-wrap" id="instructor">
+  <div class="section">
+    <div class="section-label">Your Instructor</div>
+    <h2 class="section-title">Meet your <em>teacher</em></h2>
+    <div class="rule"></div>
+    <div class="instructor-grid">
+      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop&crop=face" alt="Instructor" class="instructor-img" loading="lazy">
+      <div>
+        <div class="instructor-name">Willem Gouws</div>
+        <div class="instructor-role">Founder · Worship Guitar &amp; Vocal Instructor</div>
+        <div class="instructor-bio">
+          With over a decade of experience leading worship and teaching music in Pretoria, Willem combines technical training with a heart for ministry. His approach meets every student where they are — whether you're strumming your first open chord or leading a full worship set on Sunday.
+          <br><br>
+          Every lesson is built around real songs and real ministry contexts. You won't just learn theory — you'll learn how to play, sing, and lead with confidence.
+        </div>
+        <div class="instructor-creds">
+          <span>10+ years teaching</span>
+          <span>Worship leader</span>
+          <span>Guitar &amp; vocals</span>
+          <span>Ministry consulting</span>
+          <span>Pretoria East</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TESTIMONIALS ── -->
+<div style="border-top:1px solid var(--border)" id="testimonials">
+  <div class="section">
+    <div class="section-label">Student Stories</div>
+    <h2 class="section-title">What our students <em>say</em></h2>
+    <div class="rule"></div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p class="testimonial-text">I started not knowing a single chord, and within a few months I was playing on the worship team at church. The lessons are practical, patient, and focused on real progress.</p>
+        <div class="testimonial-author">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80&fit=crop&crop=face" alt="" class="testimonial-avatar" loading="lazy">
+          <div><div class="testimonial-name">Sarah</div><div class="testimonial-meta">Guitar student · 8 months</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">The worship ministry consulting completely transformed how our team rehearses and leads. Practical, biblical, and immediately applicable. Highly recommend.</p>
+        <div class="testimonial-author">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80&fit=crop&crop=face" alt="" class="testimonial-avatar" loading="lazy">
+          <div><div class="testimonial-name">David</div><div class="testimonial-meta">Worship team leader</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">My daughter looks forward to every lesson. She's grown so much in confidence, not just in her playing but in using her gift at church. Thank you for creating such a welcoming space.</p>
+        <div class="testimonial-author">
+          <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80&fit=crop&crop=face" alt="" class="testimonial-avatar" loading="lazy">
+          <div><div class="testimonial-name">Leigh</div><div class="testimonial-meta">Parent of teen student</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GALLERY ── -->
+<div style="border-top:1px solid var(--border)" id="gallery">
+  <div class="section">
+    <div class="section-label">Behind the Scenes</div>
+    <h2 class="section-title">Studio &amp; <em>moments</em></h2>
+    <div class="rule"></div>
+    <div class="gallery-grid">
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&q=80" alt="Studio session" loading="lazy">
+        <div class="overlay"><span>Studio sessions</span></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80" alt="Guitar lesson" loading="lazy">
+        <div class="overlay"><span>One-on-one teaching</span></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1525201548942-d8732f6617a0?w=600&q=80" alt="Playing guitar" loading="lazy">
+        <div class="overlay"><span>Learning in action</span></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&q=80" alt="Worship guitar" loading="lazy">
+        <div class="overlay"><span>Worship leading</span></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600&q=80" alt="Vocal lesson" loading="lazy">
+        <div class="overlay"><span>Vocal coaching</span></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&q=80" alt="Worship team" loading="lazy">
+        <div class="overlay"><span>Worship ministry</span></div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=600&q=80" alt="Music studio" loading="lazy">
+        <div class="overlay"><span>The studio space</span></div>
+      </div>
+    </div>
+    <div class="social-bar">
+      <a href="#" class="social-link" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        Follow on Instagram
+      </a>
+      <a href="#" class="social-link" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.955-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
+        Follow on X
+      </a>
     </div>
   </div>
 </div>
@@ -377,8 +527,9 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 
 <footer>
   <div class="footer-logo"><img src="New_Backstage_logo.png" class="footer-logo-img" alt="Backstage Worship"></div>
-  <p>Pretoria East · Worship Ministry Consulting</p>
-  <p>© 2026 Backstage Worship Music School</p>
+  <p>Willem Gouws · Pretoria East · Worship Music Education</p>
+  <p style="margin-top:.25rem">Guitar lessons · Vocal coaching · Worship ministry consulting</p>
+  <p style="margin-top:.75rem;font-size:.72rem;opacity:.6">© 2026 Backstage Worship Music School</p>
 </footer>
 
 <script type="module">
