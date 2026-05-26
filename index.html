@@ -1185,11 +1185,14 @@ async function loadContent() {
   if (testContainer)   testContainer.innerHTML   = '';
   if (galleryContainer) galleryContainer.innerHTML = '';
 
-  try {
-    const snap = await getDoc(doc(db,'siteConfig','main'));
-    if (!snap.exists()) { console.warn('loadContent: siteConfig/main not found'); return; }
-    const c = snap.data().content;
-    if (!c) { console.warn('loadContent: no content field in doc'); return; }
+  // Read from the cached siteConfig (loaded by loadSiteConfig) instead of calling Firestore directly
+  // This avoids a hard-to-debug scope issue where getDoc is undefined in this function
+  let c;
+  for (let i = 0; i < 30; i++) {
+    if (window._S.siteConfig?.content) { c = window._S.siteConfig.content; break; }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  if (!c) { console.warn('loadContent: siteConfig.content not available after 3s'); return; }
 
     // Social links
     if (c.socialInstagram) {
