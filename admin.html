@@ -1037,7 +1037,7 @@ function generateSessionDates(type, day, startTime, endTime, startDate, repeatTy
   if (!startDate || !numSessions) return sessions;
   const dayMap = {monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
   const targetDay = dayMap[day?.toLowerCase()];
-  let current = new Date(startDate);
+  let current = new Date(startDate+'T12:00:00');
 
   if (repeatType === 'weekly' && targetDay !== undefined) {
     // Advance to first occurrence of target weekday on or after startDate
@@ -1046,7 +1046,7 @@ function generateSessionDates(type, day, startTime, endTime, startDate, repeatTy
     }
     for (let i = 0; i < numSessions; i++) {
       sessions.push({
-        date: current.toISOString().split('T')[0],
+        date: localDateStr(current),
         startTime, endTime,
         label: current.toLocaleDateString('en-ZA', {weekday:'short',day:'numeric',month:'short'})
       });
@@ -1055,7 +1055,7 @@ function generateSessionDates(type, day, startTime, endTime, startDate, repeatTy
   } else if (repeatType === 'daily') {
     for (let i = 0; i < numSessions; i++) {
       sessions.push({
-        date: current.toISOString().split('T')[0],
+        date: localDateStr(current),
         startTime, endTime,
         label: current.toLocaleDateString('en-ZA', {weekday:'short',day:'numeric',month:'short'})
       });
@@ -1761,17 +1761,17 @@ async function generateTermDates(prefDay, startDate) {
   if (targetDay === undefined) return [];
 
   const dates  = [];
-  const start  = new Date(startDate);
+  const start  = new Date(startDate+'T12:00:00');
 
   terms.forEach(term => {
-    const tStart = new Date(term.start);
-    const tEnd   = new Date(term.end);
+    const tStart = new Date(term.start+'T12:00:00');
+    const tEnd   = new Date(term.end+'T12:00:00');
     // Use whichever is later — term start or booking start date
     let current  = new Date(Math.max(start.getTime(), tStart.getTime()));
     // Advance to first target weekday
     while (current.getDay() !== targetDay) current.setDate(current.getDate()+1);
     while (current <= tEnd) {
-      dates.push(current.toISOString().split('T')[0]);
+      dates.push(localDateStr(current));
       current.setDate(current.getDate()+7);
     }
   });

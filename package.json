@@ -1,0 +1,7 @@
+{
+  "name": "backstage-bookings",
+  "private": true,
+  "scripts": {
+    "test": "node test-dates.js"
+  }
+}
