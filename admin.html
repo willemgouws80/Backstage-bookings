@@ -1314,7 +1314,7 @@ async function loadPromo() {
 }
 
 window.savePromo = async function() {
-  const promo = { active:document.getElementById('promoActive').checked, text:document.getElementById('promoText').value, discount:Number(document.getElementById('promoDiscount').value)||0, validUntil:document.getElementById('promoEnd').value, linkTo:document.getElementById('promoLinkTo').value };
+  const promo = { active:document.getElementById('promoActive').checked, text:document.getElementById('promoText').value, discount:Number(document.getElementById('promoDiscount').value)||0, validUntil:sanitizeDate(document.getElementById('promoEnd').value), linkTo:document.getElementById('promoLinkTo').value };
   try {
     const ref=doc(db,'siteConfig','main');
     const snap=await getDoc(ref);
@@ -1800,6 +1800,7 @@ window.rescheduleBooking = async function(bookingId) {
 
   // Build modal
   const modal = document.createElement('div');
+  modal.className = 'resched-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:center;justify-content:center;padding:2rem';
   modal.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:2rem;max-width:480px;width:100%">
@@ -1859,7 +1860,7 @@ window.confirmReschedule = async function(bookingId) {
       prefDay: newDay, prefTime: newTime,
       rescheduledAt: new Date().toISOString()
     });
-    document.querySelector('[style*="position:fixed"][style*="z-index:500"]')?.remove();
+    document.querySelector('.resched-modal')?.remove();
     toast('Booking rescheduled!','success');
     loadDashboard();
   } catch(e) { toast('Error: '+e.message,'error'); }
