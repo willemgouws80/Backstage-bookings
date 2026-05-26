@@ -1195,13 +1195,14 @@ async function loadContent() {
   if (!c) { console.warn('loadContent: siteConfig.content not available after 3s'); return; }
 
   // Social links
+  const fixUrl = u => u.match(/^https?:\/\//) ? u : 'https://' + u;
   if (c.socialInstagram) {
     const el = document.getElementById('socialInstagramLink');
-    if (el) { el.href = c.socialInstagram; el.style.display = ''; }
+    if (el) { el.href = fixUrl(c.socialInstagram); el.style.display = ''; }
   }
   if (c.socialFacebook) {
     const el = document.getElementById('socialFacebookLink');
-    if (el) { el.href = c.socialFacebook; el.style.display = ''; }
+    if (el) { el.href = fixUrl(c.socialFacebook); el.style.display = ''; }
   }
 
   // Instructor
