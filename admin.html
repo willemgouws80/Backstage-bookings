@@ -1387,6 +1387,10 @@ window.savePromo = async function() {
 let _contentInstructor  = { name:'', role:'', photo:'', bio:'', creds:[] };
 let _contentTestimonials = [];
 let _contentGallery      = [];
+// Closure-based setters for inline oninput handlers (global scope can't reach module let)
+window.setInstructorField = (field, val) => { _contentInstructor[field] = val; };
+window.setGalleryField    = (i, field, val) => { if (_contentGallery[i]) _contentGallery[i][field] = val; };
+window.setTestimonialField= (i, field, val) => { if (_contentTestimonials[i]) _contentTestimonials[i][field] = val; };
 
 async function loadContent() {
   try {
@@ -1469,20 +1473,20 @@ function renderTestimonials() {
     <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 36px;gap:.5rem;align-items:end;margin-bottom:.5rem;padding:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:1px">
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Quote</label>
-        <textarea oninput="_contentTestimonials[${i}].text=this.value" rows="2" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem;resize:vertical">${(t.text||'').replace(/"/g,'&quot;')}</textarea>
+        <textarea oninput="setTestimonialField(${i},'text',this.value)" rows="2" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem;resize:vertical">${(t.text||'').replace(/"/g,'&quot;')}</textarea>
       </div>
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Name</label>
-        <input value="${(t.name||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].name=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+        <input value="${(t.name||'').replace(/"/g,'&quot;')}" oninput="setTestimonialField(${i},'name',this.value)" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
       </div>
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Meta</label>
-        <input value="${(t.meta||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].meta=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+        <input value="${(t.meta||'').replace(/"/g,'&quot;')}" oninput="setTestimonialField(${i},'meta',this.value)" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
       </div>
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Photo URL</label>
         <div style="display:flex;gap:.3rem">
-          <input value="${(t.photo||'').replace(/"/g,'&quot;')}" oninput="_contentTestimonials[${i}].photo=this.value" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+          <input value="${(t.photo||'').replace(/"/g,'&quot;')}" oninput="setTestimonialField(${i},'photo',this.value)" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
           <button class="btn btn-outline btn-sm" onclick="uploadFile(null,${i})" style="font-size:.7rem;padding:.3rem .5rem">📁</button>
         </div>
       </div>
@@ -1511,12 +1515,12 @@ function renderGallery() {
     <div style="display:grid;grid-template-columns:1fr 2fr 36px;gap:.5rem;align-items:end;margin-bottom:.5rem;padding:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:1px">
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Label</label>
-        <input value="${(g.label||'').replace(/"/g,'&quot;')}" oninput="_contentGallery[${i}].label=this.value" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+        <input value="${(g.label||'').replace(/"/g,'&quot;')}" oninput="setGalleryField(${i},'label',this.value)" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
       </div>
       <div class="fg" style="margin:0">
         <label style="font-size:.65rem">Image URL</label>
         <div style="display:flex;gap:.3rem">
-          <input value="${(g.src||'').replace(/"/g,'&quot;')}" oninput="_contentGallery[${i}].src=this.value" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
+          <input value="${(g.src||'').replace(/"/g,'&quot;')}" oninput="setGalleryField(${i},'src',this.value)" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
           <button class="btn btn-outline btn-sm" onclick="uploadFile('gallery',${i})" style="font-size:.7rem;padding:.3rem .5rem">📁</button>
         </div>
       </div>
