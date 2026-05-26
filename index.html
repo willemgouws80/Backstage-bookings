@@ -15,7 +15,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1.2rem 3rem;display:flex;align-items:center;justify-content:space-between;transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
 nav.scrolled{background:rgba(9,8,5,0.92);backdrop-filter:blur(12px);border-bottom-color:var(--border)}
 .nav-logo{display:flex;align-items:center;gap:.85rem;text-decoration:none}
-.nav-logo-img{width:48px;height:48px;object-fit:contain;border-radius:3px}
+.nav-logo-img{width:48px;height:48px;object-fit:contain;border-radius:3px;filter:drop-shadow(0 0 8px rgba(201,145,26,0.25))}
 .nav-links{display:flex;align-items:center;gap:2.5rem}
 .nav-links a{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .3s}
 .nav-links a:hover{color:var(--gold)}
@@ -31,7 +31,7 @@ nav.scrolled{background:rgba(9,8,5,0.92);backdrop-filter:blur(12px);border-botto
 .hero-ring2{position:absolute;left:50%;top:0;transform:translateX(-50%);width:1400px;height:1400px;border-radius:50%;border:1px solid rgba(201,145,26,.06);margin-top:-620px;animation:breathe 7s ease-in-out infinite .8s}
 @keyframes breathe{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.015)}}
 .hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
-.hero-logo{width:320px;height:320px;object-fit:contain;margin-bottom:1.5rem;animation:fadeUp .9s ease both;filter:drop-shadow(0 0 50px rgba(201,145,26,0.3))}
+.hero-logo{width:320px;height:320px;object-fit:contain;margin-bottom:1.5rem;animation:fadeUp .9s ease both;filter:drop-shadow(0 0 50px rgba(201,145,26,0.3)) drop-shadow(0 0 12px rgba(255,255,255,0.15))}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .hero-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);border:1px solid var(--border);padding:.4rem 1.2rem;border-radius:100px;background:var(--gold-dim);margin-bottom:2rem;animation:fadeUp .9s ease .1s both}
 .hero-desc{max-width:500px;font-size:.975rem;line-height:1.75;color:var(--muted);margin-bottom:3rem;animation:fadeUp .9s ease .4s both}
@@ -162,7 +162,7 @@ nav.scrolled{background:rgba(9,8,5,0.92);backdrop-filter:blur(12px);border-botto
 .success-state p{color:var(--muted);font-size:.9rem;line-height:1.7}
 footer{background:var(--surface);border-top:1px solid var(--border);padding:3.5rem 2rem;text-align:center}
 .footer-logo{display:inline-flex;align-items:center;gap:.85rem;margin-bottom:.75rem}
-.footer-logo-img{width:60px;height:60px;object-fit:contain;opacity:.85}
+.footer-logo-img{width:60px;height:60px;object-fit:contain;opacity:.85;filter:drop-shadow(0 0 6px rgba(201,145,26,0.2))}
 footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 .skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:2px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
