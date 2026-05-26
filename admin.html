@@ -1308,7 +1308,7 @@ async function loadPromo() {
     document.getElementById('promoActive').checked   = !!p.active;
     document.getElementById('promoText').value       = p.text||'';
     document.getElementById('promoDiscount').value   = p.discount||'';
-    document.getElementById('promoEnd').value        = p.validUntil||'';
+    document.getElementById('promoEnd').value        = sanitizeDate(p.validUntil||'');
     document.getElementById('promoLinkTo').value     = p.linkTo||'courses';
   } catch(e) {}
 }
@@ -1640,9 +1640,9 @@ window.toggleAttendance = async function(email, date, courseId, existingId) {
 };
 
 window.addIndivAttendance = async function(email, status) {
-  const date = document.getElementById('indivDate').value;
+  const date = sanitizeDate(document.getElementById('indivDate').value);
   const plan = document.getElementById('indivPlan').value;
-  if (!date) { toast('Please select a date','error'); return; }
+  if (!date) { toast('Please select a valid date','error'); return; }
   try {
     await addDoc(collection(db,'attendance'), {
       studentEmail:email, sessionDate:date, plan, status,
