@@ -3046,12 +3046,14 @@ function toast(msg, type='success') {
 window.toast = toast;
 
 // ── BOOKING POLLING NOTIFICATIONS ──
+const _fsMod = import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
 if ('Notification' in window) Notification.requestPermission();
 const _seenIds = new Set();
 let _firstPoll = true;
 setInterval(async () => {
   try {
-    const snap = await getDocs(collection(db,'bookings'));
+    const { getDocs, collection: col } = await _fsMod;
+    const snap = await getDocs(col(db,'bookings'));
     snap.forEach(d => {
       if (_firstPoll) { _seenIds.add(d.id); return; }
       if (!_seenIds.has(d.id)) {
