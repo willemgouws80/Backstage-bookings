@@ -3046,6 +3046,7 @@ function toast(msg, type='success') {
 window.toast = toast;
 
 // ── BOOKING POLLING NOTIFICATIONS ──
+function _beep() { try { const a=new (window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=800;g.gain.value=.3;o.start();g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.3);o.stop(a.currentTime+.3);if(a.state==='suspended')a.resume(); }catch(e){} } window._beep=_beep;
 const _fsMod = import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
 if ('Notification' in window) Notification.requestPermission();
 const _seenIds = new Set();
@@ -3065,6 +3066,19 @@ setInterval(async () => {
           new Notification('New Booking!', { body: `${name} signed up for ${detail}` });
         }
         toast(`New booking from ${name} (${detail})`);
+        window._beep();
+        // refresh dashboard
+        window._bookings = window._bookings||[];
+        const nb = {id:d.id,...b};
+        const existing = window._bookings.findIndex(x=>x.id===d.id);
+        if (existing!==-1) window._bookings[existing]=nb;
+        else window._bookings.unshift(nb);
+        document.getElementById('statBookings').textContent = window._bookings.length;
+        document.getElementById('statPending').textContent  = window._bookings.filter(x=>x.status==='pending').length;
+        document.getElementById('statStudents').textContent = new Set(window._bookings.map(x=>x.email)).size;
+        const recent = [...window._bookings].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,8);
+        document.getElementById('recentBookings').innerHTML = recent.map(x=>bookingRow(x)).join('');
+        renderBookingsList(window._bookings);
       }
     });
     _firstPoll = false;
