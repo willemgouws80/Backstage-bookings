@@ -828,7 +828,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db   = getFirestore(app);
+const db   = getFirestore(app); window._bdb = db;
 const auth = getAuth(app);
 const storage = getStorage(app);
 window._db = db;
@@ -3053,7 +3053,7 @@ let _firstPoll = true;
 setInterval(async () => {
   try {
     const { getDocs, collection: col } = await _fsMod;
-    const snap = await getDocs(col(db,'bookings'));
+    const snap = await getDocs(col(window._bdb,'bookings'));
     snap.forEach(d => {
       if (_firstPoll) { _seenIds.add(d.id); return; }
       if (!_seenIds.has(d.id)) {
