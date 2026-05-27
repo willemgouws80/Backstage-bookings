@@ -1258,7 +1258,7 @@ async function loadContent() {
             if (isVideo) {
               let vid;
               if (u.includes('youtube.com') || u.includes('youtu.be')) {
-                const id = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/)?.[1];
+                const id = u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]+)/)?.[1];
                 vid = id ? `<iframe src="https://www.youtube.com/embed/${id}" allow="autoplay;fullscreen" style="width:100%;height:100%;border:0" loading="lazy"></iframe>` : '';
               } else {
                 vid = `<video src="${esc(u)}" muted loop playsinline style="width:100%;height:100%;object-fit:cover" onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0"></video>`;
