@@ -3047,7 +3047,7 @@ window.toast = toast;
 
 // ── BOOKING POLLING NOTIFICATIONS ──
 window._initAudio = function(){ try { if (!window._bctx) window._bctx = new (window.AudioContext||window.webkitAudioContext)(); if (window._bctx.state==='suspended') window._bctx.resume(); }catch(e){} document.removeEventListener('click',window._initAudio); document.removeEventListener('touchstart',window._initAudio); document.removeEventListener('keydown',window._initAudio); }; document.addEventListener('click',window._initAudio); document.addEventListener('touchstart',window._initAudio); document.addEventListener('keydown',window._initAudio);
-window._beep = function(){ try { const c=window._bctx; if (!c) return; const t=c.currentTime, notes=[261.63,329.63,392.00,587.33], dur=.12, gap=.05; notes.forEach((f,i)=>{ const o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); const s=t+i*(dur+gap); o.frequency.setValueAtTime(f,s); g.gain.setValueAtTime(.2,s); g.gain.exponentialRampToValueAtTime(.001,s+dur); o.start(s); o.stop(s+dur); }); }catch(e){console.warn('beep err:',e)} };
+window._beep = function(){ try { const c=window._bctx; if (!c) return; const t=c.currentTime+.02, notes=[261.63,329.63,392.00,587.33], dur=.12, gap=.05; notes.forEach((f,i)=>{ const o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); const s=t+i*(dur+gap); o.frequency.setValueAtTime(f,s-.01); g.gain.setValueAtTime(.25,s); g.gain.exponentialRampToValueAtTime(.001,s+dur); o.start(s); o.stop(s+dur); }); }catch(e){console.warn('beep err:',e)} };
 const _fsMod = import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
 if ('Notification' in window) Notification.requestPermission();
 const _seenIds = new Set();
