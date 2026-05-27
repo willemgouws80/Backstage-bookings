@@ -812,8 +812,7 @@ service cloud.firestore {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc,
-  onSnapshot, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
@@ -3046,23 +3045,29 @@ function toast(msg, type='success') {
 }
 window.toast = toast;
 
-// ── REAL-TIME BOOKING NOTIFICATIONS ──
+// ── BOOKING POLLING NOTIFICATIONS ──
 if ('Notification' in window) Notification.requestPermission();
-const _seenBookingIds = new Set();
-onSnapshot(query(collection(db,'bookings'), orderBy('createdAt','desc'), limit(1)), snap => {
-  snap.forEach(d => {
-    if (_seenBookingIds.has(d.id)) return;
-    _seenBookingIds.add(d.id);
-    const b = d.data();
-    const name = b.name||b.firstName||'Someone';
-    const detail = b.instrument||b.focus||'lessons';
-    // Desktop notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('New Booking!', { body: `${name} signed up for ${detail}`, icon: 'New_Backstage_logo.png' });
-    }
-    toast(`New booking from ${name} (${detail})`);
-  });
-}, e => console.error('Booking monitor error:', e));
+const _seenIds = new Set();
+let _firstPoll = true;
+setInterval(async () => {
+  try {
+    const snap = await getDocs(collection(db,'bookings'));
+    snap.forEach(d => {
+      if (_firstPoll) { _seenIds.add(d.id); return; }
+      if (!_seenIds.has(d.id)) {
+        _seenIds.add(d.id);
+        const b = d.data();
+        const name = b.name||b.firstName||'Someone';
+        const detail = b.instrument||b.focus||'lessons';
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('New Booking!', { body: `${name} signed up for ${detail}` });
+        }
+        toast(`New booking from ${name} (${detail})`);
+      }
+    });
+    _firstPoll = false;
+  } catch(e) { console.warn('Booking poll error:', e); }
+}, 8000);
 </script>
 </body>
 </html>
