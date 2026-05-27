@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booking Monitor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#111;color:#eee;padding:1rem;max-width:600px;margin:auto}
+h1{font-size:1.1rem;margin-bottom:.5rem;color:#C9911A}
+#status{font-size:.75rem;color:#666;margin-bottom:1rem}
+.entry{border:1px solid #333;border-radius:4px;padding:.6rem;margin-bottom:.4rem;font-size:.82rem}
+.entry .name{font-weight:600;color:#e8b040}
+.entry .detail{color:#888;font-size:.72rem;margin-top:.2rem}
+.entry.new{animation:flash 2s}
+@keyframes flash{0%{background:#C9911A22}100%{background:transparent}}
+</style>
+</head>
+<body>
+<h1>📋 Booking Monitor</h1>
+<div id="status">Listening for new bookings…</div>
+<div id="list"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, onSnapshot, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",authDomain:"backstage-music.firebaseapp.com",
+  databaseURL:"https://backstage-music-default-rtdb.firebaseio.com",projectId:"backstage-music",
+  storageBucket:"backstage-music.firebasestorage.app",messagingSenderId:"864389877971",
+  appId:"1:864389877971:web:c7d15ae843d54172c90426",measurementId:"G-DY40YLD9FM"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const list = document.getElementById('list');
+const status = document.getElementById('status');
+const seen = new Set();
+
+// Request notification permission
+if ('Notification' in window) Notification.requestPermission();
+
+onSnapshot(query(collection(db,'bookings'), orderBy('timestamp','desc'), limit(20)), snap => {
+  status.textContent = `Listening — ${snap.size} recent bookings`;
+  snap.forEach(d => {
+    if (seen.has(d.id)) return;
+    seen.add(d.id);
+    const b = d.data();
+    const ts = b.timestamp?.toDate?.() || b.submittedAt?.toDate?.() || new Date();
+    const entry = document.createElement('div');
+    entry.className = 'entry new';
+    entry.innerHTML = `
+      <div class="name">${(b.name||b.firstName||'—')} ${(b.surname||'')}</div>
+      <div class="detail">${b.instrument||b.focus||'—'} · ${b.lessonType||'—'}${b.chosenDate ? ' · '+b.chosenDate : ''}</div>
+      <div class="detail">${ts.toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'})}${b.email ? ' · '+b.email : ''}${b.phone||b.whatsapp ? ' · '+b.phone||b.whatsapp||'' : ''}</div>`;
+    list.prepend(entry);
+    // Desktop notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('New Booking!', { body: `${b.name||b.firstName||'Someone'} signed up for ${b.instrument||b.focus||'lessons'}`, icon: 'New_Backstage_logo.png' });
+    }
+  });
+}, err => { status.textContent = 'Error: '+err.message; });
+</script>
+</body>
+</html>
