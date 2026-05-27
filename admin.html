@@ -1434,7 +1434,7 @@ async function loadContent() {
 window.uploadFile = async function(targetId, index) {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*,video/mp4,video/webm,video/ogg';
+  input.accept = 'image/*';
   input.onchange = async () => {
     const file = input.files?.[0];
     if (!file) return;
@@ -1519,10 +1519,9 @@ function renderGallery() {
         <input value="${(g.label||'').replace(/"/g,'&quot;')}" oninput="setGalleryField(${i},'label',this.value)" style="width:100%;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
       </div>
       <div class="fg" style="margin:0">
-        <label style="font-size:.65rem">URL <small style="font-weight:400;color:var(--muted)">image or video (.mp4)</small></label>
-        <div style="display:flex;gap:.3rem;align-items:center">
+        <label style="font-size:.65rem">Image URL</label>
+        <div style="display:flex;gap:.3rem">
           <input value="${(g.src||'').replace(/"/g,'&quot;')}" oninput="setGalleryField(${i},'src',this.value)" style="flex:1;padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.82rem">
-          ${g.src&&g.src.match(/\.(mp4|webm|ogg)(\?|$)/)?'<span style="font-size:.75rem;color:var(--gold);white-space:nowrap">🎬 Video</span>':''}
           <button class="btn btn-outline btn-sm" onclick="uploadFile('gallery',${i})" style="font-size:.7rem;padding:.3rem .5rem">📁</button>
         </div>
       </div>
