@@ -932,7 +932,7 @@ window.searchBookings = function(query) {
 function renderBookingsList(bookings) {
   window._allBookings = bookings;
   document.getElementById('bookingsList').innerHTML = bookings.length
-    ? bookings.map(b=>bookingRow(b)).join('')
+    ? bookings.map(b=>window.bookingRow(b)).join('')
     : '<div class="loading-text">No bookings found</div>';
 } window.renderBookingsList=renderBookingsList;
 
