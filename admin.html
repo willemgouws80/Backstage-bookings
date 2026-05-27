@@ -3048,7 +3048,7 @@ window.toast = toast;
 // ── REAL-TIME BOOKING NOTIFICATIONS ──
 if ('Notification' in window) Notification.requestPermission();
 const _seenBookingIds = new Set();
-onSnapshot(query(collection(db,'bookings'), orderBy('timestamp','desc'), limit(1)), snap => {
+onSnapshot(query(collection(db,'bookings'), orderBy('createdAt','desc'), limit(1)), snap => {
   snap.forEach(d => {
     if (_seenBookingIds.has(d.id)) return;
     _seenBookingIds.add(d.id);
@@ -3061,7 +3061,7 @@ onSnapshot(query(collection(db,'bookings'), orderBy('timestamp','desc'), limit(1
     }
     toast(`New booking from ${name} (${detail})`);
   });
-});
+}, e => console.error('Booking monitor error:', e));
 </script>
 </body>
 </html>
