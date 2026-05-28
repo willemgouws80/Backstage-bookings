@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Backstage Portal</title>
+<link rel="icon" href="New_Backstage_logo.png" sizes="any">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C9911A;--gold-light:#e8b040;--gold-dim:rgba(201,145,26,.12);--black:#090805;--surface:#111009;--surface2:#1a1810;--surface3:#232116;--border:rgba(201,145,26,.16);--text:#f0ead8;--muted:#7a7060;--danger:#c0392b;--success:#27ae60}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;opacity:.6}
+
+/* LOGIN SCREEN */
+#authScreen{position:fixed;inset:0;background:var(--black);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem}
+#authScreen.hidden{display:none}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
+.auth-logo{width:80px;height:80px;object-fit:contain;margin-bottom:1.5rem}
+.auth-box h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;margin-bottom:.4rem}
+.auth-box h2 em{font-style:italic;color:var(--gold)}
+.auth-box p{font-size:.85rem;color:var(--muted);margin-bottom:2rem}
+.auth-error{color:var(--danger);font-size:.85rem;margin-bottom:1rem;min-height:1.2rem}
+.auth-tabs{display:flex;border:1px solid var(--border);border-radius:1px;overflow:hidden;margin-bottom:1.5rem}
+.auth-tab{flex:1;padding:.7rem .5rem;background:transparent;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-right:1px solid var(--border)}
+.auth-tab:last-child{border-right:none}
+.auth-tab.active{background:var(--gold-dim);color:var(--gold)}
+.auth-form{display:none}.auth-form.active{display:block;animation:fadeIn .3s ease}
+.auth-switch{font-size:.82rem;color:var(--muted);margin-top:1.25rem}
+.auth-switch a{color:var(--gold);cursor:pointer;text-decoration:underline}
+
+/* TOP BAR */
+.topbar{background:linear-gradient(90deg,#0f0d07,#1a1810);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-logo{display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--text)}
+.tb-logo img{width:40px;height:40px;object-fit:contain;border-radius:3px}
+.tb-logo-text{display:flex;flex-direction:column;line-height:1.1;text-align:left}
+.tb-logo-text span:first-child{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)}
+.tb-logo-text span:last-child{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:1rem}
+.tb-greeting{font-size:.82rem;color:var(--muted)}
+.tb-greeting strong{color:var(--text)}
+.tb-link{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:1px;transition:all .3s;background:transparent;cursor:pointer}
+.tb-link:hover{color:var(--gold);border-color:var(--gold)}
+@media(max-width:640px){.tb-greeting{display:none}.topbar{padding:.7rem 1rem}}
+
+/* LAYOUT */
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
+.sidebar-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:.5rem 1.5rem;margin-top:1rem;display:block}
+.sidebar-label:first-child{margin-top:0}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;color:var(--muted);cursor:pointer;transition:all .3s;font-size:.85rem;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--gold);background:var(--gold-dim);border-left-color:var(--gold)}
+.nav-item .icon{font-size:1rem;width:20px;text-align:center}
+.main{flex:1;overflow-y:auto;padding:2rem}
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.page-header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300}
+.page-header h1 em{font-style:italic;color:var(--gold)}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:2rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.25rem 1rem;text-align:center}
+.stat-val{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--gold);line-height:1;margin-bottom:.25rem}
+.stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.75rem;margin-bottom:1.5rem}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between}
+
+/* FORM */
+.fg{margin-bottom:1.25rem}
+.fg label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.75rem .9rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;transition:border-color .3s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold)}
+.fg textarea{resize:vertical;min-height:80px}
+.fg input:disabled{opacity:.5;cursor:not-allowed}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+
+/* BUTTONS */
+.btn{padding:.7rem 1.5rem;border:none;border-radius:1px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-gold{background:var(--gold);color:#000}
+.btn-gold:hover{background:var(--gold-light);box-shadow:0 4px 12px rgba(201,145,26,.3)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-sm{padding:.4rem .9rem;font-size:.72rem}
+.btn-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem}
+
+/* LIST ITEMS */
+.list-item{background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.li-content{flex:1}
+.li-title{font-weight:500;margin-bottom:.2rem;font-size:.95rem}
+.li-meta{font-size:.8rem;color:var(--muted);line-height:1.6}
+.li-actions{display:flex;gap:.5rem;flex-shrink:0}
+@media(max-width:640px){.list-item{flex-direction:column;align-items:stretch}.li-actions{justify-content:flex-end}}
+
+/* STATUS BADGES */
+.status-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:2px}
+.status-pending{background:rgba(201,145,26,.15);color:var(--gold);border:1px solid rgba(201,145,26,.3)}
+.status-confirmed{background:rgba(39,174,96,.15);color:var(--success);border:1px solid rgba(39,174,96,.3)}
+.status-cancelled{background:rgba(192,57,43,.15);color:var(--danger);border:1px solid rgba(192,57,43,.3)}
+.status-paid{background:rgba(39,174,96,.15);color:var(--success);border:1px solid rgba(39,174,96,.3)}
+.status-unpaid{background:rgba(192,57,43,.15);color:var(--danger);border:1px solid rgba(192,57,43,.3)}
+.status-ongoing{background:rgba(52,152,219,.15);color:#3498db;border:1px solid rgba(52,152,219,.3)}
+.status-completed{background:rgba(149,165,166,.15);color:#95a5a6;border:1px solid rgba(149,165,166,.3)}
+
+/* ATTENDANCE */
+.attendance-row{display:flex;align-items:center;gap:1rem;padding:.75rem 0;border-top:1px solid rgba(255,255,255,.04)}
+.attendance-row:first-of-type{border-top:none}
+.att-date{font-size:.85rem;color:var(--text);min-width:110px}
+.att-status{padding:.25rem .7rem;border-radius:2px;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.att-present{background:rgba(39,174,96,.15);color:var(--success)}
+.att-absent{background:rgba(192,57,43,.15);color:var(--danger)}
+.att-note{font-size:.8rem;color:var(--muted);flex:1;text-align:right}
+
+/* INVOICE */
+.invoice-row{display:flex;align-items:center;justify-content:space-between;padding:1rem 0;border-top:1px solid rgba(255,255,255,.04);gap:1rem}
+.invoice-row:first-of-type{border-top:none}
+.inv-date{font-size:.8rem;color:var(--muted)}
+.inv-amount{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold)}
+.inv-desc{font-size:.88rem;color:var(--text)}
+.inv-due{font-size:.75rem;color:var(--muted)}
+
+/* PROFILE */
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--gold);margin-bottom:1rem}
+.profile-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-top:1px solid rgba(255,255,255,.04)}
+.profile-row:first-of-type{border-top:none}
+.profile-label{font-size:.82rem;color:var(--muted)}
+.profile-value{font-size:.92rem;color:var(--text)}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1rem 1.5rem;font-size:.9rem;z-index:9999;transform:translateY(80px);opacity:0;transition:all .4s;pointer-events:none;min-width:260px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+
+/* MISC */
+.loading-text{color:var(--muted);font-size:.9rem;padding:1.5rem 0}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:1px;height:60px;margin-bottom:.6rem}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:1rem;display:block}
+.empty-state p{font-size:.88rem;line-height:1.6}
+
+/* RESPONSIVE SIDEBAR */
+@media(max-width:768px){.sidebar{display:none;position:fixed;z-index:100;top:57px;left:0;height:calc(100vh - 57px)}.sidebar.open{display:block}.app{position:relative}.menu-toggle{display:flex!important}}
+.menu-toggle{display:none;background:transparent;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:.3rem;margin-right:.5rem;align-items:center}
+.mobile-overlay{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.5)}
+.mobile-overlay.open{display:block}
+
+/* NEXT LESSON CARD */
+.next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.12) 0%,var(--surface2) 100%);border:1px solid var(--gold);border-radius:2px;padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+.nl-left{flex:1}
+.nl-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
+.nl-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--text);margin-bottom:.2rem}
+.nl-detail{font-size:.85rem;color:var(--muted)}
+.nl-right{text-align:right;flex-shrink:0}
+.nl-date{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)}
+.nl-time{font-size:.8rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-box">
+    <img src="New_Backstage_logo.png" class="auth-logo" alt="Backstage Worship">
+    <h2>Student <em>Portal</em></h2>
+    <p>Backstage Worship Music School</p>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signin',this)">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup',this)">Sign Up</button>
+    </div>
+
+    <!-- SIGN IN -->
+    <div class="auth-form active" id="authSignin">
+      <div class="fg"><label>Email</label><input type="email" id="siEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter') document.getElementById('siPass').focus()"></div>
+      <div class="fg"><label>Password</label><input type="password" id="siPass" placeholder="Password" onkeydown="if(event.key==='Enter') doSignIn()"></div>
+      <button class="btn btn-gold" style="width:100%" id="siBtn" onclick="doSignIn()">Sign In →</button>
+      <div class="auth-switch">New student? <a onclick="switchAuthTab('signup')">Create an account</a></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div class="auth-form" id="authSignup">
+      <div class="two-col">
+        <div class="fg"><label>First Name</label><input type="text" id="suFName" placeholder="Name"></div>
+        <div class="fg"><label>Surname</label><input type="text" id="suLName" placeholder="Surname"></div>
+      </div>
+      <div class="fg"><label>Email</label><input type="email" id="suEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter') document.getElementById('suPass').focus()"></div>
+      <div class="fg"><label>WhatsApp Number</label><input type="tel" id="suPhone" placeholder="+27 82 XXX XXXX"></div>
+      <div class="fg"><label>Password</label><input type="password" id="suPass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter') doSignUp()"></div>
+      <button class="btn btn-gold" style="width:100%" id="suBtn" onclick="doSignUp()">Create Account →</button>
+      <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('signin')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center">
+    <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
+    <a href="index.html" class="tb-logo">
+      <img src="New_Backstage_logo.png" alt="Backstage Worship">
+      <div class="tb-logo-text">
+        <span>Backstage Worship</span>
+        <span>Student Portal</span>
+      </div>
+    </a>
+  </div>
+  <div class="tb-right">
+    <span class="tb-greeting">Hi, <strong id="greetingName">Student</strong></span>
+    <a href="index.html" target="_blank" class="tb-link">↗ Book Lessons</a>
+    <button class="tb-link" onclick="doSignOut()">Sign Out</button>
+  </div>
+</div>
+
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <span class="sidebar-label">Overview</span>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPanel('lessons',this)"><span class="icon">🎵</span> My Lessons</div>
+    <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
+    <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
+    <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon">📂</span> Resources</div>
+    <span class="sidebar-label">Account</span>
+    <div class="nav-item" onclick="showPanel('profile',this)"><span class="icon">👤</span> My Profile</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header"><h1>Welcome back, <em id="dashName">Student</em></h1></div>
+      <div id="nextLessonBlock"></div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val" id="statUpcoming">—</div><div class="stat-lbl">Upcoming Lessons</div></div>
+        <div class="stat"><div class="stat-val" id="statCompleted">—</div><div class="stat-lbl">Completed</div></div>
+        <div class="stat"><div class="stat-val" id="statAttendance">—</div><div class="stat-lbl">Attendance Rate</div></div>
+        <div class="stat"><div class="stat-val" id="statDue">—</div><div class="stat-lbl">Amount Due</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Lessons</div>
+        <div id="recentLessons"><div class="loading-text">Loading your lessons…</div></div>
+      </div>
+    </div>
+
+    <!-- MY LESSONS -->
+    <div class="panel" id="panel-lessons">
+      <div class="page-header">
+        <h1>My <em>Lessons</em></h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+          <button class="btn btn-outline btn-sm" onclick="filterLessons('all')">All</button>
+          <button class="btn btn-outline btn-sm" onclick="filterLessons('upcoming')">Upcoming</button>
+          <button class="btn btn-outline btn-sm" onclick="filterLessons('past')">Past</button>
+        </div>
+      </div>
+      <div id="lessonsList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="panel" id="panel-attendance">
+      <div class="page-header"><h1>My <em>Attendance</em></h1></div>
+      <div class="card">
+        <div class="card-title">
+          Attendance Record
+          <span id="attSummary" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.8rem"></span>
+        </div>
+        <div id="attendanceList"><div class="loading-text">Loading attendance…</div></div>
+      </div>
+    </div>
+
+    <!-- INVOICES -->
+    <div class="panel" id="panel-invoices">
+      <div class="page-header"><h1>My <em>Invoices</em></h1></div>
+      <div class="card">
+        <div class="card-title">
+          Payment History
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.8rem" id="invTotalLabel"></span>
+        </div>
+        <div id="invoicesList"><div class="loading-text">Loading invoices…</div></div>
+      </div>
+    </div>
+
+    <!-- RESOURCES -->
+    <div class="panel" id="panel-resources">
+      <div class="page-header"><h1>My <em>Resources</em></h1></div>
+      <div class="card">
+        <div class="card-title">
+          Songs &amp; Worksheets
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.8rem" id="resCount"></span>
+        </div>
+        <div id="resourcesList"><div class="loading-text">Loading resources…</div></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="panel" id="panel-profile">
+      <div class="page-header"><h1>My <em>Profile</em></h1></div>
+      <div class="card">
+        <div class="card-title">Personal Information</div>
+        <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap">
+          <div class="profile-avatar" id="profileAvatar">👤</div>
+          <div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300" id="profileFullName">—</div>
+            <div style="font-size:.82rem;color:var(--muted)" id="profileEmail">—</div>
+          </div>
+        </div>
+        <div class="profile-row"><span class="profile-label">First Name</span><span class="profile-value" id="pFName">—</span></div>
+        <div class="profile-row"><span class="profile-label">Surname</span><span class="profile-value" id="pLName">—</span></div>
+        <div class="profile-row"><span class="profile-label">Email</span><span class="profile-value" id="pEmail">—</span></div>
+        <div class="profile-row"><span class="profile-label">Phone / WhatsApp</span><span class="profile-value" id="pPhone">—</span></div>
+        <div class="profile-row"><span class="profile-label">Member Since</span><span class="profile-value" id="pSince">—</span></div>
+        <div class="btn-row">
+          <button class="btn btn-outline btn-sm" onclick="showEditProfile()">Edit Profile</button>
+          <button class="btn btn-outline btn-sm" onclick="if(confirm('Reset password? A link will be sent to your email.')) resetPassword()">Reset Password</button>
+        </div>
+      </div>
+      <div class="card" id="editProfileCard" style="display:none">
+        <div class="card-title">Edit Profile</div>
+        <div class="two-col">
+          <div class="fg"><label>First Name</label><input type="text" id="eFName"></div>
+          <div class="fg"><label>Surname</label><input type="text" id="eLName"></div>
+        </div>
+        <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="ePhone"></div>
+        <div class="btn-row">
+          <button class="btn btn-gold btn-sm" onclick="saveProfile()">Save Changes</button>
+          <button class="btn btn-outline btn-sm" onclick="hideEditProfile()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getStorage, ref, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",authDomain:"backstage-music.firebaseapp.com",
+  databaseURL:"https://backstage-music-default-rtdb.firebaseio.com",projectId:"backstage-music",
+  storageBucket:"backstage-music.firebasestorage.app",messagingSenderId:"864389877971",
+  appId:"1:864389877971:web:c7d15ae843d54172c90426",measurementId:"G-DY40YLD9FM"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+window._auth = auth;
+window._db = db;
+
+let _currentUser = null;
+let _bookings = [];
+let _attendanceRecords = [];
+let _invoices = [];
+let _lessonFilter = 'all';
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth, user => {
+  if (user) {
+    _currentUser = user;
+    document.getElementById('authScreen').classList.add('hidden');
+    loadStudentData();
+  } else {
+    _currentUser = null;
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-dashboard').classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelector('.nav-item')?.classList.add('active');
+  }
+});
+
+// ── DATA LOADING ──
+async function loadStudentData() {
+  const email = _currentUser.email;
+  document.getElementById('greetingName').textContent = email.split('@')[0];
+  document.getElementById('dashName').textContent = email.split('@')[0];
+
+  // Load all relevant collections in parallel
+  const [bSnap, aSnap, iSnap, pSnap] = await Promise.all([
+    getDocs(query(collection(db,'bookings'), where('email','==',email))),
+    getDocs(query(collection(db,'attendance'), where('studentEmail','==',email))),
+    getDocs(query(collection(db,'invoices'), where('email','==',email))),
+    getDoc(doc(db,'students',email))
+  ]);
+
+  _bookings = [];
+  bSnap.forEach(d => _bookings.push({id:d.id,...d.data()}));
+  _bookings.sort((a,b) => ((b.startDate||b.createdAt||'') > (a.startDate||a.createdAt||'') ? 1 : -1));
+
+  _attendanceRecords = [];
+  aSnap.forEach(d => _attendanceRecords.push({id:d.id,...d.data()}));
+  _attendanceRecords.sort((a,b) => ((b.date||'') > (a.date||'') ? 1 : -1));
+
+  _invoices = [];
+  iSnap.forEach(d => _invoices.push({id:d.id,...d.data()}));
+  _invoices.sort((a,b) => ((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
+
+  // Load/save student profile
+  if (pSnap.exists()) {
+    window._studentProfile = pSnap.data();
+  } else {
+    // Create student profile from auth + first booking
+    const first = _bookings[_bookings.length-1];
+    const profile = {
+      firstName: first?.firstName || email.split('@')[0],
+      lastName: first?.lastName || '',
+      email: email,
+      phone: first?.phone || '',
+      createdAt: new Date().toISOString()
+    };
+    window._studentProfile = profile;
+    try { await setDoc(doc(db,'students',email), profile); } catch(e) { /* may not be allowed */ }
+  }
+
+  renderDashboard();
+  renderLessons('all');
+  renderAttendance();
+  renderInvoices();
+  renderProfile();
+  loadResources();
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const upcoming = _bookings.filter(b => b.status !== 'cancelled' && (!b.status || b.status === 'pending' || b.status === 'confirmed'));
+  const completed = _bookings.filter(b => b.status === 'completed');
+  const present = _attendanceRecords.filter(r => r.status === 'present').length;
+  const totalAtt = _attendanceRecords.length;
+  const rate = totalAtt ? Math.round(present/totalAtt*100) + '%' : '—';
+  const dueTotal = _invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').reduce((s,i) => s+Number(i.amount||0), 0);
+
+  document.getElementById('statUpcoming').textContent = upcoming.length;
+  document.getElementById('statCompleted').textContent = completed.length;
+  document.getElementById('statAttendance').textContent = rate;
+  document.getElementById('statDue').textContent = dueTotal ? 'R '+dueTotal.toLocaleString() : 'R 0';
+
+  // Next lesson
+  const next = _bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed').sort((a,b) => ((a.startDate||'') > (b.startDate||'') ? 1 : -1))[0];
+  const block = document.getElementById('nextLessonBlock');
+  if (next) {
+    block.innerHTML = `<div class="next-lesson">
+      <div class="nl-left">
+        <div class="nl-label">Next Lesson</div>
+        <div class="nl-title">${next.plan||'Lesson'}${next.instrument?' · '+next.instrument:''}</div>
+        <div class="nl-detail">${next.prefDay||next.chosenSlot||''} ${next.prefTime||''}${next.venue?' · '+next.venue:''}</div>
+      </div>
+      <div class="nl-right">
+        <div class="nl-date">${next.startDate ? new Date(next.startDate+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}) : 'TBD'}</div>
+        <div class="nl-time">${next.totalSessions ? next.totalSessions+' sessions' : ''}</div>
+      </div>
+    </div>`;
+  } else {
+    block.innerHTML = `<div class="card" style="border-color:var(--gold);background:linear-gradient(135deg,rgba(201,145,26,.08),var(--surface))">
+      <div style="text-align:center;padding:1rem">
+        <div style="font-size:2rem;margin-bottom:.5rem">🎵</div>
+        <p style="color:var(--muted);font-size:.9rem">No upcoming lessons booked yet.</p>
+        <a href="index.html#book" class="btn btn-gold" style="display:inline-block;margin-top:1rem">Book Your First Lesson</a>
+      </div>
+    </div>`;
+  }
+
+  // Recent lessons
+  const recent = _bookings.slice(0,5);
+  document.getElementById('recentLessons').innerHTML = recent.length
+    ? recent.map(b => lessonRow(b)).join('')
+    : '<div class="empty-state"><span class="icon">📅</span><p>No lessons yet. Head to the booking page to get started!</p></div>';
+}
+
+// ── LESSONS ──
+function renderLessons(filter) {
+  _lessonFilter = filter || 'all';
+  let list = [..._bookings];
+  const now = new Date().toISOString().split('T')[0];
+  if (filter === 'upcoming') list = list.filter(b => (b.startDate||'') >= now && b.status !== 'cancelled');
+  if (filter === 'past') list = list.filter(b => (b.startDate||'') < now || b.status === 'completed' || b.status === 'cancelled');
+  document.getElementById('lessonsList').innerHTML = list.length
+    ? list.map(b => lessonRow(b)).join('')
+    : '<div class="empty-state"><span class="icon">🎵</span><p>No '+(filter!=='all'?filter+' ':'')+'lessons found.</p></div>';
+}
+
+function lessonRow(b) {
+  const s = b.status||'pending';
+  const paidBadge = b.paid ? '<span class="status-badge status-paid" style="margin-left:.3rem">Paid</span>' : '';
+  return `<div class="list-item">
+    <div class="li-content">
+      <div class="li-title">${b.plan||'Private Lesson'} <span class="status-badge status-${s}">${s}</span>${paidBadge}</div>
+      <div class="li-meta">${b.instrument?'🎸 '+b.instrument+' · ':''}${b.prefDay||b.chosenSlot||''} ${b.prefTime||''}${b.startDate?' · Starts '+new Date(b.startDate+'T12:00:00').toLocaleDateString('en-ZA'):''}${b.venue?' · 📍 '+b.venue:''}${b.totalSessions?' · '+b.totalSessions+'x':''}</div>
+    </div>
+  </div>`;
+}
+
+function filterLessons(f) { renderLessons(f); }
+
+// ── ATTENDANCE ──
+function renderAttendance() {
+  const present = _attendanceRecords.filter(r => r.status === 'present').length;
+  const absent = _attendanceRecords.filter(r => r.status === 'absent').length;
+  const total = _attendanceRecords.length;
+  document.getElementById('attSummary').textContent = total ? `${present} present · ${absent} absent · ${total} total` : '';
+
+  document.getElementById('attendanceList').innerHTML = _attendanceRecords.length
+    ? _attendanceRecords.map(r => {
+        const d = r.date ? new Date(r.date+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : '—';
+        const cls = r.status === 'present' ? 'att-present' : r.status === 'absent' ? 'att-absent' : '';
+        return `<div class="attendance-row">
+          <span class="att-date">${d}</span>
+          <span class="att-status ${cls}">${r.status||'—'}</span>
+          <span class="att-note">${r.notes||''}</span>
+        </div>`;
+      }).join('')
+    : '<div class="empty-state"><span class="icon">✅</span><p>No attendance records yet. They will appear here after your first lesson.</p></div>';
+}
+
+// ── INVOICES ──
+function renderInvoices() {
+  const total = _invoices.reduce((s,i) => s+Number(i.amount||0), 0);
+  const paid = _invoices.filter(i => i.status === 'paid').reduce((s,i) => s+Number(i.amount||0), 0);
+  const unpaid = total - paid;
+  document.getElementById('invTotalLabel').textContent = `R ${total.toLocaleString()} total · R ${paid.toLocaleString()} paid`;
+
+  document.getElementById('invoicesList').innerHTML = _invoices.length
+    ? _invoices.map(i => {
+        const d = i.date ? new Date(i.date+'T12:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
+        const s = i.status||'unpaid';
+        return `<div class="invoice-row">
+          <div style="flex:1">
+            <div class="inv-desc">${i.description||'Lesson'}</div>
+            <div class="inv-date">${d}${i.dueDate?' · Due '+new Date(i.dueDate+'T12:00:00').toLocaleDateString('en-ZA'):''}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="inv-amount">R ${Number(i.amount||0).toLocaleString()}</div>
+            <span class="status-badge status-${s === 'paid' ? 'paid' : 'unpaid'}">${s}</span>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty-state"><span class="icon">🧾</span><p>No invoices yet.</p></div>';
+}
+
+// ── PROFILE ──
+function renderProfile() {
+  const p = window._studentProfile || {};
+  const email = _currentUser?.email || '';
+  document.getElementById('profileFullName').textContent = (p.firstName||'') + ' ' + (p.lastName||'');
+  document.getElementById('profileEmail').textContent = email;
+  document.getElementById('pFName').textContent = p.firstName||'—';
+  document.getElementById('pLName').textContent = p.lastName||'—';
+  document.getElementById('pEmail').textContent = email;
+  document.getElementById('pPhone').textContent = p.phone||'—';
+  document.getElementById('pSince').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}) : '—';
+}
+
+function showEditProfile() {
+  const p = window._studentProfile || {};
+  document.getElementById('eFName').value = p.firstName||'';
+  document.getElementById('eLName').value = p.lastName||'';
+  document.getElementById('ePhone').value = p.phone||'';
+  document.getElementById('editProfileCard').style.display = 'block';
+}
+
+function hideEditProfile() {
+  document.getElementById('editProfileCard').style.display = 'none';
+}
+
+async function saveProfile() {
+  const email = _currentUser.email;
+  const data = {
+    firstName: document.getElementById('eFName').value.trim(),
+    lastName: document.getElementById('eLName').value.trim(),
+    phone: document.getElementById('ePhone').value.trim(),
+    email: email
+  };
+  try {
+    await setDoc(doc(db,'students',email), data, {merge: true});
+    window._studentProfile = data;
+    renderProfile();
+    hideEditProfile();
+    toast('Profile updated!');
+  } catch(e) {
+    toast('Could not save profile: '+e.message, 'error');
+  }
+}
+
+// ── RESOURCES ──
+async function loadResources() {
+  const container = document.getElementById('resourcesList');
+  try {
+    const snap = await getDocs(query(collection(db,'resources'), orderBy('uploadedAt','desc')));
+    const resources = [];
+    snap.forEach(d => resources.push({id:d.id,...d.data()}));
+
+    document.getElementById('resCount').textContent = resources.length+' file'+(resources.length!==1?'s':'');
+
+    if (!resources.length) {
+      container.innerHTML = '<div class="empty-state"><span class="icon">📂</span><p>No resources available yet. Check back soon for songs and worksheets!</p></div>';
+      return;
+    }
+
+    container.innerHTML = resources.map(r => {
+      const cat = r.category||'General';
+      const d = r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '';
+      const size = r.fileSize ? (r.fileSize/1024).toFixed(0)+' KB' : '';
+      const icon = r.category === 'Guitar' ? '🎸' : r.category === 'Vocals' ? '🎤' : r.category === 'Worship' ? '⛪' : r.category === 'Theory' ? '🎼' : '📄';
+      return `<div class="list-item">
+        <div class="li-content">
+          <div class="li-title">${icon} ${r.title||'Untitled'}</div>
+          <div class="li-meta">${r.description||''}${d?' · '+d:''}${size?' · '+size:''} · ${cat}</div>
+        </div>
+        <div class="li-actions">
+          <a href="${r.fileUrl}" target="_blank" class="btn btn-outline btn-sm" download>Download PDF</a>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="loading-text">Could not load resources.</div>';
+  }
+}
+
+async function resetPassword() {
+  try {
+    await sendPasswordResetEmail(auth, _currentUser.email);
+    toast('Password reset link sent to your email.');
+  } catch(e) {
+    toast('Error: '+e.message, 'error');
+  }
+}
+
+// ── AUTH FUNCTIONS ──
+window.doSignIn = async function() {
+  const email = document.getElementById('siEmail').value.trim();
+  const pass = document.getElementById('siPass').value;
+  const btn = document.getElementById('siBtn');
+  const err = document.getElementById('authError');
+  if (!email || !pass) { err.textContent = 'Please enter your email and password.'; return; }
+  btn.textContent = 'Signing in…'; btn.disabled = true; err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    let msg = 'Sign in failed.';
+    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'Incorrect email or password.';
+    if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait a few minutes.';
+    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+    if (e.code === 'auth/user-disabled') msg = 'This account has been disabled.';
+    err.textContent = msg;
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
+};
+
+window.doSignUp = async function() {
+  const fName = document.getElementById('suFName').value.trim();
+  const lName = document.getElementById('suLName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const phone = document.getElementById('suPhone').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const btn = document.getElementById('suBtn');
+  const err = document.getElementById('authError');
+  if (!fName || !lName || !email || !phone || !pass) { err.textContent = 'Please fill in all fields.'; return; }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+  btn.textContent = 'Creating account…'; btn.disabled = true; err.textContent = '';
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    // Create student profile document
+    try {
+      await setDoc(doc(db,'students',email), {
+        firstName: fName, lastName: lName, email, phone, createdAt: new Date().toISOString()
+      });
+    } catch(e) { /* rules may not allow write yet */ }
+    toast('Account created! Welcome to Backstage.');
+  } catch(e) {
+    let msg = 'Could not create account.';
+    if (e.code === 'auth/email-already-in-use') msg = 'This email is already registered. Sign in instead.';
+    if (e.code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
+    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+    err.textContent = msg;
+    btn.textContent = 'Create Account →'; btn.disabled = false;
+  }
+};
+
+window.doSignOut = async function() {
+  await signOut(auth);
+};
+
+window.switchAuthTab = function(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
+  document.getElementById('authSign'+tab).classList.add('active');
+  document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
+  document.getElementById('authError').textContent = '';
+};
+
+// ── PANEL SWITCHING ──
+window.showPanel = function(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (el) el.classList.add('active');
+  // Close sidebar on mobile
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('mobileOverlay')?.classList.remove('open');
+};
+
+window.toggleSidebar = function() {
+  document.getElementById('sidebar')?.classList.toggle('open');
+  document.getElementById('mobileOverlay')?.classList.toggle('open');
+};
+
+// ── TOAST ──
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✓ ':'✕ ')+msg;
+  t.className = 'toast '+type+' show';
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+window.toast = toast;
+
+// Focus email on load
+setTimeout(() => document.getElementById('siEmail')?.focus(), 100);
+</script>
+</body>
+</html>

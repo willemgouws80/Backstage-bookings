@@ -32,6 +32,14 @@ A full-featured booking and admin platform for [Backstage Worship Music School](
 - **Alerts** — configure EmailJS notifications for new bookings
 - **Firebase Setup** — copy-paste Firestore security rules
 
+### Student portal (`portal.html`)
+- Secure login/signup with Firebase Authentication
+- Dashboard with next lesson, stats, and recent lessons
+- View upcoming and past lessons with status tracking
+- Attendance record with present/absent tracking
+- Invoice history with paid/unpaid status
+- Profile management (name, phone, password reset)
+
 ### Monitoring (`monitor.html`)
 - Real-time booking monitoring dashboard
 - Audio alert on new bookings
@@ -54,6 +62,7 @@ A full-featured booking and admin platform for [Backstage Worship Music School](
 Backstage-bookings/
 ├── index.html          # Public booking website
 ├── admin.html          # Admin dashboard
+├── portal.html         # Student & parent portal
 ├── monitor.html        # Real-time booking monitor
 ├── New_Backstage_logo.png
 └── .github/workflows/  # CI/CD (if configured)
@@ -89,6 +98,9 @@ Admin → Firebase Setup panel contains the exact security rules to copy into yo
 
 ## Admin Access
 Visit `/admin.html` and sign in with your Firebase Authentication credentials.
+
+## Student Portal
+Visit `/portal.html` to sign in or create an account. Students see only their own lessons, attendance, and invoices using the email they registered with.
 
 ## Contact
 

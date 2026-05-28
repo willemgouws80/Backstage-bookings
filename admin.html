@@ -231,6 +231,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
     <div class="nav-item" onclick="showPanel('promo',this)"><span class="icon">🎯</span> Promotion</div>
     <div class="nav-item" onclick="showPanel('content',this)"><span class="icon">🎨</span> Website Content</div>
     <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
+    <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon">📂</span> Resources</div>
     <span class="sidebar-label">Finance</span>
     <div class="nav-item" onclick="showPanel('quotes',this)"><span class="icon">📄</span> Quotes</div>
     <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
@@ -658,14 +659,18 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Public: anyone can create a booking, nobody can read/edit/delete
+    // Bookings: anyone can create, student can read own, admin can read/write/delete
     match /bookings/{b} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      allow read: if request.auth != null && (
+        request.auth.token.email == resource.data.email
+        || request.auth.token.email == 'willemgouws80@gmail.com'
+      );
+      allow update, delete: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
     }
 
     // Public: anyone can read courses and pricing/config
-    // Only authenticated admin can write
     match /courses/{c} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -675,18 +680,72 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Private: only authenticated admin
-    match /quotes/{q} {
-      allow read, write: if request.auth != null;
+    // Students: user can read/write their own profile, admin can read/write all
+    match /students/{email} {
+      allow read: if request.auth != null && (
+        request.auth.token.email == email
+        || request.auth.token.email == 'willemgouws80@gmail.com'
+      );
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
     }
+
+    // Invoices: student can read their own, admin full access
     match /invoices/{i} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null && (
+        resource.data.email == request.auth.token.email
+        || request.auth.token.email == 'willemgouws80@gmail.com'
+      );
+      allow write: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
     }
-    match /studentNotes/{n} {
-      allow read, write: if request.auth != null;
-    }
+
+    // Attendance: student can read their own, admin full access
     match /attendance/{a} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null && (
+        resource.data.studentEmail == request.auth.token.email
+        || request.auth.token.email == 'willemgouws80@gmail.com'
+      );
+      allow write: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
+    }
+
+    // Student notes: student can read their own, admin full access
+    match /studentNotes/{n} {
+      allow read: if request.auth != null && (
+        resource.data.studentEmail == request.auth.token.email
+        || request.auth.token.email == 'willemgouws80@gmail.com'
+      );
+      allow write: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
+    }
+
+    // Resources: anyone can read (authenticated), admin can write
+    match /resources/{r} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
+    }
+
+    // Quotes: admin only
+    match /quotes/{q} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
+    }
+  }
+}</pre>
+      </div>
+      <div class="card" style="margin-top:1rem">
+        <div class="card-title">Storage Rules</div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1rem;line-height:1.7">Go to <strong style="color:var(--gold)">console.firebase.google.com → backstage-music → Storage → Rules</strong>, replace with:</p>
+        <pre style="background:var(--black);border:1px solid var(--border);padding:1.25rem;font-size:.82rem;color:#a0c08a;line-height:1.8;border-radius:1px;overflow-x:auto">rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /resources/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.token.email == 'willemgouws80@gmail.com';
     }
   }
 }</pre>
@@ -780,6 +839,46 @@ service cloud.firestore {
       <div id="attendanceView"><div class="loading-text">Select a course or student above</div></div>
     </div>
 
+    <!-- RESOURCES -->
+    <div class="panel" id="panel-resources">
+      <div class="page-header">
+        <h1><em>Resources</em></h1>
+        <button class="btn btn-gold btn-sm" onclick="toggleResourceForm()">+ Upload PDF</button>
+      </div>
+      <div class="card" id="resourceFormCard" style="display:none">
+        <div class="card-title">Upload Song / Resource</div>
+        <div class="fg"><label>Title</label><input type="text" id="resTitle" placeholder="e.g. Amazing Grace (Chord Chart)"></div>
+        <div class="fg"><label>Description</label><textarea id="resDesc" rows="2" placeholder="Key of G · Beginner friendly"></textarea></div>
+        <div class="two-col">
+          <div class="fg">
+            <label>Category</label>
+            <select id="resCat">
+              <option value="Guitar">Guitar</option>
+              <option value="Vocals">Vocals</option>
+              <option value="Worship">Worship</option>
+              <option value="Theory">Theory</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+          <div class="fg"><label>PDF File</label>
+            <input type="file" id="resFile" accept=".pdf" style="padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);width:100%">
+          </div>
+        </div>
+        <div class="hint" style="margin-bottom:1rem">Files are stored in Firebase Storage. Max 10 MB per file.</div>
+        <div id="resUploadProgress" style="display:none;margin-bottom:1rem">
+          <div style="background:var(--surface3);border-radius:2px;height:6px;overflow:hidden">
+            <div id="resProgressBar" style="background:var(--gold);height:100%;width:0%;transition:width .3s"></div>
+          </div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:.3rem;text-align:right" id="resProgressText">0%</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-gold" id="resUploadBtn" onclick="uploadResource()">Upload →</button>
+          <button class="btn btn-outline" onclick="toggleResourceForm()">Cancel</button>
+        </div>
+      </div>
+      <div id="resourcesList"><div class="loading-text">Loading resources…</div></div>
+    </div>
+
     <!-- CALENDAR -->
     <div class="panel" id="panel-calendar">
       <div class="page-header"><h1><em>Calendar</em></h1></div>
@@ -825,7 +924,7 @@ service cloud.firestore {
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",
@@ -3089,6 +3188,127 @@ window.printInvoice = function(id) {
     if (snap.exists()) window._siteConfig = snap.data();
   } catch(e){}
 })();
+
+// ── RESOURCES ──
+window.loadResources = async function() {
+  const container = document.getElementById('resourcesList');
+  try {
+    const snap = await getDocs(collection(db,'resources'));
+    const resources = [];
+    snap.forEach(d => resources.push({id:d.id,...d.data()}));
+    resources.sort((a,b) => ((b.uploadedAt||'') > (a.uploadedAt||'') ? 1 : -1));
+
+    if (!resources.length) {
+      container.innerHTML = '<div class="empty-state" style="text-align:center;padding:3rem 1rem;color:var(--muted)"><span class="icon" style="font-size:2.5rem;display:block;margin-bottom:1rem">📂</span><p>No resources uploaded yet. Click "Upload PDF" to add songs or worksheets.</p></div>';
+      return;
+    }
+
+    container.innerHTML = resources.map(r => {
+      const cat = r.category||'General';
+      const d = r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString('en-ZA') : '—';
+      const size = r.fileSize ? (r.fileSize/1024).toFixed(0)+' KB' : '';
+      return `<div class="list-item">
+        <div class="li-content">
+          <div class="li-title">${r.title||'Untitled'}</div>
+          <div class="li-meta">${r.description||''} · ${cat} · ${d}${size?' · '+size:''}</div>
+        </div>
+        <div class="li-actions">
+          <a href="${r.fileUrl}" target="_blank" class="btn btn-outline btn-sm">Download</a>
+          <button class="btn btn-danger btn-sm" onclick="window.deleteResource('${r.id}','${r.filePath||''}','${encodeURIComponent(r.title||'')}')">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="loading-text">Error loading resources: '+e.message+'</div>';
+  }
+};
+
+window.toggleResourceForm = function() {
+  const card = document.getElementById('resourceFormCard');
+  const isHidden = card.style.display === 'none' || !card.style.display;
+  card.style.display = isHidden ? 'block' : 'none';
+  if (!isHidden) {
+    document.getElementById('resTitle').value = '';
+    document.getElementById('resDesc').value = '';
+    document.getElementById('resFile').value = '';
+    document.getElementById('resUploadProgress').style.display = 'none';
+  }
+};
+
+window.uploadResource = async function() {
+  const title = document.getElementById('resTitle').value.trim();
+  const desc = document.getElementById('resDesc').value.trim();
+  const cat = document.getElementById('resCat').value;
+  const file = document.getElementById('resFile').files[0];
+  const btn = document.getElementById('resUploadBtn');
+  const err = document.getElementById('resourcesList');
+
+  if (!title) { toast('Please enter a title.','error'); return; }
+  if (!file) { toast('Please select a PDF file.','error'); return; }
+  if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+    toast('Only PDF files are supported.','error'); return;
+  }
+  if (file.size > 10*1024*1024) { toast('File too large. Max 10 MB.','error'); return; }
+
+  btn.textContent = 'Uploading…'; btn.disabled = true;
+  document.getElementById('resUploadProgress').style.display = 'block';
+
+  try {
+    const storage = getStorage(app);
+    const filePath = 'resources/'+Date.now()+'_'+file.name;
+    const storageRef = ref(storage, filePath);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on('state_changed',
+      snapshot => {
+        const pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
+        document.getElementById('resProgressBar').style.width = pct+'%';
+        document.getElementById('resProgressText').textContent = pct+'%';
+      },
+      error => {
+        toast('Upload failed: '+error.message, 'error');
+        btn.textContent = 'Upload →'; btn.disabled = false;
+      },
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        await addDoc(collection(db,'resources'), {
+          title, description: desc, category: cat,
+          fileUrl: url, filePath: filePath,
+          fileSize: file.size, fileName: file.name,
+          uploadedAt: new Date().toISOString()
+        });
+        toast('Resource uploaded!');
+        btn.textContent = 'Upload →'; btn.disabled = false;
+        document.getElementById('resUploadProgress').style.display = 'none';
+        window.toggleResourceForm();
+        window.loadResources();
+      }
+    );
+  } catch(e) {
+    toast('Error: '+e.message, 'error');
+    btn.textContent = 'Upload →'; btn.disabled = false;
+  }
+};
+
+window.deleteResource = async function(id, filePath, title) {
+  if (!confirm('Delete "'+decodeURIComponent(title)+'"? This cannot be undone.')) return;
+  try {
+    if (filePath) {
+      const storage = getStorage(app);
+      const storageRef = ref(storage, filePath);
+      await deleteObject(storageRef);
+    }
+    await deleteDoc(doc(db,'resources',id));
+    toast('Resource deleted.');
+    window.loadResources();
+  } catch(e) {
+    toast('Delete failed: '+e.message, 'error');
+  }
+};
+
+// Load resources when panel is shown
+window._loaders = window._loaders || {};
+window._loaders.resources = window.loadResources;
 </script>
 
 <script>
