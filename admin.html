@@ -945,6 +945,7 @@ window._db = db;
 
 // ── AUTH STATE — drives everything ──
 onAuthStateChanged(auth, user => {
+  window._currentUser = user;
   if (user) {
     // Signed in — show dashboard, hide login
     document.getElementById('loginScreen').classList.add('hidden');
@@ -3488,14 +3489,12 @@ async function chatSend() {
   msgs.innerHTML += '<div class="msg bot" id="' + thinkId + '">Thinking…</div>';
   msgs.scrollTop = msgs.scrollHeight;
   try {
-    // Get Firebase ID token from the module-scoped auth
-    const authMod = window._auth;
-    if (!authMod || !authMod.currentUser) {
+    if (!window._currentUser) {
       document.getElementById(thinkId).outerHTML = '<div class="msg err">Sign in first.</div>';
       btn.disabled = false; btn.textContent = 'Send';
       return;
     }
-    const token = await authMod.currentUser.getIdToken();
+    const token = await window._currentUser.getIdToken();
     const resp = await fetch('/api/adminChat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
