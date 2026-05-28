@@ -3413,6 +3413,7 @@ setInterval(async () => {
         else window._bookings.unshift(nb);
         document.getElementById('statBookings').textContent = window._bookings.length;
         document.getElementById('statPending').textContent  = window._bookings.filter(x=>x.status==='pending').length;
+        document.getElementById('statPaid').textContent     = window._bookings.filter(x=>x.paid).length;
         document.getElementById('statStudents').textContent = new Set(window._bookings.map(x=>x.email)).size;
         const recent = [...window._bookings].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,8);
         document.getElementById('recentBookings').innerHTML = recent.map(x=>window.bookingRow(x)).join('');
@@ -3422,6 +3423,102 @@ setInterval(async () => {
     _firstPoll = false;
   } catch(e) { console.warn('Booking poll error:', e); }
 }, 8000);
+</script>
+
+<!-- ── ADMIN CHAT ── -->
+<style>
+#chat-btn{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--black);border:none;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 20px rgba(201,145,26,.4);transition:transform .2s}
+#chat-btn:hover{transform:scale(1.1)}
+#chat-modal{position:fixed;bottom:5rem;right:1.5rem;z-index:9998;width:360px;max-height:520px;background:var(--black);border:1px solid var(--border);border-radius:12px;display:none;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.5);overflow:hidden}
+#chat-modal.open{display:flex}
+#chat-head{padding:1rem 1.25rem;background:var(--gold);color:var(--black);font-weight:600;font-size:.95rem;display:flex;justify-content:space-between;align-items:center}
+#chat-head button{background:transparent;border:none;color:var(--black);font-size:1.2rem;cursor:pointer;opacity:.6}
+#chat-head button:hover{opacity:1}
+#chat-msgs{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.5rem;font-size:.85rem;line-height:1.5}
+#chat-msgs .msg{padding:.6rem .9rem;border-radius:8px;max-width:85%;word-wrap:break-word}
+#chat-msgs .user{background:var(--gold);color:var(--black);align-self:flex-end}
+#chat-msgs .bot{background:var(--card-bg);color:var(--text);align-self:flex-start;border:1px solid var(--border)}
+#chat-msgs .err{background:#3d1a1a;color:#ff7a7a;align-self:flex-start;font-size:.78rem}
+#chat-input-wrap{display:flex;gap:.5rem;padding:.75rem;border-top:1px solid var(--border)}
+#chat-input-wrap input{flex:1;padding:.6rem .75rem;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);font-size:.85rem;font-family:inherit;outline:none}
+#chat-input-wrap input:focus{border-color:var(--gold)}
+#chat-input-wrap button{padding:.6rem 1rem;border-radius:6px;border:none;background:var(--gold);color:var(--black);font-weight:600;cursor:pointer;font-family:inherit;font-size:.85rem}
+#chat-input-wrap button:disabled{opacity:.5;cursor:default}
+@media(max-width:480px){#chat-modal{width:calc(100vw - 2rem);right:1rem;bottom:5rem}}
+</style>
+
+<button id="chat-btn" onclick="chatToggle()" title="Ask AI assistant">💬</button>
+
+<div id="chat-modal">
+  <div id="chat-head">
+    <span>🤖 Admin Assistant</span>
+    <button onclick="chatToggle()">✕</button>
+  </div>
+  <div id="chat-msgs">
+    <div class="msg bot">Hi! Ask me about bookings, courses, invoices, attendance, or students.</div>
+  </div>
+  <div id="chat-input-wrap">
+    <input type="text" id="chat-input" placeholder="Ask a question…" onkeydown="if(event.key==='Enter')chatSend()">
+    <button id="chat-send-btn" onclick="chatSend()">Send</button>
+  </div>
+</div>
+
+<script>
+let chatOpen = false;
+function chatToggle() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-modal').classList.toggle('open', chatOpen);
+  if (chatOpen) document.getElementById('chat-input').focus();
+}
+window.chatToggle = chatToggle;
+
+async function chatSend() {
+  const input = document.getElementById('chat-input');
+  const btn = document.getElementById('chat-send-btn');
+  const msgs = document.getElementById('chat-msgs');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  msgs.innerHTML += '<div class="msg user">' + escapeHtml(q) + '</div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  btn.disabled = true;
+  btn.textContent = '…';
+  // bot thinking indicator
+  const thinkId = 'think-' + Date.now();
+  msgs.innerHTML += '<div class="msg bot" id="' + thinkId + '">Thinking…</div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  try {
+    // Get Firebase ID token from the module-scoped auth
+    const authMod = window._auth;
+    if (!authMod || !authMod.currentUser) {
+      document.getElementById(thinkId).outerHTML = '<div class="msg err">Sign in first.</div>';
+      btn.disabled = false; btn.textContent = 'Send';
+      return;
+    }
+    const token = await authMod.currentUser.getIdToken();
+    const resp = await fetch('/api/adminChat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ question: q }),
+    });
+    const data = await resp.json();
+    if (data.error) {
+      document.getElementById(thinkId).outerHTML = '<div class="msg err">' + escapeHtml(data.error) + '</div>';
+    } else {
+      document.getElementById(thinkId).outerHTML = '<div class="msg bot">' + escapeHtml(data.answer || 'No response.') + '</div>';
+    }
+  } catch(e) {
+    document.getElementById(thinkId).outerHTML = '<div class="msg err">Could not reach AI assistant. Make sure the Cloud Function is deployed.</div>';
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+  btn.disabled = false;
+  btn.textContent = 'Send';
+}
+window.chatSend = chatSend;
+
+function escapeHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>

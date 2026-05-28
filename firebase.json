@@ -7,10 +7,11 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      { "source": "/api/**", "function": "adminChat" },
+      { "source": "**", "destination": "/index.html" }
     ]
-  }
+  },
+  "functions": [
+    { "source": "functions", "codebase": "default", "ignore": ["node_modules"] }
+  ]
 }
