@@ -251,6 +251,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
       <div class="stats-grid">
         <div class="stat"><div class="stat-val" id="statBookings">—</div><div class="stat-lbl">Total Bookings</div></div>
         <div class="stat"><div class="stat-val" id="statPending">—</div><div class="stat-lbl">Pending</div></div>
+        <div class="stat"><div class="stat-val" id="statPaid">—</div><div class="stat-lbl">Paid</div></div>
         <div class="stat"><div class="stat-val" id="statCourses">—</div><div class="stat-lbl">Courses</div></div>
         <div class="stat"><div class="stat-val" id="statStudents">—</div><div class="stat-lbl">Students</div></div>
       </div>
@@ -268,6 +269,8 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
           <button class="btn btn-outline btn-sm" onclick="filterBookings('all')">All</button>
           <button class="btn btn-outline btn-sm" onclick="filterBookings('pending')">Pending</button>
           <button class="btn btn-outline btn-sm" onclick="filterBookings('confirmed')">Confirmed</button>
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('paid')">Paid</button>
+          <button class="btn btn-outline btn-sm" onclick="filterBookings('unpaid')">Unpaid</button>
         </div>
       </div>
       <div class="student-search" style="margin-bottom:1rem">
@@ -741,7 +744,10 @@ service cloud.firestore {
 
     <!-- INVOICES -->
     <div class="panel" id="panel-invoices">
-      <div class="page-header"><h1><em>Invoices</em></h1></div>
+      <div class="page-header">
+        <h1><em>Invoices</em></h1>
+        <button class="btn btn-gold btn-sm" onclick="window.generateMonthlyInvoices(true)" title="Generate monthly invoices for individual lesson students">+ Generate Monthly</button>
+      </div>
       <div id="invoicesList"><div class="loading-text">Loading invoices…</div></div>
     </div>
 
@@ -851,6 +857,7 @@ onAuthStateChanged(auth, user => {
     loadAlerts();
     loadQuotes();
     loadInvoices();
+    window.generateMonthlyInvoices();
     loadCalendar();
     loadCourses();
     loadTerms();
@@ -881,6 +888,7 @@ async function loadDashboard() {
 
     document.getElementById('statBookings').textContent = bookings.length;
     document.getElementById('statPending').textContent  = bookings.filter(b=>b.status==='pending').length;
+    document.getElementById('statPaid').textContent     = bookings.filter(b=>b.paid).length;
     document.getElementById('statCourses').textContent  = courses.length;
     document.getElementById('statStudents').textContent = new Set(bookings.map(b=>b.email)).size;
 
@@ -898,23 +906,28 @@ function bookingRow(b) {
   const waNumber = (b.phone||'').replace(/[\s\+\-\(\)]/g,'');
   const waClean  = waNumber.startsWith('0') ? '27'+waNumber.slice(1) : waNumber;
   const waLink   = waClean ? `https://wa.me/${waClean}?text=${encodeURIComponent(`Hi ${b.firstName||''}! Just confirming your ${b.plan||'lesson'} booking at Backstage Worship.`)}` : '';
+  const paidBadge = b.paid ? '<span class="status-badge status-confirmed" style="margin-left:.3rem">✓ Paid</span>' : '<span class="status-badge status-pending" style="margin-left:.3rem">○ Unpaid</span>';
   return `<div class="list-item">
     <div class="li-content">
-      <div class="li-title">${b.firstName||''} ${b.lastName||''} <span class="status-badge status-${b.status||'pending'}" style="margin-left:.5rem">${b.status||'pending'}</span></div>
-      <div class="li-meta">${b.plan||'—'} · ${b.instrument||'—'} · ${b.prefDay||b.chosenSlot||'—'} ${b.prefTime||''} ${b.startDate?' · starts '+b.startDate:''} · ${b.email||''} · R${Number(b.price||0).toLocaleString()}${b.totalSessions?' · '+b.totalSessions+' sessions':''}${b.venue?' · 📍 '+b.venue:''}</div>
+      <div class="li-title">${b.firstName||''} ${b.lastName||''} <span class="status-badge status-${b.status||'pending'}" style="margin-left:.5rem">${b.status||'pending'}</span>${paidBadge}</div>
+      <div class="li-meta">${b.plan||'—'} · ${b.instrument||'—'} · ${b.prefDay||b.chosenSlot||'—'} ${b.prefTime||''} ${b.startDate?' · starts '+b.startDate:''} · ${b.email||''} · R${Number(b.price||0).toLocaleString()}${b.totalSessions?' · '+b.totalSessions+' sessions':''}${b.venue?' · 📍 '+b.venue:''}${b.paidAt?' · Paid '+new Date(b.paidAt).toLocaleDateString('en-ZA'):''}</div>
     </div>
     <div class="li-actions">
       ${waLink ? `<a href="${waLink}" target="_blank" class="wa-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> WhatsApp</a>` : ''}
       <button class="btn btn-outline btn-sm" onclick="window.confirmBooking('${b.id}')">✓ Confirm</button>
       <button class="btn btn-outline btn-sm" onclick="window.rescheduleBooking('${b.id}')">↔ Reschedule</button>
+      <button class="btn btn-gold btn-sm" onclick="window.togglePaid('${b.id}')">${b.paid?'○ Unpaid':'✓ Paid'}</button>
       <button class="btn btn-danger btn-sm" onclick="window.deleteBooking('${b.id}')">Delete</button>
     </div>
   </div>`;
 } window.bookingRow=bookingRow;
 
 window._allBookings = [];
-window.filterBookings = function(status) {
-  const list = status==='all' ? window._bookings : (window._bookings||[]).filter(b=>b.status===status);
+window.filterBookings = function(filter) {
+  let list = window._bookings||[];
+  if (filter==='paid') list = list.filter(b=>b.paid);
+  else if (filter==='unpaid') list = list.filter(b=>!b.paid);
+  else if (filter!=='all') list = list.filter(b=>b.status===filter);
   renderBookingsList(list);
 };
 
@@ -963,6 +976,20 @@ window.deleteBooking = async function(id) {
   try {
     await deleteDoc(doc(db,'bookings',id));
     toast('Booking deleted','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.togglePaid = async function(id) {
+  try {
+    const b = (window._bookings||[]).find(x=>x.id===id);
+    if (!b) return;
+    const nowPaid = !b.paid;
+    const updates = { paid: nowPaid };
+    if (nowPaid) updates.paidAt = new Date().toISOString();
+    else { updates.paidAt = null; }
+    await updateDoc(doc(db,'bookings',id), updates);
+    toast(nowPaid ? '✓ Marked as paid' : '○ Marked as unpaid','success');
     loadDashboard();
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
@@ -2840,7 +2867,7 @@ async function loadInvoices() {
     const snap = await getDocs(collection(db,'invoices'));
     const invoices = [];
     snap.forEach(d=>invoices.push({id:d.id,...d.data()}));
-    invoices.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    invoices.sort((a,b)=>(b.createdAt||b.generatedAt||'').localeCompare(a.createdAt||a.generatedAt||''));
     window._invoices = invoices;
     renderInvoicesList(invoices);
   } catch(e) { document.getElementById('invoicesList').innerHTML='<div class="loading-text">Could not load invoices</div>'; }
@@ -2848,17 +2875,20 @@ async function loadInvoices() {
 
 function renderInvoicesList(invoices) {
   document.getElementById('invoicesList').innerHTML = invoices.length
-    ? invoices.map(inv=>`
-      <div class="list-item" style="flex-wrap:wrap;gap:.75rem">
+    ? invoices.map(inv=>{
+      const isAuto = inv.source === 'auto';
+      return `<div class="list-item" style="flex-wrap:wrap;gap:.75rem">
         <div class="li-content">
           <div class="li-title">
-            ${inv.invoiceNumber} — ${inv.clientName}
+            ${inv.invoiceNumber} — ${isAuto ? inv.studentName : inv.clientName}
+            ${isAuto ? '<span class="status-badge status-pending" style="margin-left:.3rem;font-size:.65rem">Auto</span>' : ''}
             <span class="status-badge ${inv.status==='paid'?'status-confirmed':'status-pending'}" style="margin-left:.5rem">${inv.status||'unpaid'}</span>
           </div>
           <div class="li-meta">
-            ${inv.clientEmail||''} · R${Number(inv.total||0).toLocaleString()}
-            · From ${inv.quoteNumber||'—'}
-            · ${inv.createdAt?new Date(inv.createdAt).toLocaleDateString('en-ZA'):''}
+            ${isAuto ? (inv.studentEmail||'') + ' · ' + (inv.plan||'') : (inv.clientEmail||'')}
+            · R${Number(isAuto ? inv.amount : inv.total||0).toLocaleString()}
+            ${isAuto ? ` · ${inv.month}/${inv.year}` : ` · From ${inv.quoteNumber||'—'}`}
+            · ${inv.createdAt||inv.generatedAt ? new Date(inv.createdAt||inv.generatedAt).toLocaleDateString('en-ZA') : ''}
             ${inv.paidAt ? ` · Paid ${new Date(inv.paidAt).toLocaleDateString('en-ZA')}` : ''}
           </div>
         </div>
@@ -2869,8 +2899,9 @@ function renderInvoicesList(invoices) {
           <button class="btn btn-outline btn-sm" onclick="window.printInvoice('${inv.id}')">🖨 Print</button>
           <button class="btn btn-danger btn-sm" onclick="window.deleteInvoice('${inv.id}')">Delete</button>
         </div>
-      </div>`).join('')
-    : '<div class="loading-text">No invoices yet — convert an accepted quote to create one</div>';
+      </div>`;
+    }).join('')
+    : '<div class="loading-text">No invoices yet</div>';
 }
 
 window.markPaid = async function(id) {
@@ -2891,17 +2922,78 @@ window.deleteInvoice = async function(id) {
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
+// ── AUTO-INVOICE GENERATION (29th of each month) ──
+window.generateMonthlyInvoices = async function() {
+  const today = new Date();
+  const force = arguments[0] === true;
+  if (!force && today.getDate() !== 29) return;
+  const month = today.getMonth() + 1;
+  const year = today.getFullYear();
+  // Fetch existing auto invoices for this month and all bookings once
+  const [invSnap, bSnap] = await Promise.all([getDocs(collection(db,'invoices')), getDocs(collection(db,'bookings'))]);
+  const existingEmails = new Set();
+  let existingCount = 0;
+  invSnap.forEach(d => {
+    const dd = d.data();
+    if (dd.source === 'auto' && dd.month === month && dd.year === year) {
+      existingCount++;
+      existingEmails.add(dd.studentEmail);
+    }
+  });
+  if (existingCount > 0) { if (!force) { loadInvoices(); return; } }
+  // Gather confirmed individual lesson bookings
+  const indBookings = [];
+  bSnap.forEach(d => {
+    const b = { id: d.id, ...d.data() };
+    if (!b.courseId && (b.status === 'confirmed' || b.status === 'pending') && b.price && b.email) {
+      indBookings.push(b);
+    }
+  });
+  if (!indBookings.length) return;
+  let count = 0;
+  const batch = [];
+  for (const b of indBookings) {
+    if (existingEmails.has(b.email)) continue;
+    existingEmails.add(b.email);
+    const invNum = `AUTO-${year}-${String(month).padStart(2,'0')}-${String(++count).padStart(3,'0')}`;
+    batch.push(addDoc(collection(db,'invoices'), {
+      invoiceNumber: invNum,
+      source: 'auto',
+      studentEmail: b.email,
+      studentName: (b.firstName||'') + ' ' + (b.lastName||''),
+      bookingId: b.id,
+      month,
+      year,
+      amount: Number(b.price||0),
+      plan: b.plan||'Individual Lessons',
+      status: 'unpaid',
+      generatedAt: new Date().toISOString()
+    }));
+  }
+  await Promise.all(batch);
+  if (count) toast(`Generated ${count} invoice(s) for ${month}/${year}`,'success');
+  loadInvoices();
+};
+
 // ── PRINT ──
 function buildPrintDoc(data, type) {
+  const isAuto = data.source === 'auto';
   const biz = window._siteConfig?.contact || {};
   const bank = window._siteConfig?.banking || {};
-  const rows = (data.items||[]).map(i=>`
-    <tr>
-      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a">${i.desc}</td>
-      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:center">${i.qty}</td>
-      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:right">R ${Number(i.unit).toLocaleString()}</td>
-      <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#C9911A;text-align:right;font-weight:600">R ${Number((i.qty||0)*(i.unit||0)).toLocaleString()}</td>
-    </tr>`).join('');
+  const rows = isAuto
+    ? `<tr>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a">${data.plan||'Individual Lessons'} — ${data.month}/${data.year}</td>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:center">1</td>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:right">R ${Number(data.amount||0).toLocaleString()}</td>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#C9911A;text-align:right;font-weight:600">R ${Number(data.amount||0).toLocaleString()}</td>
+      </tr>`
+    : (data.items||[]).map(i=>`
+      <tr>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a">${i.desc}</td>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:center">${i.qty}</td>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a;text-align:right">R ${Number(i.unit).toLocaleString()}</td>
+        <td style="padding:.6rem 1rem;border-bottom:1px solid #e0e0e0;color:#C9911A;text-align:right;font-weight:600">R ${Number((i.qty||0)*(i.unit||0)).toLocaleString()}</td>
+      </tr>`).join('');
   const isInvoice = type === 'invoice';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>${isInvoice?data.invoiceNumber:data.quoteNumber}</title>
@@ -2926,15 +3018,15 @@ function buildPrintDoc(data, type) {
     <div style="text-align:right">
       <div style="font-size:1.8rem;font-weight:300;color:#C9911A">${isInvoice?'INVOICE':'QUOTE'}</div>
       <div style="font-size:1.1rem;margin:.25rem 0">${isInvoice?data.invoiceNumber:data.quoteNumber}</div>
-      <div class="muted">${isInvoice?'Issue':'Quote'} date: ${new Date(data.createdAt).toLocaleDateString('en-ZA')}</div>
+      <div class="muted">${isInvoice?'Issue':'Quote'} date: ${new Date(data.createdAt||data.generatedAt).toLocaleDateString('en-ZA')}</div>
       ${data.validUntil?`<div class="muted">Valid until: ${new Date(data.validUntil).toLocaleDateString('en-ZA')}</div>`:''}
     </div>
   </div>
   <div style="margin-bottom:2rem">
     <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;margin-bottom:.5rem">Bill To</div>
-    <div style="font-size:1.05rem;margin-bottom:.2rem">${data.clientName}</div>
-    <div class="muted">${data.clientEmail||''}</div>
-    <div class="muted">${data.clientPhone||''}</div>
+    <div style="font-size:1.05rem;margin-bottom:.2rem">${isAuto?data.studentName:data.clientName}</div>
+    <div class="muted">${isAuto?data.studentEmail||'':data.clientEmail||''}</div>
+    <div class="muted">${isAuto?'':data.clientPhone||''}</div>
   </div>
   <table>
     <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
@@ -2942,11 +3034,11 @@ function buildPrintDoc(data, type) {
   </table>
   <div style="display:flex;justify-content:flex-end;margin-top:1rem">
     <div style="min-width:250px">
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-top:1px solid #e0e0e0;font-size:.9rem;color:#555"><span>Subtotal</span><span>R ${Number(data.subtotal||0).toLocaleString()}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:.75rem 0;border-top:2px solid #C9911A;font-size:1.2rem;color:#C9911A"><span>Total</span><span>R ${Number(data.total||0).toLocaleString()}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-top:1px solid #e0e0e0;font-size:.9rem;color:#555"><span>Subtotal</span><span>R ${Number(isAuto?data.amount:data.subtotal||0).toLocaleString()}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.75rem 0;border-top:2px solid #C9911A;font-size:1.2rem;color:#C9911A"><span>Total</span><span>R ${Number(isAuto?data.amount:data.total||0).toLocaleString()}</span></div>
     </div>
   </div>
-  ${data.terms?`<div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #2a2a2a"><span style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A">Payment Terms</span><div style="margin-top:.4rem;font-size:.9rem;color:#7a7060">${data.terms}</div></div>`:''}
+  ${!isAuto && data.terms?`<div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #2a2a2a"><span style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A">Payment Terms</span><div style="margin-top:.4rem;font-size:.9rem;color:#7a7060">${data.terms}</div></div>`:''}
   ${isInvoice&&bank.accountName?`<div style="margin-top:1.5rem;padding:1.25rem;border:1px solid #e0e0e0;border-radius:2px">
     <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;margin-bottom:.75rem">Banking Details</div>
     <div style="font-size:.88rem;color:#555;line-height:2">
@@ -2956,7 +3048,6 @@ function buildPrintDoc(data, type) {
       <strong style="color:#1a1a1a">Branch:</strong> ${bank.branchCode}<br>
       <strong style="color:#1a1a1a">Reference:</strong> ${data.invoiceNumber}
     </div></div>`:''}
-  ${data.notes?`<div style="margin-top:1.5rem;font-size:.85rem;color:#555;line-height:1.7;border-top:1px solid #e0e0e0;padding-top:1.25rem">${data.notes}</div>`:''}
   <div class="no-print" style="margin-top:3rem;text-align:center">
     <button onclick="window.print()" style="background:#C9911A;color:#000;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:1px;margin-right:1rem">Print / Save as PDF</button>
     <button onclick="window.close()" style="background:transparent;color:#7a7060;border:1px solid #2a2a2a;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:1px">Close</button>
