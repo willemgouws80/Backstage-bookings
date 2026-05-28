@@ -576,6 +576,11 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <div class="fg"><label>Location Description</label><input type="text" id="contactLocation" placeholder="Pretoria East, South Africa"></div>
       </div>
       <div class="card">
+        <div class="card-title">WhatsApp Message Template</div>
+        <div class="fg"><label>Template</label><input type="text" id="waTemplate" value="Hi {name}! Just confirming your {plan} booking at Backstage Worship."></div>
+        <div class="hint">Use <code style="color:var(--gold)">{name}</code> <code style="color:var(--gold)">{plan}</code> <code style="color:var(--gold)">{instrument}</code> <code style="color:var(--gold)">{schedule}</code> <code style="color:var(--gold)">{startDate}</code> as placeholders.</div>
+      </div>
+      <div class="card">
         <div class="card-title">Banking Details (shown in EFT tab)</div>
         <div class="fg"><label>Account Name</label><input type="text" id="bankName" placeholder="Backstage Worship Music School"></div>
         <div class="two-col">
@@ -905,7 +910,9 @@ async function loadDashboard() {
 function bookingRow(b) {
   const waNumber = (b.phone||'').replace(/[\s\+\-\(\)]/g,'');
   const waClean  = waNumber.startsWith('0') ? '27'+waNumber.slice(1) : waNumber;
-  const waLink   = waClean ? `https://wa.me/${waClean}?text=${encodeURIComponent(`Hi ${b.firstName||''}! Just confirming your ${b.plan||'lesson'} booking at Backstage Worship.`)}` : '';
+  const waTpl    = (window._siteConfig?.whatsapp?.template) || 'Hi {name}! Just confirming your {plan} booking at Backstage Worship.';
+  const waMsg    = waTpl.replace(/\{name\}/g,b.firstName||'').replace(/\{plan\}/g,b.plan||'lesson').replace(/\{instrument\}/g,b.instrument||'').replace(/\{schedule\}/g,(b.prefDay||b.chosenSlot||'')+' '+(b.prefTime||'')).replace(/\{startDate\}/g,b.startDate||'');
+  const waLink   = waClean ? `https://wa.me/${waClean}?text=${encodeURIComponent(waMsg)}` : '';
   const paidBadge = b.paid ? '<span class="status-badge status-confirmed" style="margin-left:.3rem">✓ Paid</span>' : '<span class="status-badge status-pending" style="margin-left:.3rem">○ Unpaid</span>';
   return `<div class="list-item">
     <div class="li-content">
@@ -1639,17 +1646,19 @@ async function loadContact() {
     if (!snap.exists()) return;
     const d = snap.data();
     if (d.contact) { document.getElementById('contactPhone').value=d.contact.phone||''; document.getElementById('contactEmail').value=d.contact.email||''; document.getElementById('contactLocation').value=d.contact.location||''; }
+    if (d.whatsapp) { document.getElementById('waTemplate').value=d.whatsapp.template||''; }
     if (d.banking)  { document.getElementById('bankName').value=d.banking.accountName||''; document.getElementById('bankBank').value=d.banking.bank||''; document.getElementById('bankAccNo').value=d.banking.accountNumber||''; document.getElementById('bankBranch').value=d.banking.branchCode||''; }
   } catch(e) {}
 }
 
 window.saveContact = async function() {
   const contact = {phone:document.getElementById('contactPhone').value, email:document.getElementById('contactEmail').value, location:document.getElementById('contactLocation').value};
+  const whatsapp = {template:document.getElementById('waTemplate').value};
   const banking  = {accountName:document.getElementById('bankName').value, bank:document.getElementById('bankBank').value, accountNumber:document.getElementById('bankAccNo').value, branchCode:document.getElementById('bankBranch').value};
   try {
     const ref=doc(db,'siteConfig','main');
     const snap=await getDoc(ref);
-    await setDoc(ref,{...(snap.exists()?snap.data():{}),contact,banking});
+    await setDoc(ref,{...(snap.exists()?snap.data():{}),contact,whatsapp,banking});
     toast('Contact & banking updated! Live on website now.','success');
   } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save contact: ${e.message}`); }
 };
