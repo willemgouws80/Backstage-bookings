@@ -1160,8 +1160,9 @@ window.editCourse = function(id) {
   if (document.getElementById('cRepeatType'))   document.getElementById('cRepeatType').value   = course.schedRepeat||'weekly';
   if (document.getElementById('cNumSessions'))  document.getElementById('cNumSessions').value  = course.schedSessions||'';
   
-  // Sanitize date format before setting (ensure YYYY-MM-DD)
-  const cleanDate = sanitizeDate(course.schedStartDate||'');
+  // Convert to YYYY-MM-DD for date input
+  const rawDate = course.schedStartDate||'';
+  const cleanDate = rawDate.includes('T') ? rawDate.split('T')[0] : sanitizeDate(rawDate);
   if (document.getElementById('cStartDate'))    document.getElementById('cStartDate').value    = cleanDate;
 
   // Options schedule
@@ -2225,7 +2226,7 @@ window.rescheduleBooking = async function(bookingId) {
       </div>
       <div class="fg" style="margin-bottom:1.25rem">
         <label>New Start Date</label>
-        <input type="date" id="reschedDate" value="${sanitizeDate(b.startDate||'')}"
+        <input type="date" id="reschedDate" value="${(b.startDate||'').includes('T') ? (b.startDate||'').split('T')[0] : sanitizeDate(b.startDate||'')}"
           style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem">
       </div>
       <div style="display:flex;gap:.75rem">
