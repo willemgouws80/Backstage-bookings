@@ -1377,7 +1377,7 @@ function renderCoursesList(courses) {
   const schedLabel = c => {
     if (c.scheduleType === 'fixed' && c.schedDay) {
       const rep = c.schedRepeat === 'daily' ? 'daily' : 'weekly';
-      return `📅 ${c.schedDay}s ${c.schedStartTime||''}${c.schedEndTime?' – '+c.schedEndTime:''} · ${c.schedSessions||'?'} sessions (${rep}) · Starts ${c.schedStartDate||'TBC'}`;
+      return `📅 ${c.schedDay}s ${c.schedStartTime||''}${c.schedEndTime?' – '+c.schedEndTime:''} · ${c.schedSessions||'?'} sessions (${rep}) · Starts ${fmtDate(c.schedStartDate)||'TBC'}`;
     }
     if (c.scheduleType === 'fixed')   return `📅 ${c.fixedSchedule||'Fixed'}`;
     if (c.scheduleType === 'options') {
