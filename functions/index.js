@@ -1,7 +1,6 @@
 const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -28,9 +27,6 @@ exports.adminChat = onRequest(
     if (!question || typeof question !== 'string' || question.length > 2000) {
       res.status(400).json({ error: 'Invalid question' }); return;
     }
-
-    const genAI = new GoogleGenerativeAI(GEMINI_KEY.value());
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const [bSnap, cSnap, iSnap, aSnap] = await Promise.all([
       db.collection('bookings').orderBy('createdAt', 'desc').limit(100).get(),
@@ -86,13 +82,29 @@ User question: ${question}
 If the data doesn't cover the question, suggest what they can find in the admin panel. Keep answers under 3 paragraphs. Be helpful and direct.`;
 
     try {
-      const result = await model.generateContent(prompt);
-      const answer = result.response.text();
-      res.json({ answer: answer || 'No response.' });
+      const apiKey = GEMINI_KEY.value();
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 600, temperature: 0.3 },
+          }),
+        }
+      );
+      const data = await resp.json();
+      const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (answer) {
+        res.json({ answer });
+      } else {
+        const errMsg = data?.error?.message || JSON.stringify(data);
+        res.status(500).json({ error: 'AI error: ' + errMsg });
+      }
     } catch (err) {
       console.error('Gemini error:', err);
-      const msg = err?.message || err?.toString() || 'Unknown error';
-      res.status(500).json({ error: 'AI error: ' + msg });
+      res.status(500).json({ error: 'AI error: ' + (err?.message || err?.toString() || 'Unknown') });
     }
   }
 );
