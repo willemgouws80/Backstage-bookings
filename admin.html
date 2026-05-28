@@ -3510,6 +3510,14 @@ async function chatAnswer(q) {
   const courses = _chatKeys.c();
 
   // ── ACTIONS ──
+  if (_match(lq, ['generate','create','make']) && _match(lq, ['invoice','invoices'])) {
+    if (typeof window.generateMonthlyInvoices !== 'function') return 'generateMonthlyInvoices not available.';
+    try {
+      await window.generateMonthlyInvoices(true);
+      return '✓ Monthly invoices generated! Check the Invoices tab.';
+    } catch(e) { return 'Error generating invoices.'; }
+  }
+
   if (_match(lq, ['mark','set','change','toggle']) && _match(lq, ['paid','unpaid','pay'])) {
     const booking = _findBooking(lq);
     if (!booking) return 'Could not find a matching student. Try using their first name.';
