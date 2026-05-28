@@ -3456,7 +3456,7 @@ setInterval(async () => {
     <button onclick="chatToggle()">✕</button>
   </div>
   <div id="chat-msgs">
-    <div class="msg bot">Hi! Ask me about bookings, courses, invoices, attendance, or students.</div>
+    <div class="msg bot">Hi! Try: "how many bookings?", "show unpaid invoices", "list courses", "who has paid?" or "help".</div>
   </div>
   <div id="chat-input-wrap">
     <input type="text" id="chat-input" placeholder="Ask a question…" onkeydown="if(event.key==='Enter')chatSend()">
@@ -3473,7 +3473,94 @@ function chatToggle() {
 }
 window.chatToggle = chatToggle;
 
-async function chatSend() {
+const _chatKeys = {
+  b: () => window._bookings||[],
+  i: () => window._invoices||[],
+  c: () => window._courses||[],
+  a: () => window._attendance||[],
+};
+
+function _match(q, words) { return words.some(w => q.includes(w)); }
+
+function _fmt(n) { return n.toLocaleString(); }
+
+function _list(arr, fields, limit) {
+  return arr.slice(0, limit||10).map(x => fields.map(f => x[f]||'—').join(' · ')).join('\n');
+}
+
+function chatAnswer(q) {
+  const lq = q.toLowerCase();
+  const b = _chatKeys.b();
+  const inv = _chatKeys.i();
+  const courses = _chatKeys.c();
+
+  // Count queries
+  if (_match(lq, ['how many','total','count'])) {
+    const parts = [];
+    if (_match(lq, ['booking','student','signup'])) parts.push(b.length + ' total bookings');
+    if (_match(lq, ['pending']) && !_match(lq, ['invoice'])) parts.push(b.filter(x=>x.status==='pending').length + ' pending');
+    if (_match(lq, ['confirmed']) && !_match(lq, ['invoice'])) parts.push(b.filter(x=>x.status==='confirmed').length + ' confirmed');
+    if (_match(lq, ['paid'])) parts.push(b.filter(x=>x.paid).length + ' paid');
+    if (_match(lq, ['unpaid']) || (_match(lq, ['not paid']) && !_match(lq, ['invoice']))) parts.push(b.filter(x=>!x.paid).length + ' unpaid');
+    if (_match(lq, ['course'])) parts.push(courses.length + ' courses');
+    if (_match(lq, ['student','learner','pupil'])) parts.push(new Set(b.map(x=>x.email).filter(Boolean)).size + ' unique students');
+    if (_match(lq, ['invoice'])) {
+      if (_match(lq, ['unpaid','pending'])) parts.push(inv.filter(x=>x.status!=='paid').length + ' unpaid invoices');
+      else if (_match(lq, ['paid'])) parts.push(inv.filter(x=>x.status==='paid').length + ' paid invoices');
+      else parts.push(inv.length + ' total invoices');
+    }
+    if (_match(lq, ['attendance','lesson','class'])) {
+      const att = _chatKeys.a();
+      parts.push(att.length + ' attendance records');
+      if (att.length) {
+        const pr = att.filter(x=>x.status==='present').length;
+        const ab = att.filter(x=>x.status==='absent').length;
+        parts.push(pr + ' present, ' + ab + ' absent');
+      }
+    }
+    return parts.length ? parts.join(' · ') : 'I found ' + b.length + ' bookings, ' + inv.length + ' invoices, ' + courses.length + ' courses.';
+  }
+
+  // Show / list queries
+  if (_match(lq, ['show','list','find','search','who','what','which'])) {
+    let data = b;
+    let label = 'bookings';
+    let fields = ['firstName','lastName','plan','status','email'];
+
+    if (_match(lq, ['invoice'])) { data = inv; label = 'invoices'; fields = ['invoiceNumber','studentName','status','amount']; }
+    else if (_match(lq, ['course'])) { data = courses; label = 'courses'; fields = ['title','category','level','price']; }
+
+    if (_match(lq, ['paid'])) data = data.filter(x=>x.paid);
+    if (_match(lq, ['unpaid','not paid'])) data = data.filter(x=>!x.paid);
+    if (_match(lq, ['pending'])) data = data.filter(x=>x.status==='pending');
+    if (_match(lq, ['confirmed'])) data = data.filter(x=>x.status==='confirmed');
+
+    // Search by name/email
+    for (const w of [q]) {
+      const matched = data.filter(x =>
+        (x.firstName||'').toLowerCase().includes(w) ||
+        (x.lastName||'').toLowerCase().includes(w) ||
+        (x.email||'').toLowerCase().includes(w)
+      );
+      if (matched.length && matched.length < data.length) { data = matched; break; }
+    }
+
+    if (!data.length) return 'No ' + label + ' found.';
+    if (data.length > 20) return data.length + ' ' + label + ' found. Showing first 20:\n' + _list(data, fields, 20);
+    return data.length + ' ' + label + ' found:\n' + _list(data, fields);
+  }
+
+  // Help
+  if (_match(lq, ['help','what can','what do','commands'])) {
+    return 'Try: "how many bookings?", "show unpaid invoices", "list courses", "who has paid?", "show pending bookings", "total students"';
+  }
+
+  // Default
+  const summary = b.length + ' bookings · ' + inv.length + ' invoices · ' + courses.length + ' courses · ' + new Set(b.map(x=>x.email).filter(Boolean)).size + ' students';
+  return 'Not sure what you mean. Try "help" for examples. Current stats: ' + summary;
+}
+
+function chatSend() {
   const input = document.getElementById('chat-input');
   const btn = document.getElementById('chat-send-btn');
   const msgs = document.getElementById('chat-msgs');
@@ -3481,37 +3568,18 @@ async function chatSend() {
   if (!q) return;
   input.value = '';
   msgs.innerHTML += '<div class="msg user">' + escapeHtml(q) + '</div>';
-  msgs.scrollTop = msgs.scrollHeight;
   btn.disabled = true;
   btn.textContent = '…';
-  // bot thinking indicator
   const thinkId = 'think-' + Date.now();
   msgs.innerHTML += '<div class="msg bot" id="' + thinkId + '">Thinking…</div>';
   msgs.scrollTop = msgs.scrollHeight;
-  try {
-    if (!window._currentUser) {
-      document.getElementById(thinkId).outerHTML = '<div class="msg err">Sign in first.</div>';
-      btn.disabled = false; btn.textContent = 'Send';
-      return;
-    }
-    const token = await window._currentUser.getIdToken();
-    const resp = await fetch('https://us-central1-backstage-music.cloudfunctions.net/adminChat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ question: q }),
-    });
-    const data = await resp.json();
-    if (data.error) {
-      document.getElementById(thinkId).outerHTML = '<div class="msg err">' + escapeHtml(data.error) + '</div>';
-    } else {
-      document.getElementById(thinkId).outerHTML = '<div class="msg bot">' + escapeHtml(data.answer || 'No response.') + '</div>';
-    }
-  } catch(e) {
-    document.getElementById(thinkId).outerHTML = '<div class="msg err">Could not reach AI assistant. Make sure the Cloud Function is deployed.</div>';
-  }
-  msgs.scrollTop = msgs.scrollHeight;
-  btn.disabled = false;
-  btn.textContent = 'Send';
+  setTimeout(() => {
+    const answer = chatAnswer(q);
+    document.getElementById(thinkId).outerHTML = '<div class="msg bot" style="white-space:pre-wrap">' + escapeHtml(answer) + '</div>';
+    msgs.scrollTop = msgs.scrollHeight;
+    btn.disabled = false;
+    btn.textContent = 'Send';
+  }, 200);
 }
 window.chatSend = chatSend;
 
