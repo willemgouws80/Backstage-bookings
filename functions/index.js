@@ -91,7 +91,8 @@ If the data doesn't cover the question, suggest what they can find in the admin 
       res.json({ answer: answer || 'No response.' });
     } catch (err) {
       console.error('Gemini error:', err);
-      res.status(500).json({ error: 'AI service error. Check your Gemini API key and usage limits.' });
+      const msg = err?.message || err?.toString() || 'Unknown error';
+      res.status(500).json({ error: 'AI error: ' + msg });
     }
   }
 );
