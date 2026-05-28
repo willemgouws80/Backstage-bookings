@@ -3495,7 +3495,7 @@ async function chatSend() {
       return;
     }
     const token = await window._currentUser.getIdToken();
-    const resp = await fetch('/api/adminChat', {
+    const resp = await fetch('https://us-central1-backstage-music.cloudfunctions.net/adminChat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ question: q }),
