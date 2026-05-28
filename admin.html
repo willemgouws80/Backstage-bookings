@@ -3488,13 +3488,50 @@ function _list(arr, fields, limit) {
   return arr.slice(0, limit||10).map(x => fields.map(f => x[f]||'—').join(' · ')).join('\n');
 }
 
-function chatAnswer(q) {
+function _findBooking(q) {
+  const b = _chatKeys.b();
+  const words = q.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+  // Try matching by name parts
+  for (const bk of b) {
+    const full = ((bk.firstName||'') + ' ' + (bk.lastName||'')).toLowerCase();
+    if (words.some(w => full.includes(w))) return bk;
+  }
+  // Try by email
+  for (const bk of b) {
+    if (words.some(w => (bk.email||'').toLowerCase().includes(w))) return bk;
+  }
+  return null;
+}
+
+async function chatAnswer(q) {
   const lq = q.toLowerCase();
   const b = _chatKeys.b();
   const inv = _chatKeys.i();
   const courses = _chatKeys.c();
 
-  // Count queries
+  // ── ACTIONS ──
+  if (_match(lq, ['mark','set','change','toggle']) && _match(lq, ['paid','unpaid','pay'])) {
+    const booking = _findBooking(lq);
+    if (!booking) return 'Could not find a matching student. Try using their first name.';
+    if (typeof window.togglePaid !== 'function') return 'togglePaid not available.';
+    try {
+      const nowPaid = !booking.paid;
+      await window.togglePaid(booking.id);
+      return '✓ ' + (booking.firstName||'') + ' ' + (booking.lastName||'') + ' is now ' + (nowPaid ? 'paid' : 'unpaid') + '!';
+    } catch(e) { return 'Error updating payment status.'; }
+  }
+
+  if (_match(lq, ['confirm','approve']) && !_match(lq, ['invoice'])) {
+    const booking = _findBooking(lq);
+    if (!booking) return 'Could not find a matching student. Try using their first name.';
+    if (typeof window.confirmBooking !== 'function') return 'confirmBooking not available.';
+    try {
+      await window.confirmBooking(booking.id);
+      return '✓ ' + (booking.firstName||'') + ' confirmed!';
+    } catch(e) { return 'Error confirming booking.'; }
+  }
+
+  // ── COUNT QUERIES ──
   if (_match(lq, ['how many','total','count'])) {
     const parts = [];
     if (_match(lq, ['booking','student','signup'])) parts.push(b.length + ' total bookings');
@@ -3560,7 +3597,7 @@ function chatAnswer(q) {
   return 'Not sure what you mean. Try "help" for examples. Current stats: ' + summary;
 }
 
-function chatSend() {
+async function chatSend() {
   const input = document.getElementById('chat-input');
   const btn = document.getElementById('chat-send-btn');
   const msgs = document.getElementById('chat-msgs');
@@ -3573,13 +3610,11 @@ function chatSend() {
   const thinkId = 'think-' + Date.now();
   msgs.innerHTML += '<div class="msg bot" id="' + thinkId + '">Thinking…</div>';
   msgs.scrollTop = msgs.scrollHeight;
-  setTimeout(() => {
-    const answer = chatAnswer(q);
-    document.getElementById(thinkId).outerHTML = '<div class="msg bot" style="white-space:pre-wrap">' + escapeHtml(answer) + '</div>';
-    msgs.scrollTop = msgs.scrollHeight;
-    btn.disabled = false;
-    btn.textContent = 'Send';
-  }, 200);
+  const answer = await chatAnswer(q);
+  document.getElementById(thinkId).outerHTML = '<div class="msg bot" style="white-space:pre-wrap">' + escapeHtml(answer) + '</div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  btn.disabled = false;
+  btn.textContent = 'Send';
 }
 window.chatSend = chatSend;
 
