@@ -1160,12 +1160,8 @@ window.editCourse = function(id) {
   if (document.getElementById('cRepeatType'))   document.getElementById('cRepeatType').value   = course.schedRepeat||'weekly';
   if (document.getElementById('cNumSessions'))  document.getElementById('cNumSessions').value  = course.schedSessions||'';
   
-  // Convert to YYYY-MM-DD for date input
-  const rawDate = course.schedStartDate||'';
-  const cleanDate = rawDate.includes('T') ? rawDate.split('T')[0] : sanitizeDate(rawDate);
+  const cleanDate = dateInputValue(course.schedStartDate);
   if (document.getElementById('cStartDate'))    document.getElementById('cStartDate').value    = cleanDate;
-
-  // Options schedule
   if (document.getElementById('cOptionsStartDate'))    document.getElementById('cOptionsStartDate').value    = cleanDate;
   if (document.getElementById('cOptionsRepeatType'))   document.getElementById('cOptionsRepeatType').value   = course.schedRepeat||'weekly';
   if (document.getElementById('cOptionsNumSessions'))  document.getElementById('cOptionsNumSessions').value  = course.schedSessions||'';
@@ -2124,10 +2120,24 @@ async function getTerms() {
 }
 
 // Sanitize date string to ensure YYYY-MM-DD format
-function fmtDate(dateStr) {
-  if (!dateStr) return '';
-  try { return new Date(dateStr+'T12:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}); }
-  catch(e) { return dateStr; }
+function toDateObj(v) {
+  if (!v) return null;
+  if (typeof v === 'object' && v.toDate) return v.toDate();
+  if (v instanceof Date) return v;
+  if (typeof v === 'number') return new Date(v);
+  return new Date(String(v).replace(/[\/]/g,'-')+'T12:00:00');
+}
+
+function fmtDate(v) {
+  if (!v) return '';
+  try { const d = toDateObj(v); return d ? d.toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : ''; }
+  catch(e) { return String(v); }
+}
+
+function dateInputValue(v) {
+  if (!v) return '';
+  try { const d = toDateObj(v); return d ? d.toISOString().split('T')[0] : ''; }
+  catch(e) { return ''; }
 }
 
 function sanitizeDate(dateStr) {
@@ -2226,7 +2236,7 @@ window.rescheduleBooking = async function(bookingId) {
       </div>
       <div class="fg" style="margin-bottom:1.25rem">
         <label>New Start Date</label>
-        <input type="date" id="reschedDate" value="${(b.startDate||'').includes('T') ? (b.startDate||'').split('T')[0] : sanitizeDate(b.startDate||'')}"
+        <input type="date" id="reschedDate" value="${dateInputValue(b.startDate)}"
           style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem">
       </div>
       <div style="display:flex;gap:.75rem">
