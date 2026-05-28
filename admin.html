@@ -3049,6 +3049,39 @@ window.deleteInvoice = async function(id) {
 };
 
 // ── AUTO-INVOICE GENERATION (29th of each month) ──
+window.generateInvoicesForUnpaid = async function() {
+  const bSnap = await getDocs(collection(db,'bookings'));
+  const invSnap = await getDocs(collection(db,'invoices'));
+  const existingBookingIds = new Set();
+  invSnap.forEach(d => {
+    const dd = d.data();
+    if (dd.source === 'auto' && dd.bookingId) existingBookingIds.add(dd.bookingId);
+  });
+  let count = 0;
+  const batch = [];
+  bSnap.forEach(d => {
+    const b = { id: d.id, ...d.data() };
+    if (!existingBookingIds.has(b.id) && !b.paid && b.price && b.email) {
+      const invNum = `AUTO-UNPAID-${String(++count).padStart(3,'0')}`;
+      batch.push(addDoc(collection(db,'invoices'), {
+        invoiceNumber: invNum,
+        source: 'auto',
+        studentEmail: b.email,
+        studentName: (b.firstName||'') + ' ' + (b.lastName||''),
+        bookingId: b.id,
+        amount: Number(b.price||0),
+        plan: b.plan||'Booking',
+        status: 'unpaid',
+        generatedAt: new Date().toISOString()
+      }));
+    }
+  });
+  await Promise.all(batch);
+  if (count) toast(`Generated ${count} invoice(s) for unpaid bookings`,'success');
+  loadInvoices();
+  return count;
+};
+
 window.generateMonthlyInvoices = async function() {
   const today = new Date();
   const force = arguments[0] === true;
@@ -3511,6 +3544,13 @@ async function chatAnswer(q) {
 
   // ── ACTIONS ──
   if (_match(lq, ['generate','create','make']) && _match(lq, ['invoice','invoices'])) {
+    if (_match(lq, ['unpaid','not paid'])) {
+      if (typeof window.generateInvoicesForUnpaid !== 'function') return 'generateInvoicesForUnpaid not available.';
+      try {
+        const n = await window.generateInvoicesForUnpaid();
+        return n ? '✓ Generated ' + n + ' invoice(s) for unpaid bookings. Check the Invoices tab.' : 'No unpaid bookings without existing invoices found.';
+      } catch(e) { return 'Error generating invoices.'; }
+    }
     if (typeof window.generateMonthlyInvoices !== 'function') return 'generateMonthlyInvoices not available.';
     try {
       await window.generateMonthlyInvoices(true);
