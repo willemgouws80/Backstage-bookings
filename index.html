@@ -472,6 +472,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js';
 import { getFirestore, collection, getDocs, addDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -481,6 +482,7 @@ const firebaseConfig = {
   appId:"1:864389877971:web:c7d15ae843d54172c90426",measurementId:"G-DY40YLD9FM"
 };
 const app = initializeApp(firebaseConfig);
+getAnalytics(app);
 const db  = getFirestore(app);
 
 window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{} };
