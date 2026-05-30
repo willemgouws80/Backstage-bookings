@@ -255,6 +255,8 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <div class="stat"><div class="stat-val" id="statPaid">—</div><div class="stat-lbl">Paid</div></div>
         <div class="stat"><div class="stat-val" id="statCourses">—</div><div class="stat-lbl">Courses</div></div>
         <div class="stat"><div class="stat-val" id="statStudents">—</div><div class="stat-lbl">Students</div></div>
+        <div class="stat"><div class="stat-val" id="statViews">—</div><div class="stat-lbl">Page Views</div></div>
+        <div class="stat"><div class="stat-val" id="statViewsToday">—</div><div class="stat-lbl">Views Today</div></div>
       </div>
       <div class="card">
         <div class="card-title">Recent Bookings</div>
@@ -996,6 +998,15 @@ async function loadDashboard() {
     document.getElementById('statPaid').textContent     = bookings.filter(b=>b.paid).length;
     document.getElementById('statCourses').textContent  = courses.length;
     document.getElementById('statStudents').textContent = new Set(bookings.map(b=>b.email)).size;
+    // Page views
+    try {
+      const vSnap = await getDoc(doc(db,'analytics','pageviews'));
+      if (vSnap.exists()) {
+        const v = vSnap.data();
+        document.getElementById('statViews').textContent      = v.total||0;
+        document.getElementById('statViewsToday').textContent  = (v.date === new Date().toISOString().slice(0,10) ? v.today||0 : 0);
+      }
+    } catch(e) {}
 
     const recent = [...bookings].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,8);
     document.getElementById('recentBookings').innerHTML = recent.length
