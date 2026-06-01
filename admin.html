@@ -955,7 +955,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('fbStatus').textContent = `● ${user.email}`;
     document.getElementById('fbStatus').style.color = '#27ae60';
     // Load initial data
-    loadDashboard();
+    loadDashboard(); loadPageViews();
     loadPricing();
     loadPromo();
     loadPayments();
@@ -998,18 +998,6 @@ async function loadDashboard() {
     document.getElementById('statPaid').textContent     = bookings.filter(b=>b.paid).length;
     document.getElementById('statCourses').textContent  = courses.length;
     document.getElementById('statStudents').textContent = new Set(bookings.map(b=>b.email)).size;
-    // Page views
-    try {
-      const vSnap = await getDoc(doc(db,'analytics','pageviews'));
-      const v = vSnap.exists() ? vSnap.data() : {};
-      const today = new Date().toISOString().slice(0,10);
-      document.getElementById('statViews').textContent      = v.total||0;
-      document.getElementById('statViewsToday').textContent  = (v.date === today ? v.today||0 : 0);
-      // Ensure document exists
-      if (!vSnap.exists()) {
-        await setDoc(doc(db,'analytics','pageviews'), { total:0, today:0, date:today });
-      }
-    } catch(e) { console.warn('pageviews read error:',e); }
 
     const recent = [...bookings].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,8);
     document.getElementById('recentBookings').innerHTML = recent.length
@@ -1019,6 +1007,22 @@ async function loadDashboard() {
     renderBookingsList(bookings);
     renderCoursesList(courses);
   } catch(e) { console.warn('Dashboard error:',e); }
+}
+
+async function loadPageViews() {
+  try {
+    const vSnap = await getDoc(doc(db,'analytics','pageviews'));
+    const v = vSnap.exists() ? vSnap.data() : {};
+    const today = new Date().toISOString().slice(0,10);
+    const viewsEl = document.getElementById('statViews');
+    const todayEl = document.getElementById('statViewsToday');
+    if (viewsEl) viewsEl.textContent = v.total||0;
+    if (todayEl) todayEl.textContent = (v.date === today ? v.today||0 : 0);
+    if (!vSnap.exists()) {
+      await setDoc(doc(db,'analytics','pageviews'), { total:0, today:0, date:today, created:new Date().toISOString() });
+    }
+    console.log('Page views loaded:', v.total||0, 'total,', (v.date===today?v.today||0:0), 'today');
+  } catch(e) { console.warn('pageviews error:',e); }
 }
 
 function bookingRow(b) {
@@ -1826,7 +1830,7 @@ function loadEmailJS(pubKey) {
 // Data loading is triggered by onAuthStateChanged above
 
 // Expose for panel switching
-window._loaders = { dashboard:loadDashboard, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
+window._loaders = { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
 
 // ── ATTENDANCE ──
 async function loadAttendancePanel() {
@@ -3453,6 +3457,7 @@ setInterval(async () => {
         }
         toast(`New booking from ${name} (${detail})`);
         window._beep();
+        loadPageViews();
         // refresh dashboard
         window._bookings = window._bookings||[];
         const nb = {id:d.id,...b};
