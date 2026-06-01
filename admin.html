@@ -422,6 +422,10 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         </div>
       </div>
       <div id="coursesList"><div class="skeleton"></div><div class="skeleton"></div></div>
+      <div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="backfillCourseCounts()">🔄 Backfill Enrollment Counts</button>
+        <span style="font-size:.75rem;color:var(--muted);align-self:center">(Run once after migration to fix existing course counts)</span>
+      </div>
     </div>
 
     <!-- PRICING -->
@@ -1380,13 +1384,41 @@ window.saveCourse = async function() {
 };
 
 window.deleteCourse = async function(id) {
-  const course = (window._courses||[]).find(c=>c.id===id);
-  if (!confirm(`Delete "${course?.title||'this course'}"? This cannot be undone.`)) return;
+  if (!confirm('Delete this course?')) return;
+  await deleteDoc(doc(db,'courses',id));
+  loadDashboard();
+};
+
+window.backfillCourseCounts = async function() {
+  const btn = event.target; btn.disabled = true; btn.textContent = 'Counting...';
   try {
-    await deleteDoc(doc(db,'courses',id));
-    toast('Course deleted','success');
+    const [bSnap, cSnap] = await Promise.all([getDocs(collection(db,'bookings')), getDocs(collection(db,'courses'))]);
+    const counts = {}; // { courseId: { total: N, slots: { slotKey: M } } }
+    bSnap.forEach(d => {
+      const b = d.data();
+      if (!b.courseId) return;
+      if (!counts[b.courseId]) counts[b.courseId] = { total:0, slots:{} };
+      counts[b.courseId].total++;
+      const slotKey = b.chosenSlot || b.prefDay||'__total__';
+      counts[b.courseId].slots[slotKey] = (counts[b.courseId].slots[slotKey]||0) + 1;
+    });
+    let updated = 0;
+    const writes = [];
+    cSnap.forEach(d => {
+      const c = d.data();
+      const cCounts = counts[d.id];
+      if (!cCounts) return;
+      writes.push(updateDoc(doc(db,'courses',d.id), {
+        bookedCount: cCounts.total,
+        slotBookedCounts: cCounts.slots
+      }));
+      updated++;
+    });
+    await Promise.all(writes);
+    alert(`Backfilled ${updated} course(s) with enrollment counts.`);
     loadDashboard();
-  } catch(e) { toast('Error: '+e.message,'error'); }
+  } catch(e) { alert('Backfill error: '+e.message); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = '🔄 Backfill Enrollment Counts'; }
 };
 
 function renderCoursesList(courses) {
