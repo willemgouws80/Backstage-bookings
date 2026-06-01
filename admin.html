@@ -639,6 +639,12 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <strong style="color:var(--gold)">console.firebase.google.com → backstage-music → Authentication → Users</strong><br><br>
         Click on your email address and select "Reset password" to send yourself a reset link.</p>
       </div>
+      <div class="card">
+        <div class="card-title">📢 Announcements (visible to all students)</div>
+        <div class="fg"><label>New Announcement</label><textarea id="announcementText" rows="3" placeholder="Type your message to students…" style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+        <div class="btn-row"><button class="btn btn-gold btn-sm" onclick="postAnnouncement()">Post Announcement</button></div>
+        <div id="announcementsList" style="margin-top:1rem"></div>
+      </div>
     </div>
 
     <!-- SCHOOL TERMS -->
@@ -931,7 +937,7 @@ service firebase.storage {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
@@ -1832,6 +1838,7 @@ async function loadAlerts() {
     document.getElementById('alertTemplateId').value    = a.templateId||'';
     document.getElementById('alertPublicKey').value     = a.publicKey||'';
   } catch(e) {}
+  loadAnnouncements();
 }
 
 window.saveAlerts = async function() {
@@ -1866,6 +1873,48 @@ function loadEmailJS(pubKey) {
     document.head.appendChild(s);
   });
 }
+
+// ── ANNOUNCEMENTS ──
+async function loadAnnouncements() {
+  const container = document.getElementById('announcementsList');
+  if (!container) return;
+  try {
+    const snap = await getDocs(query(collection(db,'announcements'), orderBy('createdAt','desc')));
+    const items = [];
+    snap.forEach(d => items.push({id:d.id,...d.data()}));
+    if (!items.length) { container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem 0">No announcements posted yet.</div>'; return; }
+    container.innerHTML = items.map(a => `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.75rem 0;border-top:1px solid var(--border);gap:1rem">
+      <div style="flex:1">
+        <div style="font-size:.82rem;color:var(--muted)">${a.author||'Admin'} · ${a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+        <div style="font-size:.88rem;margin-top:.2rem;color:var(--text)">${a.message||''}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${a.id}')">✕</button>
+    </div>`).join('');
+  } catch(e) { container.innerHTML = '<div style="color:var(--danger)">Could not load announcements.</div>'; }
+}
+
+window.postAnnouncement = async function() {
+  const msg = document.getElementById('announcementText').value.trim();
+  if (!msg) { toast('Please enter a message','error'); return; }
+  try {
+    await addDoc(collection(db,'announcements'), {
+      message: msg,
+      author: _currentUser?.email || 'Admin',
+      createdAt: new Date().toISOString()
+    });
+    document.getElementById('announcementText').value = '';
+    toast('Announcement posted!','success');
+    loadAnnouncements();
+  } catch(e) { toast('Failed to post: '+e.message,'error'); }
+};
+
+window.deleteAnnouncement = async function(id) {
+  if (!confirm('Delete this announcement?')) return;
+  try {
+    await deleteDoc(doc(db,'announcements',id));
+    loadAnnouncements();
+  } catch(e) { toast('Delete failed','error'); }
+};
 
 
 

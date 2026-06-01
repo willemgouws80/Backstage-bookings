@@ -252,6 +252,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div class="card-title">Recent Lessons</div>
         <div id="recentLessons"><div class="loading-text">Loading your lessons…</div></div>
       </div>
+      <div id="announcementsBlock" style="display:none"></div>
     </div>
 
     <!-- MY LESSONS -->
@@ -346,7 +347,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, orderBy, onSnapshot, addDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage, ref, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
@@ -391,32 +392,15 @@ async function loadStudentData() {
   document.getElementById('greetingName').textContent = email.split('@')[0];
   document.getElementById('dashName').textContent = email.split('@')[0];
 
-  // Load all relevant collections in parallel
-  const [bSnap, aSnap, iSnap, pSnap] = await Promise.all([
-    getDocs(query(collection(db,'bookings'), where('email','==',email))),
-    getDocs(query(collection(db,'attendance'), where('studentEmail','==',email))),
-    getDocs(query(collection(db,'invoices'), where('email','==',email))),
-    getDoc(doc(db,'students',email))
-  ]);
-
-  _bookings = [];
-  bSnap.forEach(d => _bookings.push({id:d.id,...d.data()}));
-  _bookings.sort((a,b) => ((b.startDate||b.createdAt||'') > (a.startDate||a.createdAt||'') ? 1 : -1));
-
-  _attendanceRecords = [];
-  aSnap.forEach(d => _attendanceRecords.push({id:d.id,...d.data()}));
-  _attendanceRecords.sort((a,b) => ((b.date||'') > (a.date||'') ? 1 : -1));
-
-  _invoices = [];
-  iSnap.forEach(d => _invoices.push({id:d.id,...d.data()}));
-  _invoices.sort((a,b) => ((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
-
-  // Load/save student profile
+  // Load student profile once
+  const pSnap = await getDoc(doc(db,'students',email));
   if (pSnap.exists()) {
     window._studentProfile = pSnap.data();
   } else {
-    // Create student profile from auth + first booking
-    const first = _bookings[_bookings.length-1];
+    const allB = [];
+    const initSnap = await getDocs(query(collection(db,'bookings'), where('email','==',email)));
+    initSnap.forEach(d => allB.push(d.data()));
+    const first = allB[allB.length-1];
     const profile = {
       firstName: first?.firstName || email.split('@')[0],
       lastName: first?.lastName || '',
@@ -425,16 +409,52 @@ async function loadStudentData() {
       createdAt: new Date().toISOString()
     };
     window._studentProfile = profile;
-    try { await setDoc(doc(db,'students',email), profile); } catch(e) { /* may not be allowed */ }
+    try { await setDoc(doc(db,'students',email), profile); } catch(e) { /* rules may not allow */ }
   }
-
-  renderDashboard();
-  renderLessons('all');
-  renderAttendance();
-  renderInvoices();
   renderProfile();
+
+  // Real-time listeners
+  const bookingsQ = query(collection(db,'bookings'), where('email','==',email));
+  onSnapshot(bookingsQ, snap => {
+    _bookings = [];
+    snap.forEach(d => _bookings.push({id:d.id,...d.data()}));
+    _bookings.sort((a,b) => ((b.startDate||b.createdAt||'') > (a.startDate||a.createdAt||'') ? 1 : -1));
+    renderDashboard();
+    renderLessons(_lessonFilter);
+  });
+
+  const attQ = query(collection(db,'attendance'), where('studentEmail','==',email));
+  onSnapshot(attQ, snap => {
+    _attendanceRecords = [];
+    snap.forEach(d => _attendanceRecords.push({id:d.id,...d.data()}));
+    _attendanceRecords.sort((a,b) => ((b.date||'') > (a.date||'') ? 1 : -1));
+    renderAttendance();
+  });
+
+  const invQ = query(collection(db,'invoices'), where('email','==',email));
+  onSnapshot(invQ, snap => {
+    _invoices = [];
+    snap.forEach(d => _invoices.push({id:d.id,...d.data()}));
+    _invoices.sort((a,b) => ((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
+    renderInvoices();
+  });
+
+  // Announcements
+  const annQ = query(collection(db,'announcements'), orderBy('createdAt','desc'));
+  onSnapshot(annQ, snap => {
+    const announcements = [];
+    snap.forEach(d => announcements.push({id:d.id,...d.data()}));
+    const block = document.getElementById('announcementsBlock');
+    if (!announcements.length) { block.style.display = 'none'; return; }
+    block.style.display = 'block';
+    block.innerHTML = announcements.map(a => `
+      <div class="card" style="margin-bottom:.75rem;padding:1rem 1.25rem;border-left:3px solid var(--gold)">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:.25rem">${a.author||'Admin'} · ${a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : ''}</div>
+        <div style="font-size:.9rem;line-height:1.6">${a.message||''}</div>
+      </div>`).join('');
+  });
+
   loadResources();
-}
 
 // ── DASHBOARD ──
 function renderDashboard() {
@@ -454,6 +474,7 @@ function renderDashboard() {
   const next = _bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed').sort((a,b) => ((a.startDate||'') > (b.startDate||'') ? 1 : -1))[0];
   const block = document.getElementById('nextLessonBlock');
   if (next) {
+    const countdownHtml = next.startDate ? countdownTo(next.startDate) : '';
     block.innerHTML = `<div class="next-lesson">
       <div class="nl-left">
         <div class="nl-label">Next Lesson</div>
@@ -463,6 +484,7 @@ function renderDashboard() {
       <div class="nl-right">
         <div class="nl-date">${next.startDate ? new Date(next.startDate+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}) : '—'}</div>
         <div class="nl-time">${next.totalSessions ? next.totalSessions+' sessions' : ''}</div>
+        ${countdownHtml ? '<div class="nl-time" style="color:var(--gold);font-size:.9rem;margin-top:.3rem">'+countdownHtml+'</div>' : ''}
       </div>
     </div>`;
   } else {
@@ -546,98 +568,62 @@ function renderInvoices() {
           <div style="text-align:right">
             <div class="inv-amount">R ${Number(i.amount||0).toLocaleString()}</div>
             <span class="status-badge status-${s === 'paid' ? 'paid' : 'unpaid'}">${s}</span>
+            <button class="btn btn-outline btn-sm" style="margin-top:.3rem" onclick="downloadInvoicePDF('${encodeURIComponent(JSON.stringify(i))}')">⬇ PDF</button>
           </div>
         </div>`;
       }).join('')
     : '<div class="empty-state"><span class="icon">🧾</span><p>No invoices yet.</p></div>';
 }
 
-// ── PROFILE ──
-function renderProfile() {
+window.downloadInvoicePDF = function(enc) {
+  const i = JSON.parse(decodeURIComponent(enc));
   const p = window._studentProfile || {};
-  const email = _currentUser?.email || '';
-  document.getElementById('profileFullName').textContent = (p.firstName||'') + ' ' + (p.lastName||'');
-  document.getElementById('profileEmail').textContent = email;
-  document.getElementById('pFName').textContent = p.firstName||'—';
-  document.getElementById('pLName').textContent = p.lastName||'—';
-  document.getElementById('pEmail').textContent = email;
-  document.getElementById('pPhone').textContent = p.phone||'—';
-  document.getElementById('pSince').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}) : '—';
-}
+  const name = (p.firstName||'')+' '+(p.lastName||'');
+  const date = i.date ? new Date(i.date+'T12:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const due = i.dueDate ? new Date(i.dueDate+'T12:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice</title>
+    <style>body{font-family:Arial,sans-serif;padding:3rem;max-width:700px;margin:auto;color:#222}
+    .header{text-align:center;margin-bottom:2rem;border-bottom:2px solid #C9911A;padding-bottom:1rem}
+    .header h1{font-size:1.8rem;margin:0;color:#C9911A}.header h1 small{font-size:.8rem;color:#666;display:block}
+    .header p{color:#666;font-size:.85rem;margin:.3rem 0}
+    .details{display:flex;justify-content:space-between;margin-bottom:2rem;font-size:.88rem}
+    .details div{line-height:1.7}
+    .details .lbl{color:#666;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em}
+    .table{width:100%;border-collapse:collapse;margin-bottom:2rem}
+    .table th,.table td{padding:.6rem .8rem;text-align:left;border-bottom:1px solid #ddd;font-size:.88rem}
+    .table th{background:#f5f5f5;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:#666}
+    .total{text-align:right;font-size:1.3rem;font-weight:700;padding:.5rem 0}
+    .footer{text-align:center;color:#999;font-size:.75rem;margin-top:2rem;border-top:1px solid #ddd;padding-top:1rem}
+  </style></head><body>
+    <div class="header">
+      <h1>Backstage Worship Music School <small>Tax Invoice</small></h1>
+      <p>Pretoria East · backstageworshipmusic@gmail.com</p>
+    </div>
+    <div class="details">
+      <div><div class="lbl">Bill To</div>${name}<br>${i.email||'—'}</div>
+      <div style="text-align:right"><div class="lbl">Invoice Date</div>${date}<br><div class="lbl" style="margin-top:.5rem">Invoice #</div>${i.invoiceNumber||i.id||'—'}</div>
+    </div>
+    <table class="table"><tr><th>Description</th><th style="text-align:right">Amount</th></tr>
+    <tr><td>${i.description||'Music Lesson'}</td><td style="text-align:right">R ${Number(i.amount||0).toLocaleString()}</td></tr>
+    <tr><td colspan="2" class="total">Total: R ${Number(i.amount||0).toLocaleString()}</td></tr></table>
+    <p style="text-align:center;color:#666;font-size:.82rem">Payment due: ${due}</p>
+    <div class="footer">Thank you for choosing Backstage Worship Music School</div>
+    <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+};
 
-function showEditProfile() {
-  const p = window._studentProfile || {};
-  document.getElementById('eFName').value = p.firstName||'';
-  document.getElementById('eLName').value = p.lastName||'';
-  document.getElementById('ePhone').value = p.phone||'';
-  document.getElementById('editProfileCard').style.display = 'block';
-}
-
-function hideEditProfile() {
-  document.getElementById('editProfileCard').style.display = 'none';
-}
-
-async function saveProfile() {
-  const email = _currentUser.email;
-  const data = {
-    firstName: document.getElementById('eFName').value.trim(),
-    lastName: document.getElementById('eLName').value.trim(),
-    phone: document.getElementById('ePhone').value.trim(),
-    email: email
-  };
-  try {
-    await setDoc(doc(db,'students',email), data, {merge: true});
-    window._studentProfile = data;
-    renderProfile();
-    hideEditProfile();
-    toast('Profile updated!');
-  } catch(e) {
-    toast('Could not save profile: '+e.message, 'error');
-  }
-}
-
-// ── RESOURCES ──
-async function loadResources() {
-  const container = document.getElementById('resourcesList');
-  try {
-    const snap = await getDocs(query(collection(db,'resources'), orderBy('uploadedAt','desc')));
-    const resources = [];
-    snap.forEach(d => resources.push({id:d.id,...d.data()}));
-
-    document.getElementById('resCount').textContent = resources.length+' file'+(resources.length!==1?'s':'');
-
-    if (!resources.length) {
-      container.innerHTML = '<div class="empty-state"><span class="icon">📂</span><p>No resources available yet. Check back soon for songs and worksheets!</p></div>';
-      return;
-    }
-
-    container.innerHTML = resources.map(r => {
-      const cat = r.category||'General';
-      const d = r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '';
-      const size = r.fileSize ? (r.fileSize/1024).toFixed(0)+' KB' : '';
-      const icon = r.category === 'Guitar' ? '🎸' : r.category === 'Vocals' ? '🎤' : r.category === 'Worship' ? '⛪' : r.category === 'Theory' ? '🎼' : '📄';
-      return `<div class="list-item">
-        <div class="li-content">
-          <div class="li-title">${icon} ${r.title||'Untitled'}</div>
-          <div class="li-meta">${r.description||''}${d?' · '+d:''}${size?' · '+size:''} · ${cat}</div>
-        </div>
-        <div class="li-actions">
-          <a href="${r.fileUrl}" target="_blank" class="btn btn-outline btn-sm" download>Download PDF</a>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    container.innerHTML = '<div class="loading-text">Could not load resources.</div>';
-  }
-}
-
-async function resetPassword() {
-  try {
-    await sendPasswordResetEmail(auth, _currentUser.email);
-    toast('Password reset link sent to your email.');
-  } catch(e) {
-    toast('Error: '+e.message, 'error');
-  }
+function countdownTo(dateStr) {
+  const target = new Date(dateStr+'T12:00:00').getTime();
+  const now = Date.now();
+  const diff = target - now;
+  if (diff <= 0) return '';
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  if (days > 0) return days+' day'+(days>1?'s':'')+' away';
+  if (hours > 0) return hours+' hour'+(hours>1?'s':'')+' away';
+  return 'Today!';
 }
 
 // ── AUTH FUNCTIONS ──
