@@ -500,7 +500,7 @@ const db  = getFirestore(app);
     lastPage: location.href,
     lastVisit: new Date().toISOString()
   }, { merge: true });
-} catch(e) {} })();
+} catch(e) { console.warn('pageview tracking error:',e); } })();
 
 window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{} };
 
@@ -878,6 +878,17 @@ window.submitBooking = async () => {
     document.querySelectorAll('.fs').forEach(s=>s.style.display='none');
     document.getElementById('successMsg').classList.add('show');
     if (typeof fbq === 'function') fbq('track', 'CompleteRegistration', { content_name: booking.plan||'Booking', currency: 'ZAR', value: booking.price||0 });
+    // Server-side Meta Conversions API (backup if Pixel is blocked)
+    fetch('https://sendmetaconversion-oq4hyy6bda-uc.a.run.app', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventName: 'CompleteRegistration',
+        email: booking.email, phone: booking.phone,
+        firstName: booking.firstName, lastName: booking.lastName,
+        plan: booking.plan, price: booking.price, currency: 'ZAR',
+      }),
+    }).catch(() => {});
   } catch(err) { alert('Error saving booking. Please try again.'); console.error(err); }
 };
 

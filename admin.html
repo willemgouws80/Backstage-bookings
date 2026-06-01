@@ -1001,12 +1001,15 @@ async function loadDashboard() {
     // Page views
     try {
       const vSnap = await getDoc(doc(db,'analytics','pageviews'));
-      if (vSnap.exists()) {
-        const v = vSnap.data();
-        document.getElementById('statViews').textContent      = v.total||0;
-        document.getElementById('statViewsToday').textContent  = (v.date === new Date().toISOString().slice(0,10) ? v.today||0 : 0);
+      const v = vSnap.exists() ? vSnap.data() : {};
+      const today = new Date().toISOString().slice(0,10);
+      document.getElementById('statViews').textContent      = v.total||0;
+      document.getElementById('statViewsToday').textContent  = (v.date === today ? v.today||0 : 0);
+      // Ensure document exists
+      if (!vSnap.exists()) {
+        await setDoc(doc(db,'analytics','pageviews'), { total:0, today:0, date:today });
       }
-    } catch(e) {}
+    } catch(e) { console.warn('pageviews read error:',e); }
 
     const recent = [...bookings].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,8);
     document.getElementById('recentBookings').innerHTML = recent.length

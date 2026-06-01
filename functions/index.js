@@ -6,6 +6,8 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const GEMINI_KEY = defineSecret('GEMINI_API_KEY');
+const META_TOKEN = defineSecret('META_ACCESS_TOKEN');
+const PIXEL_ID = '878140531231402';
 
 exports.adminChat = onRequest(
   { secrets: [GEMINI_KEY], cors: true, maxInstances: 5 },
@@ -105,6 +107,64 @@ If the data doesn't cover the question, suggest what they can find in the admin 
     } catch (err) {
       console.error('Gemini error:', err);
       res.status(500).json({ error: 'AI error: ' + (err?.message || err?.toString() || 'Unknown') });
+    }
+  }
+);
+
+// ── META CONVERSIONS API ──
+exports.sendMetaConversion = onRequest(
+  { secrets: [META_TOKEN], cors: true, maxInstances: 5 },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { eventName, email, phone, firstName, lastName, plan, price, currency } = req.body || {};
+    if (!eventName || !email) { res.status(400).json({ error: 'eventName and email required' }); return; }
+
+    // Hash user data with SHA-256 (required by Meta)
+    const crypto = require('crypto');
+    const hash = (s) => crypto.createHash('sha256').update((s||'').trim().toLowerCase()).digest('hex');
+
+    const event = {
+      event_name: eventName,
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'website',
+      user_data: {
+        em: [hash(email)],
+        fn: [hash(firstName)],
+        ln: [hash(lastName)],
+        ph: phone ? [hash(phone)] : undefined,
+      },
+      custom_data: {
+        content_name: plan || 'Booking',
+        currency: currency || 'ZAR',
+        value: parseFloat(price) || 0,
+      },
+      event_source_url: req.headers['referer'] || '',
+    };
+
+    try {
+      const accessToken = META_TOKEN.value();
+      const resp = await fetch(
+        `https://graph.facebook.com/v22.0/${PIXEL_ID}/events?access_token=${accessToken}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: [event] }),
+        }
+      );
+      const result = await resp.json();
+      if (result.events_received === 1) {
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: 'Meta rejected event', detail: result });
+      }
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
   }
 );
