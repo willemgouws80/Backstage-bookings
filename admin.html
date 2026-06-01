@@ -1412,6 +1412,7 @@ function renderCoursesList(courses) {
           <div class="li-meta">
             ${c.category} · ${c.level} · ${c.duration} weeks · R${Number(c.price).toLocaleString()}
             ${c.maxParticipants ? ` · Max ${c.maxParticipants} per slot` : ''}
+            ${c.bookedCount ? ` · ${c.bookedCount} enrolled` : ''}
             ${c.venue ? ` · 📍 ${c.venue}` : ''}
             · ${schedLabel(c)}
           </div>

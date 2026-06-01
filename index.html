@@ -476,7 +476,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js';
-import { getFirestore, collection, getDocs, addDoc, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",authDomain:"backstage-music.firebaseapp.com",
@@ -696,27 +696,9 @@ async function loadCourses(retries=3) {
     return;
   }
 
-  // Step 2: Try to get slot counts from bookings — silently skip if permission denied
-  // Slot counts are a nice-to-have; courses display regardless
-  const slotCounts = {};
-  try {
-    const bookSnap = await getDocs(collection(db,'bookings'));
-    bookSnap.forEach(d => {
-      const b = d.data();
-      if (!b.courseId) return;
-      if (!slotCounts[b.courseId]) slotCounts[b.courseId] = {};
-      const slotKey = b.chosenSlot || '__total__';
-      slotCounts[b.courseId][slotKey] = (slotCounts[b.courseId][slotKey] || 0) + 1;
-    });
-  } catch(e) {
-    // Bookings read denied (correct — public users can't read bookings)
-    // Courses still render, just without live slot counts
-    console.info('Slot counts unavailable for public users — courses will display without live availability');
-  }
-
-  // Step 3: Render courses with whatever slot data we have
+  // Step 2: Render courses with booked count
   window._courses = courses;
-  renderCourses(courses, slotCounts);
+  renderCourses(courses);
 }
 
 
@@ -729,20 +711,19 @@ function slotLabel(slot) {
 // Expose to plain script block
 window.slotLabel = slotLabel;
 function slotKey(slot) { return slotLabel(slot); }
-function renderCourses(courses, slotCounts) {
+function renderCourses(courses) {
   document.getElementById('coursesGrid').innerHTML = courses.map(c => {
     const max       = c.maxParticipants ? Number(c.maxParticipants) : null;
+    const taken     = c.bookedCount || 0;
     const slots     = c.slotOptions?.length ? c.slotOptions : (c.fixedSchedule ? [c.fixedSchedule] : []);
     const schedType = c.scheduleType || 'free';
-    const counts    = slotCounts[c.id] || {};
+    const left      = max ? max - taken : null;
+    const full      = max && left <= 0;
 
     let schedHtml = '';
     let allFull   = false;
 
     if (schedType === 'fixed' && c.fixedSchedule) {
-      const taken = counts[c.fixedSchedule] || counts['__total__'] || 0;
-      const left  = max ? max - taken : null;
-      const full  = max && left <= 0;
       allFull = !!full;
       schedHtml   = `<div class="slot-row">
         <span class="slot-time">📅 ${c.fixedSchedule}</span>
@@ -751,27 +732,21 @@ function renderCourses(courses, slotCounts) {
 
     } else if (schedType === 'options' && slots.length) {
       const slotRows = slots.map(slot => {
-        const lbl   = slotLabel(slot);
-        const taken = counts[lbl] || 0;
-        const left  = max ? max - taken : null;
-        const full  = max && left <= 0;
         const isObj = typeof slot === 'object';
         const dur   = isObj && slot.duration ? `<span style="font-size:.75rem;color:var(--muted);margin-left:.4rem">${slot.duration}</span>` : '';
         const desc  = isObj && slot.description ? `<div style="font-size:.75rem;color:var(--muted);margin-top:.15rem;padding-left:1.4rem">${slot.description}</div>` : '';
         const name  = isObj && slot.name ? `<strong style="color:var(--text)">${slot.name}</strong> — ` : '';
         return `<div class="slot-row" style="flex-direction:column;align-items:flex-start">
           <div style="display:flex;justify-content:space-between;width:100%">
-            <span class="slot-time">📅 ${name}${isObj?`${slot.day||''} ${slot.start||''}${slot.end?' – '+slot.end:''}`:lbl}${dur}</span>
+            <span class="slot-time">📅 ${name}${isObj?`${slot.day||''} ${slot.start||''}${slot.end?' – '+slot.end:''}`:slotLabel(slot)}${dur}</span>
             ${max ? `<span class="${full?'spots-full':'spots-left'}">${full?'Full':left+' spot'+(left===1?'':'s')+' left'}</span>` : ''}
           </div>
           ${desc}
         </div>`;
       });
-      allFull   = max ? slots.every(s => (counts[slotLabel(s)]||0) >= max) : false;
+      allFull   = max ? slots.every(s => (taken||0) >= max) : false;
       schedHtml = slotRows.join('');
     }
-
-    const slotCountsEnc = encodeURIComponent(JSON.stringify(counts));
 
     return `<div class="course-card">
       <div class="course-head">
@@ -796,16 +771,7 @@ function renderCourses(courses, slotCounts) {
         ${c.venue?`<div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;display:flex;align-items:center;gap:.3rem">📍 ${c.venue}</div>`:''}
         <div class="course-slots">${schedHtml}</div>
         <button class="enroll-btn" ${allFull?'disabled':''}
-          onclick="window.enrollCourse(
-            '${c.id}',
-            '${encodeURIComponent(c.title)}',
-            ${c.price},
-            '${encodeURIComponent(schedType)}',
-            '${encodeURIComponent(c.fixedSchedule||'')}',
-            '${encodeURIComponent(JSON.stringify(c.slotOptions||[]))}',
-            ${max||0},
-            '${slotCountsEnc}'
-          )">
+          onclick="window.enrollCourse('${c.id}')">
           ${allFull ? 'Course Full' : 'Enroll — R'+Number(c.price).toLocaleString()}
         </button>
       </div>
@@ -822,22 +788,23 @@ window.pickPlan   = (id,price,nameEnc,dur) => {
   document.querySelectorAll('.lesson-opt').forEach(el=>el.classList.remove('selected'));
   const el=document.getElementById('lo-'+id); if(el) el.classList.add('selected');
 };
-window.enrollCourse = (id,titleEnc,price,schedTypeEnc,schedEnc,slotsEnc,maxP,slotCountsEnc) => {
-  const title        = decodeURIComponent(titleEnc);
-  const scheduleType = decodeURIComponent(schedTypeEnc||'free');
-  const fixedSchedule= decodeURIComponent(schedEnc||'');
-  const slotOptions  = JSON.parse(decodeURIComponent(slotsEnc||'[]'));
-  const maxParticipants = Number(maxP)||0;
-  const slotCounts   = JSON.parse(decodeURIComponent(slotCountsEnc||'{}'));
-
-  // Find full course data including venue
+window.enrollCourse = (id) => {
   const fullCourse = (window._courses||[]).find(c=>c.id===id) || {};
+  const title = fullCourse.title||'';
+  const price = fullCourse.price||0;
+  const scheduleType = fullCourse.scheduleType||'free';
+  const fixedSchedule = fullCourse.fixedSchedule||'';
+  const slotOptions = fullCourse.slotOptions||[];
+  const maxParticipants = Number(fullCourse.maxParticipants)||0;
+  const bookedCount = fullCourse.bookedCount||0;
+  const slotBookedCounts = fullCourse.slotBookedCounts||{};
+
   window._S.plan     = 'course-'+id;
   window._S.planName = title+' (Course)';
   window._S.price    = price;
   window._S.isCourse = true;
   window._S.selectedSlot = null;
-  window._S.courseData = {id, title, price, scheduleType, fixedSchedule, slotOptions, maxParticipants, slotCounts, venue: fullCourse.venue||''};
+  window._S.courseData = {id, title, price, scheduleType, fixedSchedule, slotOptions, maxParticipants, bookedCount, slotBookedCounts, venue: fullCourse.venue||''};
 
   document.getElementById('instrumentBlock').style.display='none';
   document.getElementById('planLabel').textContent='Selected Course';
@@ -874,6 +841,14 @@ window.submitBooking = async () => {
   };
   try {
     await addDoc(collection(db,'bookings'), booking);
+    // Increment course enrollment count if this is a course booking
+    if (window._S.courseData?.id) {
+      const slotKey = window._S.selectedSlot || window._S.courseData?.fixedSchedule || '__total__';
+      updateDoc(doc(db,'courses',window._S.courseData.id), {
+        bookedCount: increment(1),
+        [`slotBookedCounts.${slotKey}`]: increment(1)
+      }).catch(e => console.warn('course count err:',e));
+    }
     document.getElementById('stepsBar').style.display='none';
     document.querySelectorAll('.fs').forEach(s=>s.style.display='none');
     document.getElementById('successMsg').classList.add('show');
@@ -992,7 +967,7 @@ function buildSchedule() {
 
   if (S.isCourse && c) {
     const max    = c.maxParticipants || 0;
-    const counts = c.slotCounts || {};
+    const counts = c.slotBookedCounts || {};
     const slots  = (c.slotOptions && c.slotOptions.length) ? c.slotOptions
                  : (c.fixedSchedule ? [c.fixedSchedule] : []);
 
