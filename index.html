@@ -714,39 +714,49 @@ function slotKey(slot) { return slotLabel(slot); }
 function renderCourses(courses) {
   document.getElementById('coursesGrid').innerHTML = courses.map(c => {
     const max       = c.maxParticipants ? Number(c.maxParticipants) : null;
-    const taken     = c.bookedCount || 0;
+    const booked    = c.bookedCount || 0;
     const slots     = c.slotOptions?.length ? c.slotOptions : (c.fixedSchedule ? [c.fixedSchedule] : []);
     const schedType = c.scheduleType || 'free';
-    const left      = max ? max - taken : null;
-    const full      = max && left <= 0;
+    const totalLeft = max ? max - booked : null;
+    const allFull   = schedType === 'options' ? false : (max && totalLeft <= 0);
 
     let schedHtml = '';
-    let allFull   = false;
 
     if (schedType === 'fixed' && c.fixedSchedule) {
-      allFull = !!full;
       schedHtml   = `<div class="slot-row">
         <span class="slot-time">📅 ${c.fixedSchedule}</span>
-        ${max ? `<span class="${full?'spots-full':'spots-left'}">${full?'Full':left+' spot'+(left===1?'':'s')+' left'}</span>` : ''}
+        ${max ? `<span class="${totalLeft<=0?'spots-full':'spots-left'}">${totalLeft<=0?'Full':totalLeft+' spot'+(totalLeft===1?'':'s')+' left'}</span>` : ''}
       </div>`;
 
     } else if (schedType === 'options' && slots.length) {
       const slotRows = slots.map(slot => {
-        const isObj = typeof slot === 'object';
+        const isObj  = typeof slot === 'object';
+        const lbl    = slotLabel(slot);
+        const sMax   = isObj && slot.maxParticipants ? Number(slot.maxParticipants) : null;
+        const taken  = c.slotBookedCounts?.[lbl] || 0;
+        const sLeft  = sMax ? sMax - taken : null;
+        const sFull  = sMax && sLeft <= 0;
         const dur   = isObj && slot.duration ? `<span style="font-size:.75rem;color:var(--muted);margin-left:.4rem">${slot.duration}</span>` : '';
         const desc  = isObj && slot.description ? `<div style="font-size:.75rem;color:var(--muted);margin-top:.15rem;padding-left:1.4rem">${slot.description}</div>` : '';
         const name  = isObj && slot.name ? `<strong style="color:var(--text)">${slot.name}</strong> — ` : '';
         return `<div class="slot-row" style="flex-direction:column;align-items:flex-start">
           <div style="display:flex;justify-content:space-between;width:100%">
-            <span class="slot-time">📅 ${name}${isObj?`${slot.day||''} ${slot.start||''}${slot.end?' – '+slot.end:''}`:slotLabel(slot)}${dur}</span>
-            ${max ? `<span class="${full?'spots-full':'spots-left'}">${full?'Full':left+' spot'+(left===1?'':'s')+' left'}</span>` : ''}
+            <span class="slot-time">📅 ${name}${isObj?`${slot.day||''} ${slot.start||''}${slot.end?' – '+slot.end:''}`:lbl}${dur}</span>
+            ${sMax ? `<span class="${sFull?'spots-full':'spots-left'}">${sFull?'Full':sLeft+' spot'+(sLeft===1?'':'s')+' left'}</span>` : ''}
           </div>
           ${desc}
         </div>`;
       });
-      allFull   = max ? slots.every(s => (taken||0) >= max) : false;
       schedHtml = slotRows.join('');
     }
+
+    const isFull = schedType === 'options'
+      ? slots.every(s => {
+          const sMax = typeof s === 'object' && s.maxParticipants ? Number(s.maxParticipants) : null;
+          if (!sMax) return false;
+          return (c.slotBookedCounts?.[slotLabel(s)] || 0) >= sMax;
+        })
+      : allFull;
 
     return `<div class="course-card">
       <div class="course-head">
@@ -754,7 +764,7 @@ function renderCourses(courses) {
           <div class="course-badges">
             <span class="badge">${c.category||'Guitar'}</span>
             <span class="badge">${c.level||'Beginner'}</span>
-            ${allFull ? '<span class="badge badge-full">Full</span>' : ''}
+            ${isFull ? '<span class="badge badge-full">Full</span>' : ''}
           </div>
           <h3>${c.title}</h3>
         </div>
@@ -770,9 +780,9 @@ function renderCourses(courses) {
       <div class="course-foot">
         ${c.venue?`<div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;display:flex;align-items:center;gap:.3rem">📍 ${c.venue}</div>`:''}
         <div class="course-slots">${schedHtml}</div>
-        <button class="enroll-btn" ${allFull?'disabled':''}
+        <button class="enroll-btn" ${isFull?'disabled':''}
           onclick="window.enrollCourse('${c.id}')">
-          ${allFull ? 'Course Full' : 'Enroll — R'+Number(c.price).toLocaleString()}
+          ${isFull ? 'Course Full' : 'Enroll — R'+Number(c.price).toLocaleString()}
         </button>
       </div>
     </div>`;
@@ -840,6 +850,21 @@ window.submitBooking = async () => {
     payMethod: window._S.payMethod, status:'pending', createdAt:new Date().toISOString()
   };
   try {
+    // Double-check capacity for courses before saving
+    if (window._S.courseData?.id) {
+      const courseSnap = await getDoc(doc(db,'courses',window._S.courseData.id));
+      if (courseSnap.exists()) {
+        const cd = courseSnap.data();
+        const slotKey = window._S.selectedSlot || window._S.courseData?.fixedSchedule || '__total__';
+        const slotObj = (cd.slotOptions||[]).find(s => slotLabel(s) === slotKey);
+        const sMax = slotObj?.maxParticipants ? Number(slotObj.maxParticipants) : (cd.maxParticipants ? Number(cd.maxParticipants) : null);
+        const taken = (cd.slotBookedCounts?.[slotKey] || 0);
+        if (sMax && taken >= sMax) {
+          alert('Sorry, this slot is no longer available. Please choose another.');
+          return;
+        }
+      }
+    }
     await addDoc(collection(db,'bookings'), booking);
     // Increment course enrollment count if this is a course booking
     if (window._S.courseData?.id) {
@@ -974,10 +999,13 @@ function buildSchedule() {
     if (slots.length === 1) {
       // Single slot — confirm only, auto-select
       const slot  = slots[0];
-      const taken = counts[slot] || counts['__total__'] || 0;
-      const left  = max ? max - taken : null;
-      const full  = max && left <= 0;
-      window._S.selectedSlot = window.slotLabel(slot);
+      const isObj = typeof slot === 'object';
+      const sMax  = isObj && slot.maxParticipants ? Number(slot.maxParticipants) : max;
+      const lbl   = window.slotLabel(slot);
+      const taken = counts[lbl] || counts['__total__'] || 0;
+      const left  = sMax ? sMax - taken : null;
+      const full  = sMax && left <= 0;
+      window._S.selectedSlot = lbl;
       const cVenue = S.courseData?.venue || '';
       block.innerHTML = `
         <div class="fixed-schedule-notice">
@@ -997,9 +1025,10 @@ function buildSchedule() {
       const opts = slots.map((slot, i) => {
         const isObj   = typeof slot === 'object';
         const lbl     = isObj ? (slot.label || `${slot.day||''} ${slot.start||''}${slot.end?' – '+slot.end:''}`.trim()) : slot;
+        const sMax    = isObj && slot.maxParticipants ? Number(slot.maxParticipants) : max;
         const taken   = counts[lbl] || 0;
-        const left    = max ? max - taken : null;
-        const full    = max && left <= 0;
+        const left    = sMax ? sMax - taken : null;
+        const full    = sMax && left <= 0;
         // Safe key for use inside onclick string — escape single quotes
         const safeKey = lbl.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         const dName   = isObj && slot.name     ? slot.name     : `Option ${i+1}`;

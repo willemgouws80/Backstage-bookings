@@ -367,6 +367,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
                 <div class="fg"><label>End Time</label><input type="time" class="slot-end"></div>
               </div>
               <div class="fg"><label>Description</label><textarea class="slot-desc" rows="2" placeholder="e.g. For primary school learners, complete beginners welcome." style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+              <div class="fg" style="margin-top:.5rem"><label>Max Participants (per slot)</label><input type="number" class="slot-max" placeholder="Leave empty = unlimited" min="1" style="width:100%"></div>
             </div>
             <div class="slot-option-row" data-slot="1" style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1rem">
               <div style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Option 2</div>
@@ -382,6 +383,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
                 <div class="fg"><label>End Time</label><input type="time" class="slot-end"></div>
               </div>
               <div class="fg"><label>Description</label><textarea class="slot-desc" rows="2" placeholder="e.g. For high school learners with some prior experience." style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+              <div class="fg" style="margin-top:.5rem"><label>Max Participants (per slot)</label><input type="number" class="slot-max" placeholder="Leave empty = unlimited" min="1" style="width:100%"></div>
             </div>
             <div class="slot-option-row" data-slot="2" style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1rem">
               <div style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Option 3 <span style="color:var(--muted);font-weight:300">(optional)</span></div>
@@ -397,6 +399,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
                 <div class="fg"><label>End Time</label><input type="time" class="slot-end"></div>
               </div>
               <div class="fg"><label>Description</label><textarea class="slot-desc" rows="2" placeholder="e.g. For adult learners, intermediate to advanced level." style="width:100%;padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.88rem;resize:vertical"></textarea></div>
+              <div class="fg" style="margin-top:.5rem"><label>Max Participants (per slot)</label><input type="number" class="slot-max" placeholder="Leave empty = unlimited" min="1" style="width:100%"></div>
             </div>
           </div>
           <div class="three-col">
@@ -1210,6 +1213,8 @@ window.editCourse = function(id) {
       row.querySelector('.slot-start').value = parts[1] || '';
       row.querySelector('.slot-end').value   = parts[3] || '';
     }
+    const maxEl = row.querySelector('.slot-max');
+    if (maxEl) maxEl.value = typeof slot === 'object' && slot.maxParticipants ? slot.maxParticipants : '';
   });
   toggleScheduleFields();
 
@@ -1317,9 +1322,11 @@ window.saveCourse = async function() {
       const name  = row.querySelector('.slot-name')?.value.trim() || '';
       const dur   = row.querySelector('.slot-duration')?.value.trim() || '';
       const desc  = row.querySelector('.slot-desc')?.value.trim() || '';
+      const max   = row.querySelector('.slot-max')?.value;
       if (day && start) slotOptions.push({
         label:    name || `${day} ${start}${end?' – '+end:''}`,
-        day, start, end, name, duration: dur, description: desc
+        day, start, end, name, duration: dur, description: desc,
+        maxParticipants: max ? Number(max) : null
       });
     });
     if (slotOptions.length < 2) { toast('Please fill in at least 2 slot options','error'); return; }
@@ -1443,7 +1450,9 @@ function renderCoursesList(courses) {
           <div class="li-title">${c.title}</div>
           <div class="li-meta">
             ${c.category} · ${c.level} · ${c.duration} weeks · R${Number(c.price).toLocaleString()}
-            ${c.maxParticipants ? ` · Max ${c.maxParticipants} per slot` : ''}
+            ${c.scheduleType === 'options' && c.slotOptions?.length
+              ? ' · Per-slot limits: '+c.slotOptions.map(s => s.maxParticipants ? `${s.name||s.label||'slot'}: ${s.maxParticipants}` : 'unlimited').join(', ')
+              : c.maxParticipants ? ` · Max ${c.maxParticipants}` : ''}
             ${c.bookedCount ? ` · ${c.bookedCount} enrolled` : ''}
             ${c.venue ? ` · 📍 ${c.venue}` : ''}
             · ${schedLabel(c)}
