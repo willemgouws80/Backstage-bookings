@@ -376,7 +376,14 @@ onAuthStateChanged(auth, user => {
     _currentUser = user;
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('panel-dashboard')?.classList.add('active');
-    loadStudentData().catch(e => console.error('loadStudentData error:', e));
+    loadStudentData().catch(e => {
+      console.error('loadStudentData error:', e);
+      // Render empty state as fallback
+      renderDashboard();
+      renderLessons('all');
+      renderAttendance();
+      renderInvoices();
+    });
   } else {
     _currentUser = null;
     document.getElementById('authScreen').classList.remove('hidden');
@@ -746,7 +753,8 @@ window.doSignOut = async function() {
 window.switchAuthTab = function(tab) {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
-  document.getElementById('authSign'+tab).classList.add('active');
+  const el = document.getElementById('authSign'+tab);
+  if (el) el.classList.add('active');
   document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
   document.getElementById('authError').textContent = '';
 };
