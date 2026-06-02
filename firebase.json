@@ -6,6 +6,9 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "headers": [
+      { "source": "*.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] }
+    ],
     "rewrites": [
       { "source": "/api/**", "function": "adminChat" },
       { "source": "**", "destination": "/index.html" }
