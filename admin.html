@@ -2720,9 +2720,18 @@ function showCalModal(html) {
 // ── STUDENTS ──
 async function loadStudents() {
   try {
-    const snap = await getDocs(collection(db,'bookings'));
+    const [bookSnap, studSnap] = await Promise.all([
+      getDocs(collection(db,'bookings')),
+      getDocs(collection(db,'students'))
+    ]);
     const bookings = [];
-    snap.forEach(d => bookings.push({id:d.id,...d.data()}));
+    bookSnap.forEach(d => bookings.push({id:d.id,...d.data()}));
+
+    const photoMap = {};
+    studSnap.forEach(d => {
+      const data = d.data();
+      if (data.email) photoMap[data.email.toLowerCase().trim()] = data.photoURL || '';
+    });
 
     // Group by email — one student record per unique email
     const studentMap = {};
@@ -2733,6 +2742,7 @@ async function loadStudents() {
           name:  `${b.firstName||''} ${b.lastName||''}`.trim(),
           email: b.email||'',
           phone: b.phone||'',
+          photoURL: photoMap[key] || '',
           bookings: []
         };
       }
@@ -2766,12 +2776,15 @@ function renderStudentsList(students) {
     return `
     <div class="student-card">
       <div class="student-card-header" onclick="toggleStudent('s${i}')">
-        <div>
-          <div class="student-name">${s.name||'Unknown'}</div>
-          <div class="student-meta">
-            ${s.email} · ${s.phone||'—'} ·
-            ${s.bookings.length} booking${s.bookings.length===1?'':'s'} ·
-            Last: ${lastBook?.plan||'—'}
+        <div style="display:flex;align-items:center;gap:.85rem">
+          ${s.photoURL ? `<img src="${s.photoURL}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0">` : '<span style="font-size:1.6rem;flex-shrink:0">👤</span>'}
+          <div>
+            <div class="student-name">${s.name||'Unknown'}</div>
+            <div class="student-meta">
+              ${s.email} · ${s.phone||'—'} ·
+              ${s.bookings.length} booking${s.bookings.length===1?'':'s'} ·
+              Last: ${lastBook?.plan||'—'}
+            </div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:.75rem">
