@@ -762,11 +762,18 @@ window.doSignOut = async function() {
 
 window.switchAuthTab = function(tab) {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f=>{
+    f.classList.remove('active');
+    f.style.display = 'none';
+  });
   const el = document.getElementById('authSign'+tab);
-  if (el) el.classList.add('active');
+  if (el) {
+    el.classList.add('active');
+    el.style.display = 'block';
+  }
   document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
-  document.getElementById('authError').textContent = '';
+  const err = document.getElementById('authError');
+  if (err) err.textContent = '';
 };
 
 // ── PANEL SWITCHING ──
