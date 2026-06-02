@@ -395,7 +395,6 @@ onAuthStateChanged(auth, user => {
       });
     });
   } else {
-  } else {
     _currentUser = null;
     document.getElementById('authScreen').classList.remove('hidden');
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
