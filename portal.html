@@ -376,14 +376,25 @@ onAuthStateChanged(auth, user => {
     _currentUser = user;
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('panel-dashboard')?.classList.add('active');
-    loadStudentData().catch(e => {
-      console.error('loadStudentData error:', e);
-      // Render empty state as fallback
-      renderDashboard();
-      renderLessons('all');
-      renderAttendance();
-      renderInvoices();
+    // Force token refresh so Firestore permissions apply for newly created accounts
+    (user.getIdToken(true) || Promise.resolve()).then(() => {
+      loadStudentData().catch(e => {
+        console.error('loadStudentData error:', e);
+        renderDashboard();
+        renderLessons('all');
+        renderAttendance();
+        renderInvoices();
+      });
+    }).catch(() => {
+      loadStudentData().catch(e => {
+        console.error('loadStudentData error:', e);
+        renderDashboard();
+        renderLessons('all');
+        renderAttendance();
+        renderInvoices();
+      });
     });
+  } else {
   } else {
     _currentUser = null;
     document.getElementById('authScreen').classList.remove('hidden');
