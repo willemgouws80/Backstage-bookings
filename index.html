@@ -500,7 +500,7 @@ const db  = getFirestore(app);
     lastPage: location.href,
     lastVisit: new Date().toISOString()
   }, { merge: true });
-} catch(e) { console.warn('pageview tracking error:',e); } })();
+} catch(e) {} })();
 
 window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{} };
 
