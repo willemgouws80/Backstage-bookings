@@ -415,15 +415,15 @@ function renderProfile() {
   document.getElementById('pPhone').textContent = p.phone||'—';
   document.getElementById('pSince').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
 }
-function showEditProfile() {
+window.showEditProfile = function() {
   const p = window._studentProfile||{};
   document.getElementById('eFName').value = p.firstName||'';
   document.getElementById('eLName').value = p.lastName||'';
   document.getElementById('ePhone').value = p.phone||'';
   document.getElementById('editProfileCard').style.display = 'block';
-}
-function hideEditProfile() { document.getElementById('editProfileCard').style.display = 'none'; }
-async function saveProfile() {
+};
+window.hideEditProfile = function() { document.getElementById('editProfileCard').style.display = 'none'; };
+window.saveProfile = async function() {
   const fName = document.getElementById('eFName').value.trim();
   const lName = document.getElementById('eLName').value.trim();
   const phone = document.getElementById('ePhone').value.trim();
@@ -432,9 +432,9 @@ async function saveProfile() {
   await setDoc(doc(db,'students',_currentUser.email), updated, {merge:true});
   window._studentProfile = updated;
   renderProfile();
-  hideEditProfile();
-}
-function resetPassword() {
+  window.hideEditProfile();
+};
+window.resetPassword = function() {
   sendPasswordResetEmail(auth, _currentUser.email)
     .then(() => alert('Password reset link sent to your email.'))
     .catch(e => alert('Error: '+e.message));
@@ -606,7 +606,7 @@ function lessonRow(b) {
   </div>`;
 }
 
-function filterLessons(f) { renderLessons(f); }
+window.filterLessons = function(f) { renderLessons(f); };
 
 // ── ATTENDANCE ──
 function renderAttendance() {

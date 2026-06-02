@@ -141,6 +141,12 @@ checkHTMLElements(path.join(root, 'portal.html'), [
   'switchAuthTab',
   'doSignIn',
   'doSignUp',
+  'showEditProfile',
+  'saveProfile',
+  'hideEditProfile',
+  'resetPassword',
+  'filterLessons',
+  'showPanel',
 ]);
 
 // 6. Firebase rules syntax
