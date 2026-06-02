@@ -939,7 +939,7 @@ service firebase.storage {
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",
@@ -1643,7 +1643,7 @@ window.uploadFile = async function(targetId, index) {
       : `content/testimonials/${Date.now()}_${index}.${ext}`;
     try {
       const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, file);
+      await uploadBytesResumable(storageRef, file);
       const url = await getDownloadURL(storageRef);
       if (targetId === 'instructorPhoto') {
         document.getElementById('instructorPhoto').value = url;
@@ -1655,7 +1655,7 @@ window.uploadFile = async function(targetId, index) {
         renderTestimonials();
       }
       toast('Image uploaded!','success');
-    } catch(e) { console.error('Upload error:', e); alert('Upload failed: '+e.message); }
+    } catch(e) { console.error('Upload error:', e); toast('Upload failed: '+e.message,'error'); }
   };
   input.click();
 };
