@@ -328,6 +328,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       </div>
       <div class="card" id="editProfileCard" style="display:none">
         <div class="card-title">Edit Profile</div>
+        <div class="fg"><label>Profile Photo</label><input type="file" id="ePhoto" accept="image/*" style="font-size:.82rem"></div>
         <div class="two-col">
           <div class="fg"><label>First Name</label><input type="text" id="eFName"></div>
           <div class="fg"><label>Surname</label><input type="text" id="eLName"></div>
@@ -349,7 +350,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, orderBy, onSnapshot, addDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getStorage, ref, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",authDomain:"backstage-music.firebaseapp.com",
@@ -414,6 +415,9 @@ function renderProfile() {
   document.getElementById('pEmail').textContent = p.email||'—';
   document.getElementById('pPhone').textContent = p.phone||'—';
   document.getElementById('pSince').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
+  const avatar = document.getElementById('profileAvatar');
+  if (p.photoURL) { avatar.innerHTML = '<img src="'+p.photoURL+'" style="width:60px;height:60px;border-radius:50%;object-fit:cover">'; }
+  else { avatar.textContent = '👤'; }
 }
 window.showEditProfile = function() {
   const p = window._studentProfile||{};
@@ -427,8 +431,18 @@ window.saveProfile = async function() {
   const fName = document.getElementById('eFName').value.trim();
   const lName = document.getElementById('eLName').value.trim();
   const phone = document.getElementById('ePhone').value.trim();
+  const fileInput = document.getElementById('ePhoto');
   if (!fName) { alert('First name is required.'); return; }
   const updated = { firstName:fName, lastName:lName, phone, email:_currentUser.email };
+  // Upload photo if selected
+  if (fileInput.files.length) {
+    const file = fileInput.files[0];
+    const storageRef = ref(storage, 'profilePhotos/'+_currentUser.email+'/'+Date.now()+'_'+file.name);
+    try {
+      await uploadBytesResumable(storageRef, file);
+      updated.photoURL = await getDownloadURL(storageRef);
+    } catch(e) { console.error('Photo upload failed:', e); alert('Could not upload photo. Please try again.'); return; }
+  }
   await setDoc(doc(db,'students',_currentUser.email), updated, {merge:true});
   window._studentProfile = updated;
   renderProfile();

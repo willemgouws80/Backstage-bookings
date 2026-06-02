@@ -147,6 +147,9 @@ checkHTMLElements(path.join(root, 'portal.html'), [
   'resetPassword',
   'filterLessons',
   'showPanel',
+  'uploadBytesResumable',
+  'photoURL',
+  'profilePhotos/',
 ]);
 
 // 6. Firebase rules syntax
