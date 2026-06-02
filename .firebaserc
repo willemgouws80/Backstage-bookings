@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "backstage-music"
-  }
+  },
+  "targets": {
+    "backstage-music": {
+      "storage": {
+        "rules": [
+          "backstage-music.firebasestorage.app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
