@@ -390,6 +390,7 @@ onAuthStateChanged(auth, user => {
         renderLessons('all');
         renderAttendance();
         renderInvoices();
+        loadResources();
       });
     }).catch(() => {
       loadStudentData().catch(e => {
@@ -398,6 +399,7 @@ onAuthStateChanged(auth, user => {
         renderLessons('all');
         renderAttendance();
         renderInvoices();
+        loadResources();
       });
     });
   } else {
