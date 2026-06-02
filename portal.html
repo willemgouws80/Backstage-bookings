@@ -375,7 +375,8 @@ onAuthStateChanged(auth, user => {
   if (user) {
     _currentUser = user;
     document.getElementById('authScreen').classList.add('hidden');
-    loadStudentData();
+    document.getElementById('panel-dashboard')?.classList.add('active');
+    loadStudentData().catch(e => console.error('loadStudentData error:', e));
   } else {
     _currentUser = null;
     document.getElementById('authScreen').classList.remove('hidden');
@@ -385,6 +386,66 @@ onAuthStateChanged(auth, user => {
     document.querySelector('.nav-item')?.classList.add('active');
   }
 });
+
+// ── PROFILE ──
+function renderProfile() {
+  const p = window._studentProfile || {};
+  document.getElementById('profileFullName').textContent = (p.firstName||'')+' '+(p.lastName||'');
+  document.getElementById('profileEmail').textContent = p.email||'';
+  document.getElementById('pFName').textContent = p.firstName||'—';
+  document.getElementById('pLName').textContent = p.lastName||'—';
+  document.getElementById('pEmail').textContent = p.email||'—';
+  document.getElementById('pPhone').textContent = p.phone||'—';
+  document.getElementById('pSince').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
+}
+function showEditProfile() {
+  const p = window._studentProfile||{};
+  document.getElementById('eFName').value = p.firstName||'';
+  document.getElementById('eLName').value = p.lastName||'';
+  document.getElementById('ePhone').value = p.phone||'';
+  document.getElementById('editProfileCard').style.display = 'block';
+}
+function hideEditProfile() { document.getElementById('editProfileCard').style.display = 'none'; }
+async function saveProfile() {
+  const fName = document.getElementById('eFName').value.trim();
+  const lName = document.getElementById('eLName').value.trim();
+  const phone = document.getElementById('ePhone').value.trim();
+  if (!fName) { alert('First name is required.'); return; }
+  const updated = { firstName:fName, lastName:lName, phone, email:_currentUser.email };
+  await setDoc(doc(db,'students',_currentUser.email), updated, {merge:true});
+  window._studentProfile = updated;
+  renderProfile();
+  hideEditProfile();
+}
+function resetPassword() {
+  sendPasswordResetEmail(auth, _currentUser.email)
+    .then(() => alert('Password reset link sent to your email.'))
+    .catch(e => alert('Error: '+e.message));
+}
+
+// ── RESOURCES ──
+async function loadResources() {
+  try {
+    const snap = await getDocs(query(collection(db,'resources'), orderBy('createdAt','desc')));
+    const items = [];
+    snap.forEach(d => items.push({id:d.id,...d.data()}));
+    renderResources(items);
+  } catch(e) { document.getElementById('resourcesList').innerHTML = '<div style="color:var(--danger);font-size:.85rem">Could not load resources.</div>'; }
+}
+function renderResources(items) {
+  document.getElementById('resCount').textContent = items.length+' resource'+(items.length!==1?'s':'');
+  const container = document.getElementById('resourcesList');
+  if (!items.length) { container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem 0">No resources available yet.</div>'; return; }
+  container.innerHTML = items.map(r => {
+    const url = r.fileURL||'#';
+    const icon = r.fileType?.startsWith('video') ? '▶️' : r.fileType?.startsWith('audio') ? '🎵' : '📄';
+    return `<div class="card" style="margin-bottom:.5rem;padding:.75rem 1rem;display:flex;align-items:center;gap:1rem">
+      <span style="font-size:1.2rem">${icon}</span>
+      <div style="flex:1"><div style="font-weight:500">${r.title||'Resource'}</div>${r.description ? '<div style="font-size:.82rem;color:var(--muted)">'+r.description+'</div>' : ''}</div>
+      <a href="${url}" target="_blank" class="btn btn-sm btn-outline" style="white-space:nowrap">Download</a>
+    </div>`;
+  }).join('');
+}
 
 // ── DATA LOADING ──
 async function loadStudentData() {
@@ -421,7 +482,7 @@ async function loadStudentData() {
     _bookings.sort((a,b) => ((b.startDate||b.createdAt||'') > (a.startDate||a.createdAt||'') ? 1 : -1));
     renderDashboard();
     renderLessons(_lessonFilter);
-  });
+  }, e => console.error('bookings snapshot error:', e));
 
   const attQ = query(collection(db,'attendance'), where('studentEmail','==',email));
   onSnapshot(attQ, snap => {
@@ -429,7 +490,7 @@ async function loadStudentData() {
     snap.forEach(d => _attendanceRecords.push({id:d.id,...d.data()}));
     _attendanceRecords.sort((a,b) => ((b.date||'') > (a.date||'') ? 1 : -1));
     renderAttendance();
-  });
+  }, e => console.error('attendance snapshot error:', e));
 
   const invQ = query(collection(db,'invoices'), where('email','==',email));
   onSnapshot(invQ, snap => {
@@ -437,7 +498,7 @@ async function loadStudentData() {
     snap.forEach(d => _invoices.push({id:d.id,...d.data()}));
     _invoices.sort((a,b) => ((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
     renderInvoices();
-  });
+  }, e => console.error('invoices snapshot error:', e));
 
   // Announcements
   const annQ = query(collection(db,'announcements'), orderBy('createdAt','desc'));
@@ -452,7 +513,7 @@ async function loadStudentData() {
         <div style="font-size:.82rem;color:var(--muted);margin-bottom:.25rem">${a.author||'Admin'} · ${a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : ''}</div>
         <div style="font-size:.9rem;line-height:1.6">${a.message||''}</div>
       </div>`).join('');
-  });
+  }, e => console.error('announcements snapshot error:', e));
 
   loadResources();
 }
@@ -685,7 +746,7 @@ window.doSignOut = async function() {
 window.switchAuthTab = function(tab) {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
-  document.getElementById('auth'+tab).classList.add('active');
+  document.getElementById('authSign'+tab).classList.add('active');
   document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
   document.getElementById('authError').textContent = '';
 };
