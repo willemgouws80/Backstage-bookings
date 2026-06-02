@@ -685,7 +685,7 @@ window.doSignOut = async function() {
 window.switchAuthTab = function(tab) {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
-  document.getElementById('authSign'+tab).classList.add('active');
+  document.getElementById('auth'+tab).classList.add('active');
   document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
   document.getElementById('authError').textContent = '';
 };
