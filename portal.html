@@ -176,7 +176,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
 
 /* CHORD CREATOR */
-.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.3rem .15rem;position:relative}
+.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.3rem .15rem;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px}
 .cc-nut{width:5px;flex-shrink:0;background:var(--muted);border-radius:1px;margin:0;height:22px;align-self:stretch;display:flex;align-items:center;justify-content:center}
 .cc-fret-nums .cc-nut{height:auto;background:var(--muted);width:5px;margin:0;border-radius:1px}
 .cc-dot-9{background:#81c784}
@@ -198,9 +198,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .cc-fret-nums{display:flex;margin-top:.2rem;padding-left:15px}
 .cc-fret-nums .cc-fret{font-size:.55rem;color:var(--muted);border:none;width:28px;text-align:center}
 .cc-voicing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:.75rem}
-.cc-voicing-card{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:.85rem .65rem;text-align:center;transition:border-color .3s}
-.cc-voicing-card:hover{border-color:rgba(201,145,26,.35)}
-.cc-voicing-card .cc-label{font-size:.68rem;color:var(--muted);margin-bottom:.5rem;letter-spacing:.08em;text-transform:uppercase}
+.cc-voicing-card{min-width:0;text-align:center}
+.cc-voicing-card .cc-label{font-size:.68rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.08em;text-transform:uppercase}
 .cc-string-label{font-size:.62rem;color:var(--muted);width:13px;text-align:right;margin-right:4px;flex-shrink:0;font-weight:500}
 .cc-chord-name{font-size:1.25rem;margin-bottom:.6rem;color:var(--gold);font-family:'Cormorant Garamond',serif;font-weight:300}
 .cc-legend{display:flex;gap:.5rem;justify-content:center;margin-top:.35rem;font-size:.55rem;color:var(--muted)}

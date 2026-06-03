@@ -55,16 +55,17 @@
   @media (max-width: 800px) { .voicing-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 500px) { .voicing-grid { grid-template-columns: 1fr; } }
   .voicing-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 3px; padding: 1rem; text-align: center;
+    min-width: 0; text-align: center;
   }
   .voicing-card .label {
-    font-size: .72rem; color: var(--muted); margin-bottom: .5rem;
+    font-size: .72rem; color: var(--muted); margin-bottom: .4rem;
     letter-spacing: .1em; text-transform: uppercase;
   }
   .fretboard {
     display: flex; flex-direction: column; gap: 0;
     padding: .3rem .15rem; position: relative;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px;
   }
   .nut-cell{width:5px;flex-shrink:0;background:var(--muted);border-radius:1px;margin:0;height:22px;align-self:stretch;display:flex;align-items:center;justify-content:center}
   .fret-nums .nut-cell{height:auto;background:var(--muted);width:5px;margin:0;border-radius:1px}
