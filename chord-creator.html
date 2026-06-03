@@ -64,7 +64,9 @@
     display: flex; flex-direction: column; gap: 0;
     padding: .3rem .15rem; position: relative;
   }
-  .fretboard.has-nut::before{content:'';position:absolute;left:17px;top:0;bottom:0;width:4px;background:var(--muted);border-radius:1px;z-index:1}
+  .nut-cell{width:5px;flex-shrink:0;background:var(--muted);border-radius:1px;margin:0;height:22px;align-self:stretch;display:flex;align-items:center;justify-content:center}
+  .fret-nums .nut-cell{height:auto;background:var(--muted);width:5px;margin:0;border-radius:1px}
+  .dot-9{background:#81c784}
   .fretboard .string-row {
     display: flex; align-items: center; height: 22px;
     border-bottom: 1.5px solid rgba(255,255,255,.12); position: relative;
@@ -76,7 +78,6 @@
     border-right: 1px solid rgba(255,255,255,.08);
   }
   .fret:last-child { border-right: none; }
-  .fret.nut-area { border-right: none; padding-left: 4px; }
   .dot {
     width: 13px; height: 13px; border-radius: 50%;
     background: var(--gold); position: absolute; z-index: 2;
@@ -157,6 +158,9 @@
         <option value="dom7">Dominant 7th</option>
         <option value="maj7">Major 7th</option>
         <option value="min7">Minor 7th</option>
+        <option value="sus2">Sus 2</option>
+        <option value="sus4">Sus 4</option>
+        <option value="add9">Add 9</option>
       </select>
     </div>
     <div class="field">
@@ -189,7 +193,7 @@
 <div id="result"></div>
 
 <script>
-// ── MUSIC THEORY ──
+// ── CHORD CREATOR ENGINE ──
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_TO_SEMI = {};
 NOTES.forEach((n,i) => NOTE_TO_SEMI[n] = i);
@@ -200,6 +204,9 @@ const CHORD_TYPES = {
   dom7:   { name: 'Dominant 7', intervals: [0, 4, 7, 10],      suffix: '7' },
   maj7:   { name: 'Major 7',    intervals: [0, 4, 7, 11],      suffix: 'maj7' },
   min7:   { name: 'Minor 7',    intervals: [0, 3, 7, 10],      suffix: 'm7' },
+  sus2:   { name: 'Sus 2',      intervals: [0, 2, 7],          suffix: 'sus2' },
+  sus4:   { name: 'Sus 4',      intervals: [0, 5, 7],          suffix: 'sus4' },
+  add9:   { name: 'Add 9',      intervals: [0, 2, 4, 7],       suffix: 'add9' },
 };
 
 const INTERVAL_LABELS = { 0:'R', 1:'b2', 2:'2', 3:'b3', 4:'3', 5:'4', 6:'b5',
@@ -215,77 +222,87 @@ function semiOf(note) {
   return NOTE_TO_SEMI[flatMap[n] || n];
 }
 
-// Open string semitones (same system as NOTE_TO_SEMI: C=0)
-const OPEN = [4, 9, 2, 7, 11, 4]; // E=4, A=9, D=2, G=7, B=11, e=4
+const OPEN = [4, 9, 2, 7, 11, 4];
 
-// Hardcoded correct open/basic position chord shapes for all 12 roots
-// -1 = muted string, values are fret numbers
+// Hardcoded basic shapes (open or best low-fret voicing) for all 12 roots × 8 types
 const BASIC_SHAPES = {
   major: {
-    'C':  [-1, 3, 2, 0, 1, 0], 'C#': [-1, 4, 6, 6, 6, 4],
-    'D':  [-1,-1, 0, 2, 3, 2], 'D#': [-1, 6, 8, 8, 8, 6],
-    'E':  [0, 2, 2, 1, 0, 0],  'F':  [1, 3, 3, 2, 1, 1],
-    'F#': [2, 4, 4, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 3],
-    'G#': [4, 6, 6, 5, 4, 4],  'A':  [-1, 0, 2, 2, 2, 0],
-    'A#': [-1, 1, 3, 3, 3, 1], 'B':  [-1, 2, 4, 4, 4, 2],
+    'C':[-1,3,2,0,1,0],'C#':[-1,4,6,6,6,4],'D':[-1,-1,0,2,3,2],'D#':[-1,6,8,8,8,6],
+    'E':[0,2,2,1,0,0],'F':[1,3,3,2,1,1],'F#':[2,4,4,3,2,2],'G':[3,2,0,0,0,3],
+    'G#':[4,6,6,5,4,4],'A':[-1,0,2,2,2,0],'A#':[-1,1,3,3,3,1],'B':[-1,2,4,4,4,2],
   },
   minor: {
-    'C':  [-1, 3, 5, 5, 4, 3], 'C#': [-1, 4, 6, 6, 5, 4],
-    'D':  [-1,-1, 0, 2, 3, 1], 'D#': [-1, 6, 8, 8, 7, 6],
-    'E':  [0, 2, 2, 0, 0, 0],  'F':  [1, 3, 3, 1, 1, 1],
-    'F#': [2, 4, 4, 2, 2, 2],  'G':  [3, 5, 5, 3, 3, 3],
-    'G#': [4, 6, 6, 4, 4, 4],  'A':  [-1, 0, 2, 2, 1, 0],
-    'A#': [-1, 1, 3, 3, 2, 1], 'B':  [-1, 2, 4, 4, 3, 2],
+    'C':[-1,3,5,5,4,3],'C#':[-1,4,6,6,5,4],'D':[-1,-1,0,2,3,1],'D#':[-1,6,8,8,7,6],
+    'E':[0,2,2,0,0,0],'F':[1,3,3,1,1,1],'F#':[2,4,4,2,2,2],'G':[3,5,5,3,3,3],
+    'G#':[4,6,6,4,4,4],'A':[-1,0,2,2,1,0],'A#':[-1,1,3,3,2,1],'B':[-1,2,4,4,3,2],
   },
   dom7: {
-    'C':  [-1, 3, 2, 3, 1, 0], 'C#': [-1, 4, 6, 4, 6, 4],
-    'D':  [-1,-1, 0, 2, 1, 2], 'D#': [-1, 6, 8, 6, 8, 6],
-    'E':  [0, 2, 0, 1, 0, 0],  'F':  [1, 3, 1, 2, 1, 1],
-    'F#': [2, 4, 2, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 1],
-    'G#': [4, 6, 4, 5, 4, 4],  'A':  [-1, 0, 2, 0, 2, 0],
-    'A#': [-1, 1, 3, 1, 3, 1], 'B':  [-1, 2, 4, 2, 4, 2],
+    'C':[-1,3,2,3,1,0],'C#':[-1,4,6,4,6,4],'D':[-1,-1,0,2,1,2],'D#':[-1,6,8,6,8,6],
+    'E':[0,2,0,1,0,0],'F':[1,3,1,2,1,1],'F#':[2,4,2,3,2,2],'G':[3,2,0,0,0,1],
+    'G#':[4,6,4,5,4,4],'A':[-1,0,2,0,2,0],'A#':[-1,1,3,1,3,1],'B':[-1,2,4,2,4,2],
   },
   maj7: {
-    'C':  [-1, 3, 2, 0, 0, 0], 'C#': [-1, 4, 6, 5, 6, 4],
-    'D':  [-1,-1, 0, 2, 2, 2], 'D#': [-1, 6, 8, 7, 8, 6],
-    'E':  [0, 2, 1, 1, 0, 0],  'F':  [1, 3, 2, 2, 1, 1],
-    'F#': [2, 4, 3, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 2],
-    'G#': [4, 6, 5, 5, 4, 4],  'A':  [-1, 0, 2, 1, 2, 0],
-    'A#': [-1, 1, 3, 2, 3, 1], 'B':  [-1, 2, 4, 3, 4, 2],
+    'C':[-1,3,2,0,0,0],'C#':[-1,4,6,5,6,4],'D':[-1,-1,0,2,2,2],'D#':[-1,6,8,7,8,6],
+    'E':[0,2,1,1,0,0],'F':[1,3,2,2,1,1],'F#':[2,4,3,3,2,2],'G':[3,2,0,0,0,2],
+    'G#':[4,6,5,5,4,4],'A':[-1,0,2,1,2,0],'A#':[-1,1,3,2,3,1],'B':[-1,2,4,3,4,2],
   },
   min7: {
-    'C':  [-1, 3, 5, 3, 4, 3], 'C#': [-1, 4, 6, 4, 5, 4],
-    'D':  [-1,-1, 0, 2, 1, 1], 'D#': [-1, 6, 8, 6, 7, 6],
-    'E':  [0, 2, 0, 0, 0, 0],  'F':  [1, 3, 1, 1, 1, 1],
-    'F#': [2, 4, 2, 2, 2, 2],  'G':  [3, 5, 3, 3, 3, 3],
-    'G#': [4, 6, 4, 4, 4, 4],  'A':  [-1, 0, 2, 0, 1, 0],
-    'A#': [-1, 1, 3, 1, 2, 1], 'B':  [-1, 2, 4, 2, 3, 2],
+    'C':[-1,3,5,3,4,3],'C#':[-1,4,6,4,5,4],'D':[-1,-1,0,2,1,1],'D#':[-1,6,8,6,7,6],
+    'E':[0,2,0,0,0,0],'F':[1,3,1,1,1,1],'F#':[2,4,2,2,2,2],'G':[3,5,3,3,3,3],
+    'G#':[4,6,4,4,4,4],'A':[-1,0,2,0,1,0],'A#':[-1,1,3,1,2,1],'B':[-1,2,4,2,3,2],
+  },
+  sus2: {
+    'C':[-1,3,0,0,3,-1],'C#':[-1,4,6,6,4,-1],'D':[-1,-1,0,2,3,0],'D#':[-1,6,8,8,6,-1],
+    'E':[0,2,4,4,0,0],'F':[1,3,5,5,1,1],'F#':[2,4,6,6,2,2],'G':[3,0,0,2,3,3],
+    'G#':[4,6,8,8,4,4],'A':[-1,0,2,2,0,0],'A#':[-1,1,3,3,1,1],'B':[-1,2,4,4,2,2],
+  },
+  sus4: {
+    'C':[-1,3,3,0,1,1],'C#':[-1,4,6,6,7,4],'D':[-1,-1,0,2,3,3],'D#':[-1,6,8,8,9,6],
+    'E':[0,2,2,2,0,0],'F':[1,3,3,3,1,1],'F#':[2,4,4,4,2,2],'G':[3,3,0,0,1,3],
+    'G#':[4,6,6,6,4,4],'A':[-1,0,2,2,3,0],'A#':[-1,1,3,3,4,1],'B':[-1,2,4,4,5,2],
+  },
+  add9: {
+    'C':[-1,3,2,0,3,0],'C#':[-1,4,6,8,6,4],'D':[-1,5,7,9,7,5],'D#':[-1,6,8,10,8,6],
+    'E':[0,2,2,1,0,2],'F':[1,3,3,2,1,3],'F#':[2,4,4,3,2,4],'G':[3,0,0,2,0,3],
+    'G#':[4,6,6,5,4,6],'A':[-1,0,2,4,2,0],'A#':[-1,1,3,5,3,1],'B':[-1,2,4,6,4,2],
   },
 };
 
-// E form and A form barre shapes
-const BARRE_SHAPES = {
-  eForm:  { baseString: 0, strings: [0, 2, 2, 1, 0, 0] },
-  aForm:  { baseString: 1, strings: [-1, 0, 2, 2, 2, 0] },
+// Per-type barre patterns (E form and A form)
+const BARRE_PATTERNS = {
+  major: { eForm:{baseString:0,strings:[0,2,2,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,2,0]} },
+  minor: { eForm:{baseString:0,strings:[0,2,2,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,1,0]} },
+  dom7:  { eForm:{baseString:0,strings:[0,2,0,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,2,0]} },
+  maj7:  { eForm:{baseString:0,strings:[0,2,1,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,1,2,0]} },
+  min7:  { eForm:{baseString:0,strings:[0,2,0,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,1,0]} },
+  sus2:  { eForm:{baseString:0,strings:[0,2,4,4,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,0,0]} },
+  sus4:  { eForm:{baseString:0,strings:[0,2,2,2,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,3,0]} },
+  add9:  { eForm:{baseString:0,strings:[0,2,2,1,0,2]}, aForm:{baseString:1,strings:[-1,0,2,4,2,0]} },
 };
+
+// Color class for a given interval
+function intervalColor(interval) {
+  if (interval === 0) return 'dot-R';
+  if (interval === 3 || interval === 4) return 'dot-3';
+  if (interval === 7) return 'dot-5';
+  if (interval === 10 || interval === 11) return 'dot-7';
+  if (interval === 2) return 'dot-9';
+  if (interval === 5) return 'dot-9';
+  return '';
+}
 
 function buildVoicing(rootSemi, typeKey, absFrets, name, isBasic) {
   const intervals = CHORD_TYPES[typeKey].intervals;
   const intervalSet = new Set(intervals);
   const result = absFrets.map((fret, si) => {
-    if (fret === -1) return { muted: true, fret: null, note: null, interval: null, label: null, inChord: false, colorClass: '' };
+    if (fret === -1) return { muted:true, fret:null, note:null, interval:null, label:null, inChord:false, colorClass:'' };
     const noteSemi = ((OPEN[si] + fret) % 12 + 12) % 12;
     const interval = ((noteSemi - rootSemi) % 12 + 12) % 12;
-    let colorClass = '';
-    if (interval === 0) colorClass = 'dot-R';
-    else if (interval === 3 || interval === 4) colorClass = 'dot-3';
-    else if (interval === 7) colorClass = 'dot-5';
-    else if (interval === 10 || interval === 11) colorClass = 'dot-7';
     return {
-      muted: false, fret, note: noteSemi, interval,
+      muted:false, fret, note:noteSemi, interval,
       label: interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval,
       inChord: intervalSet.has(interval),
-      colorClass
+      colorClass: intervalColor(interval)
     };
   });
   return { name, isBasic, result };
@@ -295,75 +312,124 @@ function barreFromShape(rootSemi, shapeDef, name) {
   const { baseString, strings } = shapeDef;
   const baseFret = ((rootSemi - OPEN[baseString]) % 12 + 12) % 12;
   const frets = strings.map(r => r === -1 ? -1 : baseFret + r);
-  return { name, isBasic: false, frets };
+  return { name, isBasic:false, frets };
 }
 
+// Check if a voicing's span is ≤ 5 frets
+function spanOk(voicing) {
+  const frets = voicing.result.map(r => r.fret).filter(f => f !== null);
+  if (frets.length < 2) return true;
+  return Math.max(...frets) - Math.min(...frets) <= 5;
+}
+
+// Try applying slash on each non-muted string until span is ≤ 5
+function applySlash(voicing, bassSemi, rootSemi) {
+  if (bassSemi === rootSemi || bassSemi === undefined || bassSemi === null) return voicing;
+  for (let tryIdx = 0; tryIdx < 6; tryIdx++) {
+    if (voicing.result[tryIdx].muted) continue;
+    const res = voicing.result.map(r => ({...r}));
+    const curNote = ((OPEN[tryIdx] + res[tryIdx].fret) % 12 + 12) % 12;
+    const diff = ((bassSemi - curNote) % 12 + 12) % 12;
+    if (diff === 0) return voicing;
+    const newFret = res[tryIdx].fret + diff;
+    res[tryIdx].fret = newFret;
+    res[tryIdx].note = ((OPEN[tryIdx] + newFret) % 12 + 12) % 12;
+    const interval = ((res[tryIdx].note - rootSemi) % 12 + 12) % 12;
+    res[tryIdx].interval = interval;
+    res[tryIdx].label = interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval;
+    res[tryIdx].colorClass = intervalColor(interval);
+    // Check span
+    const frets = res.map(r => r.fret).filter(f => f !== null);
+    const span = frets.length >= 2 ? Math.max(...frets) - Math.min(...frets) : 0;
+    if (span <= 5) {
+      // Mute strings below the bass string so bass note is truly lowest
+      for (let i = 0; i < tryIdx; i++) {
+        if (!res[i].muted) {
+          res[i].muted = true; res[i].fret = null; res[i].note = null;
+          res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
+        }
+      }
+      return { ...voicing, result:res, slashLabel:'/'+noteName(bassSemi) };
+    }
+  }
+  return voicing;
+}
+
+// Generate all voicings for a chord, sorted with useful first
 function generateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
+  const patterns = BARRE_PATTERNS[typeKey];
   const basicFrets = BASIC_SHAPES[typeKey]?.[rootStr];
-  const basicName = rootStr + (CHORD_TYPES[typeKey]?.suffix || '') + ' — Basic';
-  const basic = basicFrets ? buildVoicing(rootSemi, typeKey, basicFrets, basicName, true) : null;
-
-  const barreE = barreFromShape(rootSemi, BARRE_SHAPES.eForm, 'E form barre');
-  const ve = buildVoicing(rootSemi, typeKey, barreE.frets, barreE.name, false);
-  const barreA = barreFromShape(rootSemi, BARRE_SHAPES.aForm, 'A form barre');
-  const va = buildVoicing(rootSemi, typeKey, barreA.frets, barreA.name, false);
-
   const result = [];
-  if (basic) {
-    // Verify root is lowest note — mute strings below if not
-    const src = BASIC_SHAPES[typeKey]?.[rootStr] || [];
-    // Find which string has the root
-    let rootStringIdx = -1;
+
+  // 1. Slash voicing (from basic shape) if requested
+  if (basicFrets && bassSemi !== undefined && bassSemi !== null && bassSemi !== rootSemi) {
+    const basic = buildVoicing(rootSemi, typeKey, basicFrets, '', true);
+    // Mute strings below root
+    let rootIdx = -1;
     for (let i = 0; i < 6; i++) {
-      if (src[i] !== -1) {
-        const note = (OPEN[i] + src[i]) % 12;
-        if (note === rootSemi) { rootStringIdx = i; break; }
+      if (basicFrets[i] !== -1) {
+        const note = ((OPEN[i] + basicFrets[i]) % 12 + 12) % 12;
+        if (note === rootSemi) { rootIdx = i; break; }
       }
     }
-    if (rootStringIdx > 0) {
-      for (let i = 0; i < rootStringIdx; i++) {
+    if (rootIdx > 0) {
+      for (let i = 0; i < rootIdx; i++) {
         if (basic.result[i] && !basic.result[i].muted) {
-          basic.result[i].muted = true;
-          basic.result[i].fret = null; basic.result[i].note = null;
+          basic.result[i].muted = true; basic.result[i].fret = null; basic.result[i].note = null;
           basic.result[i].interval = null; basic.result[i].label = null; basic.result[i].inChord = false;
         }
       }
     }
-    if (bassSemi !== undefined && bassSemi !== null && bassSemi !== rootSemi) {
-      const slashName = rootStr + (CHORD_TYPES[typeKey]?.suffix || '') + ' / ' + noteName(bassSemi);
-      const slashVoicing = applySlash({...basic, result: basic.result.map(r => ({...r}))}, bassSemi, rootSemi);
-      slashVoicing.name = slashName;
-      result.push(slashVoicing);
-      basic.name += ' (root position)';
+    const slashed = applySlash({...basic, result:basic.result.map(r=>({...r}))}, bassSemi, rootSemi);
+    if (slashed !== basic && slashed.slashLabel) {
+      slashed.name = rootStr + (CHORD_TYPES[typeKey].suffix || '') + ' / ' + noteName(bassSemi);
+      slashed.isBasic = true;
+      if (spanOk(slashed)) result.push(slashed);
     }
-    result.push(basic);
   }
-  result.push(ve);
-  result.push(va);
-  return result;
-}
 
-function applySlash(voicing, bassSemi, rootSemi) {
-  const res = voicing.result.map(r => ({...r}));
-  let bassIdx = -1;
-  for (let i = 0; i < 6; i++) { if (!res[i].muted) { bassIdx = i; break; } }
-  if (bassIdx === -1) return { ...voicing, result: res };
-  const curNote = ((OPEN[bassIdx] + res[bassIdx].fret) % 12 + 12) % 12;
-  const diff = ((bassSemi - curNote) % 12 + 12) % 12;
-  if (diff === 0) return voicing;
-  const newFret = res[bassIdx].fret + diff;
-  res[bassIdx].fret = newFret;
-  res[bassIdx].note = ((OPEN[bassIdx] + newFret) % 12 + 12) % 12;
-  const interval = ((res[bassIdx].note - rootSemi) % 12 + 12) % 12;
-  res[bassIdx].interval = interval;
-  res[bassIdx].label = interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval;
-  res[bassIdx].colorClass = interval === 0 ? 'dot-R' : interval === 3 || interval === 4 ? 'dot-3' : interval === 7 ? 'dot-5' : (interval === 10 || interval === 11) ? 'dot-7' : '';
-  return { ...voicing, result: res };
+  // 2. Basic shape (root position)
+  if (basicFrets) {
+    const basic = buildVoicing(rootSemi, typeKey, basicFrets, rootStr + (CHORD_TYPES[typeKey].suffix || ''), true);
+    // Mute strings below root
+    let rootIdx = -1;
+    for (let i = 0; i < 6; i++) {
+      if (basicFrets[i] !== -1) {
+        const note = ((OPEN[i] + basicFrets[i]) % 12 + 12) % 12;
+        if (note === rootSemi) { rootIdx = i; break; }
+      }
+    }
+    if (rootIdx > 0) {
+      for (let i = 0; i < rootIdx; i++) {
+        if (basic.result[i] && !basic.result[i].muted) {
+          basic.result[i].muted = true; basic.result[i].fret = null; basic.result[i].note = null;
+          basic.result[i].interval = null; basic.result[i].label = null; basic.result[i].inChord = false;
+        }
+      }
+    }
+    if (spanOk(basic)) result.push(basic);
+  }
+
+  // 3. E form barre
+  if (patterns) {
+    const barreE = barreFromShape(rootSemi, patterns.eForm, 'E form');
+    const ve = buildVoicing(rootSemi, typeKey, barreE.frets, barreE.name, false);
+    if (spanOk(ve)) result.push(ve);
+  }
+
+  // 4. A form barre
+  if (patterns) {
+    const barreA = barreFromShape(rootSemi, patterns.aForm, 'A form');
+    const va = buildVoicing(rootSemi, typeKey, barreA.frets, barreA.name, false);
+    if (spanOk(va)) result.push(va);
+  }
+
+  return result;
 }
 
 function renderChord(name, voicings) {
   let html = `<div class="chord-name">${name}</div>`;
-  if (!voicings || !voicings.length) return html + '<div class="error">Could not generate voicings</div>';
+  if (!voicings || !voicings.length) return html + '<div class="error">No voicing fits within 5 frets — try a different chord</div>';
   const STRING_NAMES = ['E','A','D','G','B','e'];
   html += '<div class="voicing-grid">';
   voicings.forEach(v => {
@@ -374,36 +440,43 @@ function renderChord(name, voicings) {
     const startFret = Math.max(0, minFret - 1);
     const numFrets = Math.max(maxFret - minFret + 3, 5);
     const hasNut = startFret === 0;
-    const label = v.isBasic && !v.name.includes('/') ? '★ ' + v.name + ' <span style="color:var(--gold)">(root on top)</span>' : v.name;
-    html += `<div class="voicing-card"><div class="label">${label}</div><div class="fretboard${hasNut ? ' has-nut' : ''}">`;
+    const label = v.isBasic ? '★ ' + v.name : v.name;
+    if (v.slashLabel) label += ' · ' + v.slashLabel;
+    if (v.isBasic && !v.name.includes('/')) label += ' <span style="color:var(--gold)">(root on top)</span>';
+
+    html += `<div class="voicing-card"><div class="label">${label}</div><div class="fretboard">`;
     for (let si = 0; si < 6; si++) {
       const s = v.result[si];
       html += `<div class="string-row"><span class="string-label">${STRING_NAMES[si]}</span>`;
       if (s.muted) {
-        html += `<div class="fret${hasNut ? ' nut-area' : ''}" style="border:none"><span class="muted-mark">✕</span></div>`;
+        html += `<div class="fret"><span class="muted-mark">✕</span></div>`;
+        if (hasNut) html += `<div class="nut-cell"></div>`;
         for (let f = 1; f < numFrets; f++) html += `<div class="fret"></div>`;
       } else {
         for (let f = 0; f < numFrets; f++) {
           const fretNum = startFret + f;
-          const cls = hasNut && f === 0 ? 'fret nut-area' : 'fret';
           if (s.fret === fretNum) {
-            html += `<div class="${cls}"><div class="dot ${s.colorClass}"><span class="tip">${noteName(s.note)} (${s.label})</span></div></div>`;
+            html += `<div class="fret"><div class="dot ${s.colorClass}"><span class="tip">${noteName(s.note)} (${s.label})</span></div></div>`;
           } else {
-            html += `<div class="${cls}"></div>`;
+            html += `<div class="fret"></div>`;
           }
+          if (hasNut && f === 0) html += `<div class="nut-cell"></div>`;
         }
       }
       html += `</div>`;
     }
     html += `<div class="fret-nums">`;
-    const startNum = hasNut ? 1 : 0;
-    for (let f = startNum; f < numFrets; f++) html += `<div class="fret">${startFret + f}</div>`;
+    for (let f = 0; f < numFrets; f++) {
+      html += `<div class="fret">${startFret + f}</div>`;
+      if (hasNut && f === 0) html += `<div class="nut-cell"></div>`;
+    }
     html += `</div>`;
     html += `<div style="display:flex;gap:.5rem;justify-content:center;margin-top:.4rem;font-size:.6rem;color:var(--muted)">
       <span><span class="dot dot-R" style="position:static;display:inline-block;width:8px;height:8px"></span>R</span>
       <span><span class="dot dot-3" style="position:static;display:inline-block;width:8px;height:8px"></span>3/b3</span>
       <span><span class="dot dot-5" style="position:static;display:inline-block;width:8px;height:8px"></span>5</span>
       <span><span class="dot dot-7" style="position:static;display:inline-block;width:8px;height:8px"></span>7/b7</span>
+      <span><span class="dot dot-9" style="position:static;display:inline-block;width:8px;height:8px"></span>2/4/9</span>
     </div></div>`;
   });
   html += '</div>';
@@ -416,9 +489,10 @@ function generateFromPicker() {
   const bassStr = document.getElementById('bassNote')?.value;
   const rootSemi = NOTE_TO_SEMI[rootStr];
   const bassSemi = bassStr ? NOTE_TO_SEMI[bassStr] : null;
+  const typeInfo = CHORD_TYPES[type];
   const chordName = bassSemi && bassSemi !== rootSemi
-    ? `${rootStr}${CHORD_TYPES[type].suffix} / ${noteName(bassSemi)}`
-    : `${rootStr}${CHORD_TYPES[type].suffix} (${CHORD_TYPES[type].name})`;
+    ? `${rootStr}${typeInfo.suffix} / ${noteName(bassSemi)}`
+    : `${rootStr}${typeInfo.suffix} (${typeInfo.name})`;
   const voicings = generateVoicings(rootSemi, type, rootStr, bassSemi);
   document.getElementById('result').innerHTML = renderChord(chordName, voicings);
 }
@@ -438,22 +512,25 @@ function generateFromNotes() {
       const extraCount = uniqueSemis.filter(n => !chordNotes.includes(n)).length;
       const score = matchCount - extraCount * 2;
       if (uniqueSemis.every(n => chordNotes.includes(n)) && score > bestScore) {
-        bestScore = score;
-        bestMatch = { rootSemi, typeKey, chordNotes };
+        bestScore = score; bestMatch = { rootSemi, typeKey, chordNotes };
       }
     }
   }
   if (!bestMatch) {
-    bestMatch = { rootSemi: uniqueSemis[0], typeKey: 'major', chordNotes: CHORD_TYPES.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
+    bestMatch = { rootSemi:uniqueSemis[0], typeKey:'major', chordNotes:CHORD_TYPES.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
   }
   const rootName = noteName(bestMatch.rootSemi);
   const typeInfo = CHORD_TYPES[bestMatch.typeKey];
+  const typeLabel = typeInfo.suffix ? typeInfo.suffix.replace(/^(.)/, (_,c) => ' ' + c) : '';
   const chordName = `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
   const bassStr = document.getElementById('bassNote')?.value;
   const bassSemi = bassStr ? NOTE_TO_SEMI[bassStr] : null;
   const voicings = generateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName, bassSemi);
-  document.getElementById('result').innerHTML = renderChord(chordName, voicings) +
-    `<div style="margin-top:1rem;font-size:.82rem;color:var(--muted)">Identified from notes: ${notes.join(', ')} → ${chordName}</div>`;
+  const displayName = bassSemi && bassSemi !== bestMatch.rootSemi
+    ? `${rootName}${typeInfo.suffix} / ${noteName(bassSemi)}`
+    : chordName;
+  document.getElementById('result').innerHTML = renderChord(displayName, voicings) +
+    `<div style="margin-top:1rem;font-size:.82rem;color:var(--muted)">Identified: ${notes.join(', ')} → ${displayName}</div>`;
 }
 
 function switchTab(tabId, el) {
