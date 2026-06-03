@@ -950,16 +950,20 @@ service firebase.storage {
           <select id="resTargetType" onchange="toggleResTarget()">
             <option value="all">All Students</option>
             <option value="individual">Specific Student</option>
-            <option value="group">Group (by plan name)</option>
+            <option value="course">Course (group lessons)</option>
+            <option value="individual_lesson">Individual Lessons (1-on-1)</option>
           </select>
         </div>
         <div id="resTargetIndividual" style="display:none" class="fg">
           <label>Student Email</label>
           <input type="email" id="resTargetEmail" placeholder="student@example.com">
         </div>
-        <div id="resTargetGroup" style="display:none" class="fg">
-          <label>Course / Plan Name</label>
-          <input type="text" id="resTargetGroupName" placeholder="e.g. Guitar Beginners">
+        <div id="resTargetCourse" style="display:none" class="fg">
+          <label>Course Name</label>
+          <input type="text" id="resTargetCourseName" placeholder="e.g. Guitar for Beginners">
+        </div>
+        <div id="resTargetIndividualNote" style="display:none;font-size:.82rem;color:var(--muted);margin-bottom:.75rem">
+          This resource will be visible to all students with individual (1-on-1) lesson bookings.
         </div>
         <div class="hint" style="margin-bottom:1rem">Files are stored in Firebase Storage. Max 10 MB per file.</div>
         <div id="resUploadProgress" style="display:none;margin-bottom:1rem">
@@ -3681,7 +3685,8 @@ window.loadResources = async function() {
       const size = r.fileSize ? (r.fileSize/1024).toFixed(0)+' KB' : '';
       let targetLabel = 'Everyone';
       if (r.targetType === 'individual') targetLabel = r.targetEmail || '1 student';
-      else if (r.targetType === 'group') targetLabel = r.targetGroupName || 'Group';
+      else if (r.targetType === 'course') targetLabel = r.targetCourseName || 'Course';
+      else if (r.targetType === 'individual_lesson') targetLabel = 'Individual Lessons';
       return `<div class="list-item">
         <div class="li-content">
           <div class="li-title">${r.title||'Untitled'} <span style="font-weight:400;font-size:.75rem;color:var(--muted);margin-left:.5rem">(${targetLabel})</span></div>
@@ -3711,7 +3716,7 @@ window.editResource = async function(id) {
   document.getElementById('resCat').value = r.category||'General';
   document.getElementById('resTargetType').value = r.targetType||'all';
   document.getElementById('resTargetEmail').value = r.targetEmail||'';
-  document.getElementById('resTargetGroupName').value = r.targetGroupName||'';
+  document.getElementById('resTargetCourseName').value = r.targetCourseName||'';
   document.getElementById('resUploadBtn').textContent = 'Save Changes';
   document.getElementById('resUploadProgress').style.display = 'none';
   document.getElementById('resourceFormCard').style.display = 'block';
@@ -3731,7 +3736,8 @@ window.toggleResourceForm = function() {
     document.getElementById('resUploadProgress').style.display = 'none';
     document.getElementById('resTargetType').value = 'all';
     document.getElementById('resTargetIndividual').style.display = 'none';
-    document.getElementById('resTargetGroup').style.display = 'none';
+    document.getElementById('resTargetCourse').style.display = 'none';
+    document.getElementById('resTargetIndividualNote').style.display = 'none';
     document.getElementById('resUploadBtn').textContent = 'Upload →';
   }
 };
@@ -3739,7 +3745,8 @@ window.toggleResourceForm = function() {
 window.toggleResTarget = function() {
   const val = document.getElementById('resTargetType').value;
   document.getElementById('resTargetIndividual').style.display = val === 'individual' ? '' : 'none';
-  document.getElementById('resTargetGroup').style.display = val === 'group' ? '' : 'none';
+  document.getElementById('resTargetCourse').style.display = val === 'course' ? '' : 'none';
+  document.getElementById('resTargetIndividualNote').style.display = val === 'individual_lesson' ? '' : 'none';
 };
 
 window.uploadResource = async function() {
@@ -3758,8 +3765,8 @@ window.uploadResource = async function() {
     const update = {title, description: desc, category: cat, targetType, updatedAt: new Date().toISOString()};
     if (targetType === 'individual') update.targetEmail = document.getElementById('resTargetEmail').value.trim();
     else update.targetEmail = null;
-    if (targetType === 'group') update.targetGroupName = document.getElementById('resTargetGroupName').value.trim();
-    else update.targetGroupName = null;
+    if (targetType === 'course') update.targetCourseName = document.getElementById('resTargetCourseName').value.trim();
+    else update.targetCourseName = null;
     try {
       await setDoc(doc(db,'resources',_editingResourceId), update, {merge:true});
       toast('Resource updated!','success');
@@ -3807,7 +3814,7 @@ window.uploadResource = async function() {
           createdAt: new Date().toISOString()
         };
         if (targetType === 'individual') doc.targetEmail = document.getElementById('resTargetEmail').value.trim();
-        if (targetType === 'group') doc.targetGroupName = document.getElementById('resTargetGroupName').value.trim();
+        if (targetType === 'course') doc.targetCourseName = document.getElementById('resTargetCourseName').value.trim();
         await addDoc(collection(db,'resources'), doc);
         toast('Resource uploaded!');
         btn.textContent = 'Upload →'; btn.disabled = false;

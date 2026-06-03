@@ -464,17 +464,27 @@ window.resetPassword = function() {
 // ── RESOURCES ──
 async function loadResources() {
   try {
-    const snap = await getDocs(query(collection(db,'resources'), orderBy('createdAt','desc')));
+    const [resSnap, coursesSnap] = await Promise.all([
+      getDocs(query(collection(db,'resources'), orderBy('createdAt','desc'))),
+      getDocs(collection(db,'courses'))
+    ]);
+    const courses = {};
+    coursesSnap.forEach(d => { const c = d.data(); if (c.title) courses[c.title] = d.id; });
     const all = [];
-    snap.forEach(d => all.push({id:d.id,...d.data()}));
+    resSnap.forEach(d => all.push({id:d.id,...d.data()}));
     const email = _currentUser.email;
-    const plans = new Set();
-    const planSnap = await getDocs(query(collection(db,'bookings'), where('email','==',email)));
-    planSnap.forEach(d => { const b = d.data(); if (b.plan) plans.add(b.plan); });
+    const isIndiv = _bookings.some(b => !b.courseId);
+    const courseTitles = new Set(_bookings.filter(b => b.courseId).map(b => {
+      for (const [title, id] of Object.entries(courses)) {
+        if (id === b.courseId) return title;
+      }
+      return '';
+    }).filter(Boolean));
     const items = all.filter(r => {
       if (!r.targetType || r.targetType === 'all') return true;
       if (r.targetType === 'individual') return r.targetEmail === email;
-      if (r.targetType === 'group') return r.targetGroupName && plans.has(r.targetGroupName);
+      if (r.targetType === 'course') return r.targetCourseName && courseTitles.has(r.targetCourseName);
+      if (r.targetType === 'individual_lesson') return isIndiv;
       return true;
     });
     renderResources(items);
