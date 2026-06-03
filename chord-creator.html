@@ -64,6 +64,7 @@
     display: flex; flex-direction: column; gap: 0;
     padding: .3rem .15rem; position: relative;
   }
+  .fretboard.has-nut::before{content:'';position:absolute;left:17px;top:0;bottom:0;width:4px;background:var(--muted);border-radius:1px;z-index:1}
   .fretboard .string-row {
     display: flex; align-items: center; height: 22px;
     border-bottom: 1.5px solid rgba(255,255,255,.12); position: relative;
@@ -75,12 +76,15 @@
     border-right: 1px solid rgba(255,255,255,.08);
   }
   .fret:last-child { border-right: none; }
-  .fret.nut-area { border-right: none; }
+  .fret.nut-area { border-right: none; padding-left: 4px; }
   .dot {
     width: 13px; height: 13px; border-radius: 50%;
     background: var(--gold); position: absolute; z-index: 2;
-    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    box-shadow: 0 1px 3px rgba(0,0,0,.4); cursor: pointer;
   }
+  .dot:hover { transform: scale(1.25); }
+  .dot .tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:#111;border:1px solid var(--gold);border-radius:2px;padding:.2rem .45rem;font-size:.6rem;color:var(--gold);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
+  .dot:hover .tip{opacity:1}
   .dot-3 { background: #f06292; }
   .dot-5 { background: #64b5f6; }
   .dot-7 { background: #ce93d8; }
@@ -93,7 +97,6 @@
     display: flex; margin-top: .2rem; padding-left: 15px;
   }
   .fret-nums .fret { font-size: .55rem; color: var(--muted); border: none; width: 28px; text-align: center; }
-  .nut { height: 5px; background: var(--muted); border-radius: 1px; margin: 0 0 2px 17px; width: calc(100% - 17px); flex-shrink: 0; }
   .note-label {
     font-size: .6rem; color: rgba(255,255,255,.7);
     position: absolute; right: -14px; font-weight: 600;
@@ -342,25 +345,19 @@ function generateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
 
 function applySlash(voicing, bassSemi, rootSemi) {
   const res = voicing.result.map(r => ({...r}));
-  let lowestIdx = -1;
-  for (let i = 5; i >= 0; i--) { if (!res[i].muted) { lowestIdx = i; break; } }
-  if (lowestIdx === -1) return { ...voicing, result: res };
-  const baseNote = ((OPEN[lowestIdx] + res[lowestIdx].fret) % 12 + 12) % 12;
-  const diff = ((bassSemi - baseNote) % 12 + 12) % 12;
+  let bassIdx = -1;
+  for (let i = 0; i < 6; i++) { if (!res[i].muted) { bassIdx = i; break; } }
+  if (bassIdx === -1) return { ...voicing, result: res };
+  const curNote = ((OPEN[bassIdx] + res[bassIdx].fret) % 12 + 12) % 12;
+  const diff = ((bassSemi - curNote) % 12 + 12) % 12;
   if (diff === 0) return voicing;
-  const newFret = res[lowestIdx].fret + diff;
-  res[lowestIdx].fret = newFret;
-  res[lowestIdx].note = ((OPEN[lowestIdx] + newFret) % 12 + 12) % 12;
-  const interval = ((res[lowestIdx].note - rootSemi) % 12 + 12) % 12;
-  res[lowestIdx].interval = interval;
-  res[lowestIdx].label = interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval;
-  res[lowestIdx].colorClass = interval === 0 ? 'dot-R' : interval === 3 || interval === 4 ? 'dot-3' : interval === 7 ? 'dot-5' : (interval === 10 || interval === 11) ? 'dot-7' : '';
-  for (let i = lowestIdx + 1; i < 6; i++) {
-    if (!res[i].muted) {
-      res[i].muted = true; res[i].fret = null; res[i].note = null;
-      res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
-    }
-  }
+  const newFret = res[bassIdx].fret + diff;
+  res[bassIdx].fret = newFret;
+  res[bassIdx].note = ((OPEN[bassIdx] + newFret) % 12 + 12) % 12;
+  const interval = ((res[bassIdx].note - rootSemi) % 12 + 12) % 12;
+  res[bassIdx].interval = interval;
+  res[bassIdx].label = interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval;
+  res[bassIdx].colorClass = interval === 0 ? 'dot-R' : interval === 3 || interval === 4 ? 'dot-3' : interval === 7 ? 'dot-5' : (interval === 10 || interval === 11) ? 'dot-7' : '';
   return { ...voicing, result: res };
 }
 
@@ -378,8 +375,7 @@ function renderChord(name, voicings) {
     const numFrets = Math.max(maxFret - minFret + 3, 5);
     const hasNut = startFret === 0;
     const label = v.isBasic && !v.name.includes('/') ? '★ ' + v.name + ' <span style="color:var(--gold)">(root on top)</span>' : v.name;
-    html += `<div class="voicing-card"><div class="label">${label}</div><div class="fretboard">`;
-    if (hasNut) html += `<div class="nut"></div>`;
+    html += `<div class="voicing-card"><div class="label">${label}</div><div class="fretboard${hasNut ? ' has-nut' : ''}">`;
     for (let si = 0; si < 6; si++) {
       const s = v.result[si];
       html += `<div class="string-row"><span class="string-label">${STRING_NAMES[si]}</span>`;
@@ -391,7 +387,7 @@ function renderChord(name, voicings) {
           const fretNum = startFret + f;
           const cls = hasNut && f === 0 ? 'fret nut-area' : 'fret';
           if (s.fret === fretNum) {
-            html += `<div class="${cls}"><div class="dot ${s.colorClass}" title="${noteName(s.note)} (${s.label})"></div></div>`;
+            html += `<div class="${cls}"><div class="dot ${s.colorClass}"><span class="tip">${noteName(s.note)} (${s.label})</span></div></div>`;
           } else {
             html += `<div class="${cls}"></div>`;
           }

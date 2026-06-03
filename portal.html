@@ -177,11 +177,16 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 /* CHORD CREATOR */
 .cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.3rem .15rem;position:relative}
+.cc-fretboard.has-nut::before{content:'';position:absolute;left:17px;top:0;bottom:0;width:4px;background:var(--muted);border-radius:1px;z-index:1}
 .cc-fretboard .string-row{display:flex;align-items:center;height:22px;border-bottom:1.5px solid rgba(255,255,255,.12);position:relative}
 .cc-fretboard .string-row:last-child{border-bottom:none}
 .cc-fret {width:28px;height:22px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;border-right:1px solid rgba(255,255,255,.08)}
 .cc-fret:last-child{border-right:none}
-.cc-dot{width:13px;height:13px;border-radius:50%;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.cc-fret.nut-area{border-right:none;padding-left:4px}
+.cc-dot{width:13px;height:13px;border-radius:50%;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer}
+.cc-dot:hover{transform:scale(1.25)}
+.cc-dot .cc-tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--gold);border-radius:2px;padding:.2rem .45rem;font-size:.6rem;color:var(--gold);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
+.cc-dot:hover .cc-tip{opacity:1}
 .cc-dot-R{background:var(--gold)}
 .cc-dot-3{background:#f06292}
 .cc-dot-5{background:#64b5f6}
@@ -198,8 +203,6 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .cc-chord-name{font-size:1.25rem;margin-bottom:.6rem;color:var(--gold);font-family:'Cormorant Garamond',serif;font-weight:300}
 .cc-legend{display:flex;gap:.5rem;justify-content:center;margin-top:.35rem;font-size:.55rem;color:var(--muted)}
 .cc-legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
-.cc-nut{height:5px;background:var(--muted);border-radius:1px;margin:0 0 2px 17px;width:calc(100% - 17px);flex-shrink:0}
-.cc-fret.nut-area{border-right:none}
 @media(max-width:600px){.cc-voicing-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -1115,29 +1118,21 @@ function ccGenerateVoicings(rootSemi, typeKey, rootStr) {
 function ccApplySlash(voicing, bassSemi, rootSemi) {
   if (bassSemi === rootSemi || bassSemi === undefined || bassSemi === null) return voicing;
   const res = voicing.result.map(r => ({...r}));
-  // Find lowest non-muted string — that's where we change to bass note
-  let lowestIdx = -1;
-  for (let i = 5; i >= 0; i--) { if (!res[i].muted) { lowestIdx = i; break; } }
-  if (lowestIdx === -1) return { ...voicing, result: res };
-  // Compute fret for bass note on that string
-  const bassFret = ((bassSemi - CC_OPEN[lowestIdx]) % 12 + 12) % 12;
-  // But we want the lowest possible fret >= current fret position
-  const baseNote = ((CC_OPEN[lowestIdx] + res[lowestIdx].fret) % 12 + 12) % 12;
-  const diff = ((bassSemi - baseNote) % 12 + 12) % 12;
-  const newFret = res[lowestIdx].fret + diff;
-  res[lowestIdx].fret = newFret;
-  res[lowestIdx].note = ((CC_OPEN[lowestIdx] + newFret) % 12 + 12) % 12;
-  const interval = ((res[lowestIdx].note - rootSemi) % 12 + 12) % 12;
-  res[lowestIdx].interval = interval;
-  res[lowestIdx].label = interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval;
-  res[lowestIdx].colorClass = interval === 0 ? 'cc-dot-R' : interval === 3 || interval === 4 ? 'cc-dot-3' : interval === 7 ? 'cc-dot-5' : (interval === 10 || interval === 11) ? 'cc-dot-7' : '';
-  // Mute strings below
-  for (let i = lowestIdx + 1; i < 6; i++) {
-    if (!res[i].muted) {
-      res[i].muted = true; res[i].fret = null; res[i].note = null;
-      res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
-    }
-  }
+  // Find lowest-pitched (thickest) non-muted string — index 0 = low E
+  let bassIdx = -1;
+  for (let i = 0; i < 6; i++) { if (!res[i].muted) { bassIdx = i; break; } }
+  if (bassIdx === -1) return { ...voicing, result: res };
+  // Change that string to play the bass note
+  const curNote = ((CC_OPEN[bassIdx] + res[bassIdx].fret) % 12 + 12) % 12;
+  const diff = ((bassSemi - curNote) % 12 + 12) % 12;
+  if (diff === 0) return voicing;
+  const newFret = res[bassIdx].fret + diff;
+  res[bassIdx].fret = newFret;
+  res[bassIdx].note = ((CC_OPEN[bassIdx] + newFret) % 12 + 12) % 12;
+  const interval = ((res[bassIdx].note - rootSemi) % 12 + 12) % 12;
+  res[bassIdx].interval = interval;
+  res[bassIdx].label = interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval;
+  res[bassIdx].colorClass = interval === 0 ? 'cc-dot-R' : interval === 3 || interval === 4 ? 'cc-dot-3' : interval === 7 ? 'cc-dot-5' : (interval === 10 || interval === 11) ? 'cc-dot-7' : '';
   return { ...voicing, result: res, slashLabel: '/' + ccNoteName(bassSemi) };
 }
 
@@ -1158,8 +1153,7 @@ function ccRenderChord(name, voicings, bassSemi) {
     const numFrets = Math.max(maxFret - minFret + 3, 5);
     const hasNut = startFret === 0;
 
-    html += `<div class="cc-voicing-card"><div class="cc-label">${label}${v.isBasic ? ' <span style="color:var(--gold);font-weight:600">(root on top)</span>' : ''}</div><div class="cc-fretboard">`;
-    if (hasNut) html += `<div class="cc-nut"></div>`;
+    html += `<div class="cc-voicing-card"><div class="cc-label">${label}${v.isBasic ? ' <span style="color:var(--gold);font-weight:600">(root on top)</span>' : ''}</div><div class="cc-fretboard${hasNut ? ' has-nut' : ''}">`;
     for (let si = 0; si < 6; si++) {
       const s = v.result[si];
       html += `<div class="string-row"><span class="cc-string-label">${STRING_NAMES[si]}</span>`;
@@ -1175,7 +1169,7 @@ function ccRenderChord(name, voicings, bassSemi) {
               s.interval === 3 || s.interval === 4 ? 'cc-dot-3' :
               s.interval === 7 ? 'cc-dot-5' :
               (s.interval === 10 || s.interval === 11) ? 'cc-dot-7' : '';
-            html += `<div class="${cls}"><div class="cc-dot ${color}" title="${ccNoteName(s.note)} (${s.label})"></div></div>`;
+            html += `<div class="${cls}"><div class="cc-dot ${color}"><span class="cc-tip">${ccNoteName(s.note)} (${s.label})</span></div></div>`;
           } else {
             html += `<div class="${cls}"></div>`;
           }
