@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Chord Creator — Test</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --gold: #d4a853;
+    --text: #e0dcd0;
+    --muted: #888;
+    --success: #4caf50;
+    --danger: #e53935;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 2rem;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: .9rem; }
+  .controls {
+    display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: end;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;
+  }
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field label { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+  .field select, .field input {
+    padding: .6rem .8rem; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 2px; color: var(--text); font-size: .9rem; min-width: 120px;
+  }
+  .field input { min-width: 180px; }
+  .btn {
+    padding: .6rem 1.2rem; border: none; border-radius: 2px;
+    cursor: pointer; font-size: .85rem; font-weight: 600;
+    background: var(--gold); color: #000;
+  }
+  .btn:hover { opacity: .9; }
+  .btn-outline {
+    background: transparent; border: 1px solid var(--border); color: var(--text);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+  .chord-name { font-size: 1.4rem; margin-bottom: .5rem; }
+  .chord-name span { color: var(--gold); }
+  .voicing-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem; margin-top: 1rem;
+  }
+  .voicing-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1rem; text-align: center;
+  }
+  .voicing-card .label {
+    font-size: .72rem; color: var(--muted); margin-bottom: .5rem;
+    letter-spacing: .1em; text-transform: uppercase;
+  }
+  .fretboard {
+    display: flex; flex-direction: column; gap: 0;
+    padding: .5rem .25rem; position: relative;
+  }
+  .fretboard .string-row {
+    display: flex; align-items: center; height: 22px;
+    border-bottom: 1.5px solid var(--muted); position: relative;
+  }
+  .fretboard .string-row:last-child { border-bottom: none; }
+  .fret { 
+    width: 28px; height: 22px; display: flex; align-items: center;
+    justify-content: center; position: relative; flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+  .fret:last-child { border-right: none; }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--gold); position: absolute; z-index: 2;
+  }
+  .dot-3 { background: #f06292; }
+  .dot-5 { background: #64b5f6; }
+  .dot-7 { background: #ce93d8; }
+  .dot-9 { background: #81c784; }
+  .dot-R { background: var(--gold); }
+  .muted-mark { color: var(--danger); font-size: 1rem; font-weight: 700; }
+  .open-mark { color: var(--muted); font-size: .65rem; }
+  .fnum { font-size: .55rem; color: var(--muted); }
+  .fret-nums {
+    display: flex; margin-top: .25rem;
+  }
+  .fret-nums .fret { font-size: .6rem; color: var(--muted); border: none; }
+  .note-label {
+    font-size: .6rem; color: rgba(255,255,255,.7);
+    position: absolute; right: -14px; font-weight: 600;
+  }
+  .string-label {
+    font-size: .65rem; color: var(--muted); width: 14px;
+    text-align: right; margin-right: 4px; flex-shrink: 0;
+  }
+  .error { color: var(--danger); padding: 1rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; }
+  .tab {
+    padding: .6rem 1.2rem; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); font-size: .85rem;
+  }
+  .tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
+  .tab:first-child { border-radius: 3px 0 0 3px; }
+  .tab:last-child { border-radius: 0 3px 3px 0; }
+  .tab:not(:first-child) { border-left: none; }
+  @media (max-width:600px) {
+    .voicing-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎸 Chord Creator</h1>
+<div class="subtitle">Test page — 5 voicings per chord, CAGED system</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('pick',this)">Root + Type</div>
+  <div class="tab" onclick="switchTab('notes',this)">Raw Notes</div>
+</div>
+
+<!-- Tab 1: Pick root + type -->
+<div id="tab-pick" class="tab-content active">
+  <div class="controls">
+    <div class="field">
+      <label>Root Note</label>
+      <select id="rootNote">
+        <option value="C">C</option><option value="C#">C# / Db</option>
+        <option value="D">D</option><option value="D#">D# / Eb</option>
+        <option value="E">E</option><option value="F">F</option>
+        <option value="F#">F# / Gb</option><option value="G">G</option>
+        <option value="G#">G# / Ab</option><option value="A">A</option>
+        <option value="A#">A# / Bb</option><option value="B">B</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Chord Type</label>
+      <select id="chordType">
+        <option value="major">Major</option>
+        <option value="minor">Minor</option>
+        <option value="dom7">Dominant 7th</option>
+        <option value="maj7">Major 7th</option>
+        <option value="min7">Minor 7th</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Bass Note (slash)</label>
+      <select id="bassNote">
+        <option value="">None (root)</option>
+        <option value="C">C</option><option value="C#">C# / Db</option>
+        <option value="D">D</option><option value="D#">D# / Eb</option>
+        <option value="E">E</option><option value="F">F</option>
+        <option value="F#">F# / Gb</option><option value="G">G</option>
+        <option value="G#">G# / Ab</option><option value="A">A</option>
+        <option value="A#">A# / Bb</option><option value="B">B</option>
+      </select>
+    </div>
+    <button class="btn" onclick="generateFromPicker()">Generate</button>
+  </div>
+</div>
+
+<!-- Tab 2: Raw notes -->
+<div id="tab-notes" class="tab-content">
+  <div class="controls">
+    <div class="field">
+      <label>Notes (comma separated)</label>
+      <input type="text" id="rawNotes" placeholder="e.g. A, C#, E" value="A, C#, E">
+    </div>
+    <button class="btn" onclick="generateFromNotes()">Identify & Generate</button>
+  </div>
+</div>
+
+<div id="result"></div>
+
+<script>
+// ── MUSIC THEORY ──
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_TO_SEMI = {};
+NOTES.forEach((n,i) => NOTE_TO_SEMI[n] = i);
+
+const CHORD_TYPES = {
+  major:  { name: 'Major',      intervals: [0, 4, 7],          suffix: '' },
+  minor:  { name: 'Minor',      intervals: [0, 3, 7],          suffix: 'm' },
+  dom7:   { name: 'Dominant 7', intervals: [0, 4, 7, 10],      suffix: '7' },
+  maj7:   { name: 'Major 7',    intervals: [0, 4, 7, 11],      suffix: 'maj7' },
+  min7:   { name: 'Minor 7',    intervals: [0, 3, 7, 10],      suffix: 'm7' },
+};
+
+const INTERVAL_LABELS = { 0:'R', 1:'b2', 2:'2', 3:'b3', 4:'3', 5:'4', 6:'b5',
+  7:'5', 8:'#5', 9:'6', 10:'b7', 11:'7' };
+
+function noteName(semi) {
+  return NOTES[((semi % 12) + 12) % 12];
+}
+
+function semiOf(note) {
+  const n = note.replace(/[♯#]/g,'#').replace(/[♭b]/g,'b').trim().toUpperCase();
+  const flatMap = {'DB':'C#','EB':'D#','GB':'F#','AB':'G#','BB':'A#'};
+  return NOTE_TO_SEMI[flatMap[n] || n];
+}
+
+// Open string semitones (same system as NOTE_TO_SEMI: C=0)
+const OPEN = [4, 9, 2, 7, 11, 4]; // E=4, A=9, D=2, G=7, B=11, e=4
+
+// Hardcoded correct open/basic position chord shapes for all 12 roots
+// -1 = muted string, values are fret numbers
+const BASIC_SHAPES = {
+  major: {
+    'C':  [-1, 3, 2, 0, 1, 0], 'C#': [-1, 4, 6, 6, 6, 4],
+    'D':  [-1,-1, 0, 2, 3, 2], 'D#': [-1, 6, 8, 8, 8, 6],
+    'E':  [0, 2, 2, 1, 0, 0],  'F':  [1, 3, 3, 2, 1, 1],
+    'F#': [2, 4, 4, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 3],
+    'G#': [4, 6, 6, 5, 4, 4],  'A':  [-1, 0, 2, 2, 2, 0],
+    'A#': [-1, 1, 3, 3, 3, 1], 'B':  [-1, 2, 4, 4, 4, 2],
+  },
+  minor: {
+    'C':  [-1, 3, 5, 5, 4, 3], 'C#': [-1, 4, 6, 6, 5, 4],
+    'D':  [-1,-1, 0, 2, 3, 1], 'D#': [-1, 6, 8, 8, 7, 6],
+    'E':  [0, 2, 2, 0, 0, 0],  'F':  [1, 3, 3, 1, 1, 1],
+    'F#': [2, 4, 4, 2, 2, 2],  'G':  [3, 5, 5, 3, 3, 3],
+    'G#': [4, 6, 6, 4, 4, 4],  'A':  [-1, 0, 2, 2, 1, 0],
+    'A#': [-1, 1, 3, 3, 2, 1], 'B':  [-1, 2, 4, 4, 3, 2],
+  },
+  dom7: {
+    'C':  [-1, 3, 2, 3, 1, 0], 'C#': [-1, 4, 6, 4, 6, 4],
+    'D':  [-1,-1, 0, 2, 1, 2], 'D#': [-1, 6, 8, 6, 8, 6],
+    'E':  [0, 2, 0, 1, 0, 0],  'F':  [1, 3, 1, 2, 1, 1],
+    'F#': [2, 4, 2, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 1],
+    'G#': [4, 6, 4, 5, 4, 4],  'A':  [-1, 0, 2, 0, 2, 0],
+    'A#': [-1, 1, 3, 1, 3, 1], 'B':  [-1, 2, 4, 2, 4, 2],
+  },
+  maj7: {
+    'C':  [-1, 3, 2, 0, 0, 0], 'C#': [-1, 4, 6, 5, 6, 4],
+    'D':  [-1,-1, 0, 2, 2, 2], 'D#': [-1, 6, 8, 7, 8, 6],
+    'E':  [0, 2, 1, 1, 0, 0],  'F':  [1, 3, 2, 2, 1, 1],
+    'F#': [2, 4, 3, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 2],
+    'G#': [4, 6, 5, 5, 4, 4],  'A':  [-1, 0, 2, 1, 2, 0],
+    'A#': [-1, 1, 3, 2, 3, 1], 'B':  [-1, 2, 4, 3, 4, 2],
+  },
+  min7: {
+    'C':  [-1, 3, 5, 3, 4, 3], 'C#': [-1, 4, 6, 4, 5, 4],
+    'D':  [-1,-1, 0, 2, 1, 1], 'D#': [-1, 6, 8, 6, 7, 6],
+    'E':  [0, 2, 0, 0, 0, 0],  'F':  [1, 3, 1, 1, 1, 1],
+    'F#': [2, 4, 2, 2, 2, 2],  'G':  [3, 5, 3, 3, 3, 3],
+    'G#': [4, 6, 4, 4, 4, 4],  'A':  [-1, 0, 2, 0, 1, 0],
+    'A#': [-1, 1, 3, 1, 2, 1], 'B':  [-1, 2, 4, 2, 3, 2],
+  },
+};
+
+// E form and A form barre shapes
+const BARRE_SHAPES = {
+  eForm:  { baseString: 0, strings: [0, 2, 2, 1, 0, 0] },
+  aForm:  { baseString: 1, strings: [-1, 0, 2, 2, 2, 0] },
+};
+
+function buildVoicing(rootSemi, typeKey, absFrets, name, isBasic) {
+  const intervals = CHORD_TYPES[typeKey].intervals;
+  const intervalSet = new Set(intervals);
+  const result = absFrets.map((fret, si) => {
+    if (fret === -1) return { muted: true, fret: null, note: null, interval: null, label: null, inChord: false, colorClass: '' };
+    const noteSemi = ((OPEN[si] + fret) % 12 + 12) % 12;
+    const interval = ((noteSemi - rootSemi) % 12 + 12) % 12;
+    let colorClass = '';
+    if (interval === 0) colorClass = 'dot-R';
+    else if (interval === 3 || interval === 4) colorClass = 'dot-3';
+    else if (interval === 7) colorClass = 'dot-5';
+    else if (interval === 10 || interval === 11) colorClass = 'dot-7';
+    return {
+      muted: false, fret, note: noteSemi, interval,
+      label: interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval,
+      inChord: intervalSet.has(interval),
+      colorClass
+    };
+  });
+  return { name, isBasic, result };
+}
+
+function barreFromShape(rootSemi, shapeDef, name) {
+  const { baseString, strings } = shapeDef;
+  const baseFret = ((rootSemi - OPEN[baseString]) % 12 + 12) % 12;
+  const frets = strings.map(r => r === -1 ? -1 : baseFret + r);
+  return { name, isBasic: false, frets };
+}
+
+function generateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
+  const basicFrets = BASIC_SHAPES[typeKey]?.[rootStr];
+  const basicName = rootStr + (CHORD_TYPES[typeKey]?.suffix || '') + ' — Basic';
+  const basic = basicFrets ? buildVoicing(rootSemi, typeKey, basicFrets, basicName, true) : null;
+
+  const barreE = barreFromShape(rootSemi, BARRE_SHAPES.eForm, 'E form barre');
+  const ve = buildVoicing(rootSemi, typeKey, barreE.frets, barreE.name, false);
+  const barreA = barreFromShape(rootSemi, BARRE_SHAPES.aForm, 'A form barre');
+  const va = buildVoicing(rootSemi, typeKey, barreA.frets, barreA.name, false);
+
+  const result = [];
+  if (basic) {
+    // Verify root is lowest note — mute strings below if not
+    const src = BASIC_SHAPES[typeKey]?.[rootStr] || [];
+    // Find which string has the root
+    let rootStringIdx = -1;
+    for (let i = 0; i < 6; i++) {
+      if (src[i] !== -1) {
+        const note = (OPEN[i] + src[i]) % 12;
+        if (note === rootSemi) { rootStringIdx = i; break; }
+      }
+    }
+    if (rootStringIdx > 0) {
+      for (let i = 0; i < rootStringIdx; i++) {
+        if (basic.result[i] && !basic.result[i].muted) {
+          basic.result[i].muted = true;
+          basic.result[i].fret = null; basic.result[i].note = null;
+          basic.result[i].interval = null; basic.result[i].label = null; basic.result[i].inChord = false;
+        }
+      }
+    }
+    if (bassSemi !== undefined && bassSemi !== null && bassSemi !== rootSemi) {
+      const slashName = rootStr + (CHORD_TYPES[typeKey]?.suffix || '') + ' / ' + noteName(bassSemi);
+      const slashVoicing = applySlash({...basic, result: basic.result.map(r => ({...r}))}, bassSemi, rootSemi);
+      slashVoicing.name = slashName;
+      result.push(slashVoicing);
+      basic.name += ' (root position)';
+    }
+    result.push(basic);
+  }
+  result.push(ve);
+  result.push(va);
+  return result;
+}
+
+function applySlash(voicing, bassSemi, rootSemi) {
+  const res = voicing.result.map(r => ({...r}));
+  let lowestIdx = -1;
+  for (let i = 5; i >= 0; i--) { if (!res[i].muted) { lowestIdx = i; break; } }
+  if (lowestIdx === -1) return { ...voicing, result: res };
+  const baseNote = ((OPEN[lowestIdx] + res[lowestIdx].fret) % 12 + 12) % 12;
+  const diff = ((bassSemi - baseNote) % 12 + 12) % 12;
+  if (diff === 0) return voicing;
+  const newFret = res[lowestIdx].fret + diff;
+  res[lowestIdx].fret = newFret;
+  res[lowestIdx].note = ((OPEN[lowestIdx] + newFret) % 12 + 12) % 12;
+  const interval = ((res[lowestIdx].note - rootSemi) % 12 + 12) % 12;
+  res[lowestIdx].interval = interval;
+  res[lowestIdx].label = interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval;
+  res[lowestIdx].colorClass = interval === 0 ? 'dot-R' : interval === 3 || interval === 4 ? 'dot-3' : interval === 7 ? 'dot-5' : (interval === 10 || interval === 11) ? 'dot-7' : '';
+  for (let i = lowestIdx + 1; i < 6; i++) {
+    if (!res[i].muted) {
+      res[i].muted = true; res[i].fret = null; res[i].note = null;
+      res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
+    }
+  }
+  return { ...voicing, result: res };
+}
+
+function renderChord(name, voicings) {
+  let html = `<div class="chord-name">${name}</div>`;
+  if (!voicings || !voicings.length) return html + '<div class="error">Could not generate voicings</div>';
+  const STRING_NAMES = ['E','A','D','G','B','e'];
+  html += '<div class="voicing-grid">';
+  voicings.forEach(v => {
+    const frets = v.result.map(r => r.fret);
+    const validFrets = frets.filter(f => f !== null);
+    const minFret = validFrets.length ? Math.min(...validFrets) : 0;
+    const maxFret = validFrets.length ? Math.max(...validFrets) : 0;
+    const startFret = Math.max(0, minFret - 1);
+    const numFrets = Math.max(maxFret - minFret + 3, 5);
+    const label = v.isBasic && !v.name.includes('/') ? '★ ' + v.name + ' <span style="color:var(--gold)">(root on top)</span>' : v.name;
+    html += `<div class="voicing-card"><div class="label">${label}</div><div class="fretboard">`;
+    for (let si = 0; si < 6; si++) {
+      const s = v.result[si];
+      html += `<div class="string-row"><span class="string-label">${STRING_NAMES[si]}</span>`;
+      if (s.muted) {
+        html += `<div class="fret" style="border:none"><span class="muted-mark">✕</span></div>`;
+        for (let f = 1; f < numFrets; f++) html += `<div class="fret"></div>`;
+      } else {
+        for (let f = 0; f < numFrets; f++) {
+          const fretNum = startFret + f;
+          if (s.fret === fretNum) {
+            html += `<div class="fret"><div class="dot ${s.colorClass}" title="${noteName(s.note)} (${s.label})"></div></div>`;
+          } else {
+            html += `<div class="fret"></div>`;
+          }
+        }
+      }
+      html += `</div>`;
+    }
+    html += `<div class="fret-nums" style="padding-left:18px">`;
+    for (let f = 0; f < numFrets; f++) html += `<div class="fret">${startFret + f}</div>`;
+    html += `</div>`;
+    html += `<div style="display:flex;gap:.5rem;justify-content:center;margin-top:.4rem;font-size:.6rem;color:var(--muted)">
+      <span><span class="dot dot-R" style="position:static;display:inline-block;width:8px;height:8px"></span>R</span>
+      <span><span class="dot dot-3" style="position:static;display:inline-block;width:8px;height:8px"></span>3/b3</span>
+      <span><span class="dot dot-5" style="position:static;display:inline-block;width:8px;height:8px"></span>5</span>
+      <span><span class="dot dot-7" style="position:static;display:inline-block;width:8px;height:8px"></span>7/b7</span>
+    </div></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function generateFromPicker() {
+  const rootStr = document.getElementById('rootNote').value;
+  const type = document.getElementById('chordType').value;
+  const bassStr = document.getElementById('bassNote')?.value;
+  const rootSemi = NOTE_TO_SEMI[rootStr];
+  const bassSemi = bassStr ? NOTE_TO_SEMI[bassStr] : null;
+  const chordName = bassSemi && bassSemi !== rootSemi
+    ? `${rootStr}${CHORD_TYPES[type].suffix} / ${noteName(bassSemi)}`
+    : `${rootStr}${CHORD_TYPES[type].suffix} (${CHORD_TYPES[type].name})`;
+  const voicings = generateVoicings(rootSemi, type, rootStr, bassSemi);
+  document.getElementById('result').innerHTML = renderChord(chordName, voicings);
+}
+
+function generateFromNotes() {
+  const raw = document.getElementById('rawNotes').value;
+  const notes = raw.split(/[,;]/).map(n => n.trim().toUpperCase()).filter(Boolean);
+  if (notes.length < 2) { document.getElementById('result').innerHTML = '<div class="error">Enter at least 2 notes</div>'; return; }
+  const semis = notes.map(n => semiOf(n)).filter(s => s !== undefined);
+  if (semis.length !== notes.length) { document.getElementById('result').innerHTML = '<div class="error">Invalid note name detected</div>'; return; }
+  const uniqueSemis = [...new Set(semis.map(s => ((s % 12) + 12) % 12))].sort((a,b) => a-b);
+  let bestMatch = null, bestScore = -1;
+  for (const rootSemi of uniqueSemis) {
+    for (const [typeKey, typeInfo] of Object.entries(CHORD_TYPES)) {
+      const chordNotes = typeInfo.intervals.map(i => (rootSemi + i) % 12);
+      const matchCount = uniqueSemis.filter(n => chordNotes.includes(n)).length;
+      const extraCount = uniqueSemis.filter(n => !chordNotes.includes(n)).length;
+      const score = matchCount - extraCount * 2;
+      if (uniqueSemis.every(n => chordNotes.includes(n)) && score > bestScore) {
+        bestScore = score;
+        bestMatch = { rootSemi, typeKey, chordNotes };
+      }
+    }
+  }
+  if (!bestMatch) {
+    bestMatch = { rootSemi: uniqueSemis[0], typeKey: 'major', chordNotes: CHORD_TYPES.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
+  }
+  const rootName = noteName(bestMatch.rootSemi);
+  const typeInfo = CHORD_TYPES[bestMatch.typeKey];
+  const chordName = `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
+  const bassStr = document.getElementById('bassNote')?.value;
+  const bassSemi = bassStr ? NOTE_TO_SEMI[bassStr] : null;
+  const voicings = generateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName, bassSemi);
+  document.getElementById('result').innerHTML = renderChord(chordName, voicings) +
+    `<div style="margin-top:1rem;font-size:.82rem;color:var(--muted)">Identified from notes: ${notes.join(', ')} → ${chordName}</div>`;
+}
+
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+window.addEventListener('DOMContentLoaded', () => { generateFromPicker(); });
+</script>
+</body>
+</html>

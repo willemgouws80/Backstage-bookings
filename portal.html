@@ -371,6 +371,18 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
             <option value="min7">Minor 7th</option>
           </select>
         </div>
+        <div class="fg" style="margin:0;flex:1;min-width:120px">
+          <label>Bass Note <small style="color:var(--muted)">(slash chord)</small></label>
+          <select id="ccBassNote">
+            <option value="">Same as root</option>
+            <option value="C">C</option><option value="C#">C# / Db</option>
+            <option value="D">D</option><option value="D#">D# / Eb</option>
+            <option value="E">E</option><option value="F">F</option>
+            <option value="F#">F# / Gb</option><option value="G">G</option>
+            <option value="G#">G# / Ab</option><option value="A">A</option>
+            <option value="A#">A# / Bb</option><option value="B">B</option>
+          </select>
+        </div>
         <button class="btn btn-gold" onclick="ccGenerateFromPicker()">Generate</button>
       </div>
 
@@ -945,11 +957,10 @@ window.toast = toast;
 
 // ── CHORD CREATOR ──
 const CC_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const CC_NOTE_NAMES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 const CC_NOTE_TO_SEMI = {};
 CC_NOTES.forEach((n,i) => CC_NOTE_TO_SEMI[n] = i);
 
-const CC_CHORD_INTERVALS = {
+const CC_CHORD_TYPES = {
   major:  { name: 'Major',      intervals: [0, 4, 7],          suffix: '' },
   minor:  { name: 'Minor',      intervals: [0, 3, 7],          suffix: 'm' },
   dom7:   { name: 'Dominant 7', intervals: [0, 4, 7, 10],      suffix: '7' },
@@ -959,6 +970,9 @@ const CC_CHORD_INTERVALS = {
 
 const CC_INTERVAL_LABELS = { 0:'R', 1:'b2', 2:'2', 3:'b3', 4:'3', 5:'4', 6:'b5',
   7:'5', 8:'#5', 9:'6', 10:'b7', 11:'7' };
+
+// Open string semitones (same system as CC_NOTE_TO_SEMI: C=0)
+const CC_OPEN = [4, 9, 2, 7, 11, 4]; // E=4, A=9, D=2, G=7, B=11, e=4
 
 function ccNoteName(semi) {
   return CC_NOTES[((semi % 12) + 12) % 12];
@@ -970,81 +984,176 @@ function ccSemiOf(note) {
   return CC_NOTE_TO_SEMI[flatMap[n] || n];
 }
 
-const CC_OPEN = [0, 5, 10, 3, 7, 0];
-
-const CC_VOICINGS = {
-  major: [
-    { name: 'E form', baseString: 0, strings: [0, 2, 2, 1, 0, 0] },
-    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 2, 0, 0] },
-    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 1, 0] },
-    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 3, 2] },
-    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 3, 3] },
-  ],
-  minor: [
-    { name: 'E form', baseString: 0, strings: [0, 2, 2, 0, 0, 0] },
-    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 2, 1, 0] },
-    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 0, 0] },
-    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 3, 1] },
-    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 3, 3] },
-  ],
-  dom7: [
-    { name: 'E form', baseString: 0, strings: [0, 2, 0, 1, 0, 0] },
-    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 0, 0, 0] },
-    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 1, 0] },
-    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 1, 2] },
-    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 1, 3] },
-  ],
-  maj7: [
-    { name: 'E form', baseString: 0, strings: [0, 2, 1, 1, 0, 0] },
-    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 1, 0, 0] },
-    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 0, 0] },
-    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 3, 2] },
-    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 3, 2] },
-  ],
-  min7: [
-    { name: 'E form', baseString: 0, strings: [0, 2, 0, 0, 0, 0] },
-    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 0, 1, 0] },
-    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 0, 0] },
-    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 1, 1] },
-    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 1, 3] },
-  ],
+// Hardcoded correct open/basic position chord shapes for all 12 roots
+// -1 = muted string, values are fret numbers
+const CC_BASIC_SHAPES = {
+  major: {
+    'C':  [-1, 3, 2, 0, 1, 0], 'C#': [-1, 4, 6, 6, 6, 4],
+    'D':  [-1,-1, 0, 2, 3, 2], 'D#': [-1, 6, 8, 8, 8, 6],
+    'E':  [0, 2, 2, 1, 0, 0],  'F':  [1, 3, 3, 2, 1, 1],
+    'F#': [2, 4, 4, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 3],
+    'G#': [4, 6, 6, 5, 4, 4],  'A':  [-1, 0, 2, 2, 2, 0],
+    'A#': [-1, 1, 3, 3, 3, 1], 'B':  [-1, 2, 4, 4, 4, 2],
+  },
+  minor: {
+    'C':  [-1, 3, 5, 5, 4, 3], 'C#': [-1, 4, 6, 6, 5, 4],
+    'D':  [-1,-1, 0, 2, 3, 1], 'D#': [-1, 6, 8, 8, 7, 6],
+    'E':  [0, 2, 2, 0, 0, 0],  'F':  [1, 3, 3, 1, 1, 1],
+    'F#': [2, 4, 4, 2, 2, 2],  'G':  [3, 5, 5, 3, 3, 3],
+    'G#': [4, 6, 6, 4, 4, 4],  'A':  [-1, 0, 2, 2, 1, 0],
+    'A#': [-1, 1, 3, 3, 2, 1], 'B':  [-1, 2, 4, 4, 3, 2],
+  },
+  dom7: {
+    'C':  [-1, 3, 2, 3, 1, 0], 'C#': [-1, 4, 6, 4, 6, 4],
+    'D':  [-1,-1, 0, 2, 1, 2], 'D#': [-1, 6, 8, 6, 8, 6],
+    'E':  [0, 2, 0, 1, 0, 0],  'F':  [1, 3, 1, 2, 1, 1],
+    'F#': [2, 4, 2, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 1],
+    'G#': [4, 6, 4, 5, 4, 4],  'A':  [-1, 0, 2, 0, 2, 0],
+    'A#': [-1, 1, 3, 1, 3, 1], 'B':  [-1, 2, 4, 2, 4, 2],
+  },
+  maj7: {
+    'C':  [-1, 3, 2, 0, 0, 0], 'C#': [-1, 4, 6, 5, 6, 4],
+    'D':  [-1,-1, 0, 2, 2, 2], 'D#': [-1, 6, 8, 7, 8, 6],
+    'E':  [0, 2, 1, 1, 0, 0],  'F':  [1, 3, 2, 2, 1, 1],
+    'F#': [2, 4, 3, 3, 2, 2],  'G':  [3, 2, 0, 0, 0, 2],
+    'G#': [4, 6, 5, 5, 4, 4],  'A':  [-1, 0, 2, 1, 2, 0],
+    'A#': [-1, 1, 3, 2, 3, 1], 'B':  [-1, 2, 4, 3, 4, 2],
+  },
+  min7: {
+    'C':  [-1, 3, 5, 3, 4, 3], 'C#': [-1, 4, 6, 4, 5, 4],
+    'D':  [-1,-1, 0, 2, 1, 1], 'D#': [-1, 6, 8, 6, 7, 6],
+    'E':  [0, 2, 0, 0, 0, 0],  'F':  [1, 3, 1, 1, 1, 1],
+    'F#': [2, 4, 2, 2, 2, 2],  'G':  [3, 5, 3, 3, 3, 3],
+    'G#': [4, 6, 4, 4, 4, 4],  'A':  [-1, 0, 2, 0, 1, 0],
+    'A#': [-1, 1, 3, 1, 2, 1], 'B':  [-1, 2, 4, 2, 3, 2],
+  },
 };
 
-function ccComputeVoicing(rootSemi, chordType) {
-  const shapes = CC_VOICINGS[chordType];
-  if (!shapes) return [];
-  const intervals = CC_CHORD_INTERVALS[chordType].intervals;
+// E form and A form barre shapes (CAGED) for generating alternative voicings
+const CC_BARRE_SHAPES = {
+  // E form: root on string 0 (E), barre shape
+  eForm:  { baseString: 0, strings: [0, 2, 2, 1, 0, 0] },
+  // A form: root on string 1 (A), barre shape
+  aForm:  { baseString: 1, strings: [-1, 0, 2, 2, 2, 0] },
+};
+
+// Build a voicing from absolute fret positions + chord type
+function ccBuildVoicing(rootSemi, typeKey, absFrets, name, isBasic) {
+  const intervals = CC_CHORD_TYPES[typeKey].intervals;
   const intervalSet = new Set(intervals);
-  return shapes.map(shape => {
-    const { baseString, strings, name } = shape;
-    const baseFret = ((rootSemi - CC_OPEN[baseString]) % 12 + 12) % 12;
-    const result = strings.map((rel, si) => {
-      if (rel === -1) return { muted: true, fret: null, note: null, interval: null };
-      let fret = baseFret + rel;
-      const noteSemi = ((CC_OPEN[si] + fret) % 12 + 12) % 12;
-      const interval = ((noteSemi - rootSemi) % 12 + 12) % 12;
-      return {
-        muted: false, fret, note: noteSemi, interval,
-        label: interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval,
-        inChord: intervalSet.has(interval),
-        colorClass: interval === 0 ? 'cc-dot-R' : interval === 3 || interval === 4 ? 'cc-dot-3' : interval === 7 ? 'cc-dot-5' : (interval === 10 || interval === 11) ? 'cc-dot-7' : ''
-      };
-    });
-    return { name, result };
+  const result = absFrets.map((fret, si) => {
+    if (fret === -1) return { muted: true, fret: null, note: null, interval: null, label: null, inChord: false, colorClass: '' };
+    const noteSemi = ((CC_OPEN[si] + fret) % 12 + 12) % 12;
+    const interval = ((noteSemi - rootSemi) % 12 + 12) % 12;
+    let colorClass = '';
+    if (interval === 0) colorClass = 'cc-dot-R';
+    else if (interval === 3 || interval === 4) colorClass = 'cc-dot-3';
+    else if (interval === 7) colorClass = 'cc-dot-5';
+    else if (interval === 10 || interval === 11) colorClass = 'cc-dot-7';
+    return {
+      muted: false, fret, note: noteSemi, interval,
+      label: interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval,
+      inChord: intervalSet.has(interval),
+      colorClass
+    };
   });
+  return { name, isBasic, result };
 }
 
-function ccRenderChord(name, voicings) {
+// Generate barre chord voicing from a CAGED shape
+function ccBarreFromShape(rootSemi, shapeDef, name) {
+  const { baseString, strings } = shapeDef;
+  const baseFret = ((rootSemi - CC_OPEN[baseString]) % 12 + 12) % 12;
+  const frets = strings.map(r => r === -1 ? -1 : baseFret + r);
+  return { name, isBasic: false, frets };
+}
+
+// Generate all voicings for a chord, sorted with basic first
+function ccGenerateVoicings(rootSemi, typeKey, rootStr) {
+  const basicFrets = CC_BASIC_SHAPES[typeKey]?.[rootStr];
+  const basicName = rootStr + (CC_CHORD_TYPES[typeKey]?.suffix || '') + ' — Basic';
+  const basic = basicFrets ? ccBuildVoicing(rootSemi, typeKey, basicFrets, basicName, true) : null;
+
+  // E form barre
+  const barreE = ccBarreFromShape(rootSemi, CC_BARRE_SHAPES.eForm, 'E form barre');
+  const ve = ccBuildVoicing(rootSemi, typeKey, barreE.frets, barreE.name, false);
+
+  // A form barre
+  const barreA = ccBarreFromShape(rootSemi, CC_BARRE_SHAPES.aForm, 'A form barre');
+  const va = ccBuildVoicing(rootSemi, typeKey, barreA.frets, barreA.name, false);
+
+  const result = [];
+  if (basic) {
+    // Verify root is lowest note — mute strings below root if not
+    const rootStringIdx = CC_BASIC_SHAPES[typeKey]?.[rootStr]?.findIndex((f, i) => f !== -1 && (() => {
+      const note = ((CC_OPEN[i] + f) % 12 + 12) % 12;
+      return note === rootSemi;
+    })()) ?? -1;
+    if (rootStringIdx > 0) {
+      for (let i = 0; i < rootStringIdx; i++) {
+        if (basic.result[i] && !basic.result[i].muted) {
+          basic.result[i].muted = true;
+          basic.result[i].fret = null;
+          basic.result[i].note = null;
+          basic.result[i].interval = null;
+          basic.result[i].label = null;
+          basic.result[i].inChord = false;
+        }
+      }
+    }
+    result.push(basic);
+  }
+  result.push(ve);
+  result.push(va);
+  return result;
+}
+
+// Apply slash chord (bass note override) to a voicing
+function ccApplySlash(voicing, bassSemi, rootSemi) {
+  if (bassSemi === rootSemi || bassSemi === undefined || bassSemi === null) return voicing;
+  const res = voicing.result.map(r => ({...r}));
+  // Find lowest non-muted string — that's where we change to bass note
+  let lowestIdx = -1;
+  for (let i = 5; i >= 0; i--) { if (!res[i].muted) { lowestIdx = i; break; } }
+  if (lowestIdx === -1) return { ...voicing, result: res };
+  // Compute fret for bass note on that string
+  const bassFret = ((bassSemi - CC_OPEN[lowestIdx]) % 12 + 12) % 12;
+  // But we want the lowest possible fret >= current fret position
+  const baseNote = ((CC_OPEN[lowestIdx] + res[lowestIdx].fret) % 12 + 12) % 12;
+  const diff = ((bassSemi - baseNote) % 12 + 12) % 12;
+  const newFret = res[lowestIdx].fret + diff;
+  res[lowestIdx].fret = newFret;
+  res[lowestIdx].note = ((CC_OPEN[lowestIdx] + newFret) % 12 + 12) % 12;
+  const interval = ((res[lowestIdx].note - rootSemi) % 12 + 12) % 12;
+  res[lowestIdx].interval = interval;
+  res[lowestIdx].label = interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval;
+  res[lowestIdx].colorClass = interval === 0 ? 'cc-dot-R' : interval === 3 || interval === 4 ? 'cc-dot-3' : interval === 7 ? 'cc-dot-5' : (interval === 10 || interval === 11) ? 'cc-dot-7' : '';
+  // Mute strings below
+  for (let i = lowestIdx + 1; i < 6; i++) {
+    if (!res[i].muted) {
+      res[i].muted = true; res[i].fret = null; res[i].note = null;
+      res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
+    }
+  }
+  return { ...voicing, result: res, slashLabel: '/' + ccNoteName(bassSemi) };
+}
+
+function ccRenderChord(name, voicings, bassSemi) {
   if (!voicings || !voicings.length) return '<div style="color:var(--danger);padding:.5rem 0">Could not generate voicings</div>';
   const STRING_NAMES = ['E','A','D','G','B','e'];
-  let html = `<div class="cc-chord-name">${name}</div><div class="cc-voicing-grid">`;
-  voicings.forEach(v => {
+  const displayName = bassSemi !== undefined && bassSemi !== null && bassSemi !== ccSemiOf(name.split(/[\s(]/)[0])
+    ? name + ' (bass: ' + ccNoteName(bassSemi) + ')'
+    : name;
+  let html = `<div class="cc-chord-name">${displayName}</div><div class="cc-voicing-grid">`;
+  voicings.forEach((v, vi) => {
+    const label = v.isBasic ? '★ ' + v.name : v.slashLabel ? v.slashLabel + ' · ' + v.name : v.name;
     const frets = v.result.map(r => r.fret);
-    const minFret = Math.min(...frets.filter(f => f !== null));
-    const maxFret = Math.max(...frets.filter(f => f !== null));
+    const validFrets = frets.filter(f => f !== null);
+    const minFret = validFrets.length ? Math.min(...validFrets) : 0;
+    const maxFret = validFrets.length ? Math.max(...validFrets) : 0;
     const startFret = Math.max(0, minFret - 1);
     const numFrets = Math.max(maxFret - minFret + 3, 5);
-    html += `<div class="cc-voicing-card"><div class="cc-label">${v.name} (ft ${startFret+1}–${startFret+numFrets})</div><div class="cc-fretboard">`;
+    html += `<div class="cc-voicing-card"><div class="cc-label">${label}${v.isBasic ? ' <span style="color:var(--gold);font-weight:600">(root on top)</span>' : ''}</div><div class="cc-fretboard">`;
     for (let si = 0; si < 6; si++) {
       const s = v.result[si];
       html += `<div class="string-row"><span class="cc-string-label">${STRING_NAMES[si]}</span>`;
@@ -1084,9 +1193,15 @@ function ccRenderChord(name, voicings) {
 window.ccGenerateFromPicker = function() {
   const rootStr = document.getElementById('ccRootNote').value;
   const type = document.getElementById('ccChordType').value;
+  const bassStr = document.getElementById('ccBassNote')?.value;
   const rootSemi = CC_NOTE_TO_SEMI[rootStr];
-  const chordName = `${rootStr}${CC_CHORD_INTERVALS[type].suffix} (${CC_CHORD_INTERVALS[type].name})`;
-  document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, ccComputeVoicing(rootSemi, type));
+  const bassSemi = bassStr ? CC_NOTE_TO_SEMI[bassStr] : null;
+  const chordName = `${rootStr}${CC_CHORD_TYPES[type].suffix} (${CC_CHORD_TYPES[type].name})`;
+  let voicings = ccGenerateVoicings(rootSemi, type, rootStr);
+  if (bassSemi !== null && bassSemi !== rootSemi) {
+    voicings = voicings.map(v => ccApplySlash(v, bassSemi, rootSemi));
+  }
+  document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, voicings, bassSemi);
 };
 
 window.ccGenerateFromNotes = function() {
@@ -1098,7 +1213,7 @@ window.ccGenerateFromNotes = function() {
   const uniqueSemis = [...new Set(semis.map(s => ((s % 12) + 12) % 12))].sort((a,b) => a-b);
   let bestMatch = null, bestScore = -1;
   for (const rootSemi of uniqueSemis) {
-    for (const [typeKey, typeInfo] of Object.entries(CC_CHORD_INTERVALS)) {
+    for (const [typeKey, typeInfo] of Object.entries(CC_CHORD_TYPES)) {
       const chordNotes = typeInfo.intervals.map(i => (rootSemi + i) % 12);
       const matchCount = uniqueSemis.filter(n => chordNotes.includes(n)).length;
       const extraCount = uniqueSemis.filter(n => !chordNotes.includes(n)).length;
@@ -1110,12 +1225,17 @@ window.ccGenerateFromNotes = function() {
     }
   }
   if (!bestMatch) {
-    bestMatch = { rootSemi: uniqueSemis[0], typeKey: 'major', chordNotes: CC_CHORD_INTERVALS.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
+    bestMatch = { rootSemi: uniqueSemis[0], typeKey: 'major', chordNotes: CC_CHORD_TYPES.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
   }
   const rootName = ccNoteName(bestMatch.rootSemi);
-  const typeInfo = CC_CHORD_INTERVALS[bestMatch.typeKey];
+  const typeInfo = CC_CHORD_TYPES[bestMatch.typeKey];
   const chordName = `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
-  document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, ccComputeVoicing(bestMatch.rootSemi, bestMatch.typeKey)) +
+  const bassSemi = document.getElementById('ccBassNote')?.value ? CC_NOTE_TO_SEMI[document.getElementById('ccBassNote').value] : null;
+  let voicings = ccGenerateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName);
+  if (bassSemi !== null && bassSemi !== bestMatch.rootSemi) {
+    voicings = voicings.map(v => ccApplySlash(v, bassSemi, bestMatch.rootSemi));
+  }
+  document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, voicings, bassSemi) +
     `<div style="margin-top:.75rem;font-size:.78rem;color:var(--muted)">Identified from: ${notes.join(', ')} → ${chordName}</div>`;
 };
 
