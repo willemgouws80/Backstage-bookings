@@ -162,6 +162,42 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .nl-right{text-align:right;flex-shrink:0}
 .nl-date{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)}
 .nl-time{font-size:.8rem;color:var(--muted)}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-top:1px solid rgba(255,255,255,.04)}
+.toggle-row:first-of-type{border-top:none}
+.toggle-label{font-size:.85rem;color:var(--text);line-height:1.4}
+.toggle-label small{display:block;font-size:.72rem;color:var(--muted);font-weight:400}
+.toggle{position:relative;display:inline-block;width:42px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:22px;transition:.3s;cursor:pointer}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--gold)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
+
+/* CHORD CREATOR */
+.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.4rem .2rem;position:relative}
+.cc-fretboard .string-row{display:flex;align-items:center;height:20px;border-bottom:1.5px solid var(--muted);position:relative}
+.cc-fretboard .string-row:last-child{border-bottom:none}
+.cc-fret {width:26px;height:20px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06)}
+.cc-fret:last-child{border-right:none}
+.cc-dot{width:12px;height:12px;border-radius:50%;position:absolute;z-index:2}
+.cc-dot-R{background:var(--gold)}
+.cc-dot-3{background:#f06292}
+.cc-dot-5{background:#64b5f6}
+.cc-dot-7{background:#ce93d8}
+.cc-muted{color:var(--danger);font-size:.9rem;font-weight:700}
+.cc-fnum{font-size:.5rem;color:var(--muted)}
+.cc-fret-nums{display:flex;margin-top:.2rem}
+.cc-fret-nums .cc-fret{font-size:.55rem;color:var(--muted);border:none}
+.cc-voicing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:.75rem}
+.cc-voicing-card{background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:.75rem;text-align:center}
+.cc-voicing-card .cc-label{font-size:.65rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.1em;text-transform:uppercase}
+.cc-string-label{font-size:.6rem;color:var(--muted);width:12px;text-align:right;margin-right:3px;flex-shrink:0}
+.cc-chord-name{font-size:1.2rem;margin-bottom:.5rem;color:var(--gold)}
+.cc-legend{display:flex;gap:.4rem;justify-content:center;margin-top:.3rem;font-size:.55rem;color:var(--muted)}
+.cc-legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
+@media(max-width:600px){.cc-voicing-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -231,6 +267,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
     <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
     <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon">📂</span> Resources</div>
+    <div class="nav-item" id="nav-chord-creator" onclick="showPanel('chord-creator',this)" style="display:none"><span class="icon">🎸</span> Chord Creator</div>
     <span class="sidebar-label">Account</span>
     <div class="nav-item" onclick="showPanel('profile',this)"><span class="icon">👤</span> My Profile</div>
   </aside>
@@ -308,6 +345,46 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       </div>
     </div>
 
+    <!-- CHORD CREATOR -->
+    <div class="panel" id="panel-chord-creator">
+      <div class="page-header"><h1>Chord <em>Creator</em></h1></div>
+
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;background:var(--surface);border:1px solid var(--border);padding:1.25rem;border-radius:2px;margin-bottom:1.5rem">
+        <div class="fg" style="margin:0;flex:1;min-width:140px">
+          <label>Root Note</label>
+          <select id="ccRootNote">
+            <option value="C">C</option><option value="C#">C# / Db</option>
+            <option value="D">D</option><option value="D#">D# / Eb</option>
+            <option value="E">E</option><option value="F">F</option>
+            <option value="F#">F# / Gb</option><option value="G">G</option>
+            <option value="G#">G# / Ab</option><option value="A">A</option>
+            <option value="A#">A# / Bb</option><option value="B">B</option>
+          </select>
+        </div>
+        <div class="fg" style="margin:0;flex:1;min-width:140px">
+          <label>Chord Type</label>
+          <select id="ccChordType">
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+            <option value="dom7">Dominant 7th</option>
+            <option value="maj7">Major 7th</option>
+            <option value="min7">Minor 7th</option>
+          </select>
+        </div>
+        <button class="btn btn-gold" onclick="ccGenerateFromPicker()">Generate</button>
+      </div>
+
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;background:var(--surface);border:1px solid var(--border);padding:1.25rem;border-radius:2px;margin-bottom:1.5rem">
+        <div class="fg" style="margin:0;flex:1;min-width:200px">
+          <label>Raw Notes (comma separated)</label>
+          <input type="text" id="ccRawNotes" placeholder="e.g. A, C#, E" value="A, C#, E" style="width:100%">
+        </div>
+        <button class="btn btn-gold" onclick="ccGenerateFromNotes()">Identify & Generate</button>
+      </div>
+
+      <div id="ccResult"></div>
+    </div>
+
     <!-- PROFILE -->
     <div class="panel" id="panel-profile">
       <div class="page-header"><h1>My <em>Profile</em></h1></div>
@@ -338,6 +415,10 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
           <div class="fg"><label>Surname</label><input type="text" id="eLName"></div>
         </div>
         <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="ePhone"></div>
+        <div class="toggle-row" style="margin-top:.5rem">
+          <div class="toggle-label">Enable Chord Creator<small>Show chord diagrams tool in your portal</small></div>
+          <label class="toggle"><input type="checkbox" id="eChordCreator"><span class="toggle-slider"></span></label>
+        </div>
         <div class="btn-row">
           <button class="btn btn-gold btn-sm" onclick="saveProfile()">Save Changes</button>
           <button class="btn btn-outline btn-sm" onclick="hideEditProfile()">Cancel</button>
@@ -431,6 +512,8 @@ window.showEditProfile = function() {
   document.getElementById('eFName').value = p.firstName||'';
   document.getElementById('eLName').value = p.lastName||'';
   document.getElementById('ePhone').value = p.phone||'';
+  const ccToggle = document.getElementById('eChordCreator');
+  if (ccToggle) ccToggle.checked = p.chordCreatorEnabled !== false;
   document.getElementById('editProfileCard').style.display = 'block';
 };
 window.hideEditProfile = function() { document.getElementById('editProfileCard').style.display = 'none'; };
@@ -440,7 +523,8 @@ window.saveProfile = async function() {
   const phone = document.getElementById('ePhone').value.trim();
   const fileInput = document.getElementById('ePhoto');
   if (!fName) { alert('First name is required.'); return; }
-  const updated = { firstName:fName, lastName:lName, phone, email:_currentUser.email };
+  const ccEnabled = document.getElementById('eChordCreator')?.checked;
+  const updated = { firstName:fName, lastName:lName, phone, email:_currentUser.email, chordCreatorEnabled: ccEnabled };
   // Upload photo if selected
   if (fileInput.files.length) {
     const file = fileInput.files[0];
@@ -453,6 +537,7 @@ window.saveProfile = async function() {
   await setDoc(doc(db,'students',_currentUser.email), updated, {merge:true});
   window._studentProfile = updated;
   renderProfile();
+  ccLoadConfig();
   window.hideEditProfile();
 };
 window.resetPassword = function() {
@@ -531,6 +616,7 @@ async function loadStudentData() {
     try { await setDoc(doc(db,'students',email), profile); } catch(e) { /* rules may not allow */ }
   }
   renderProfile();
+  ccLoadConfig();
 
   // Real-time listeners
   const bookingsQ = query(collection(db,'bookings'), where('email','==',email));
@@ -856,6 +942,211 @@ function toast(msg, type='success') {
   setTimeout(()=>t.classList.remove('show'), 3500);
 }
 window.toast = toast;
+
+// ── CHORD CREATOR ──
+const CC_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CC_NOTE_NAMES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const CC_NOTE_TO_SEMI = {};
+CC_NOTES.forEach((n,i) => CC_NOTE_TO_SEMI[n] = i);
+
+const CC_CHORD_INTERVALS = {
+  major:  { name: 'Major',      intervals: [0, 4, 7],          suffix: '' },
+  minor:  { name: 'Minor',      intervals: [0, 3, 7],          suffix: 'm' },
+  dom7:   { name: 'Dominant 7', intervals: [0, 4, 7, 10],      suffix: '7' },
+  maj7:   { name: 'Major 7',    intervals: [0, 4, 7, 11],      suffix: 'maj7' },
+  min7:   { name: 'Minor 7',    intervals: [0, 3, 7, 10],      suffix: 'm7' },
+};
+
+const CC_INTERVAL_LABELS = { 0:'R', 1:'b2', 2:'2', 3:'b3', 4:'3', 5:'4', 6:'b5',
+  7:'5', 8:'#5', 9:'6', 10:'b7', 11:'7' };
+
+function ccNoteName(semi) {
+  return CC_NOTES[((semi % 12) + 12) % 12];
+}
+
+function ccSemiOf(note) {
+  const n = note.replace(/[♯#]/g,'#').replace(/[♭b]/g,'b').trim().toUpperCase();
+  const flatMap = {'DB':'C#','EB':'D#','GB':'F#','AB':'G#','BB':'A#'};
+  return CC_NOTE_TO_SEMI[flatMap[n] || n];
+}
+
+const CC_OPEN = [0, 5, 10, 3, 7, 0];
+
+const CC_VOICINGS = {
+  major: [
+    { name: 'E form', baseString: 0, strings: [0, 2, 2, 1, 0, 0] },
+    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 2, 0, 0] },
+    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 1, 0] },
+    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 3, 2] },
+    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 3, 3] },
+  ],
+  minor: [
+    { name: 'E form', baseString: 0, strings: [0, 2, 2, 0, 0, 0] },
+    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 2, 1, 0] },
+    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 0, 0] },
+    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 3, 1] },
+    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 3, 3] },
+  ],
+  dom7: [
+    { name: 'E form', baseString: 0, strings: [0, 2, 0, 1, 0, 0] },
+    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 0, 0, 0] },
+    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 1, 0] },
+    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 1, 2] },
+    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 1, 3] },
+  ],
+  maj7: [
+    { name: 'E form', baseString: 0, strings: [0, 2, 1, 1, 0, 0] },
+    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 1, 0, 0] },
+    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 0, 0] },
+    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 3, 2] },
+    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 3, 2] },
+  ],
+  min7: [
+    { name: 'E form', baseString: 0, strings: [0, 2, 0, 0, 0, 0] },
+    { name: 'A form', baseString: 1, strings: [-1, 0, 2, 0, 1, 0] },
+    { name: 'C form', baseString: 1, strings: [3, 0, 0, 2, 0, 0] },
+    { name: 'D form', baseString: 2, strings: [-1, -1, 0, 2, 1, 1] },
+    { name: 'G form', baseString: 0, strings: [0, 2, 0, 0, 1, 3] },
+  ],
+};
+
+function ccComputeVoicing(rootSemi, chordType) {
+  const shapes = CC_VOICINGS[chordType];
+  if (!shapes) return [];
+  const intervals = CC_CHORD_INTERVALS[chordType].intervals;
+  const intervalSet = new Set(intervals);
+  return shapes.map(shape => {
+    const { baseString, strings, name } = shape;
+    const baseFret = ((rootSemi - CC_OPEN[baseString]) % 12 + 12) % 12;
+    const result = strings.map((rel, si) => {
+      if (rel === -1) return { muted: true, fret: null, note: null, interval: null };
+      let fret = baseFret + rel;
+      const noteSemi = ((CC_OPEN[si] + fret) % 12 + 12) % 12;
+      const interval = ((noteSemi - rootSemi) % 12 + 12) % 12;
+      return {
+        muted: false, fret, note: noteSemi, interval,
+        label: interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval,
+        inChord: intervalSet.has(interval),
+        colorClass: interval === 0 ? 'cc-dot-R' : interval === 3 || interval === 4 ? 'cc-dot-3' : interval === 7 ? 'cc-dot-5' : (interval === 10 || interval === 11) ? 'cc-dot-7' : ''
+      };
+    });
+    return { name, result };
+  });
+}
+
+function ccRenderChord(name, voicings) {
+  if (!voicings || !voicings.length) return '<div style="color:var(--danger);padding:.5rem 0">Could not generate voicings</div>';
+  const STRING_NAMES = ['E','A','D','G','B','e'];
+  let html = `<div class="cc-chord-name">${name}</div><div class="cc-voicing-grid">`;
+  voicings.forEach(v => {
+    const frets = v.result.map(r => r.fret);
+    const minFret = Math.min(...frets.filter(f => f !== null));
+    const maxFret = Math.max(...frets.filter(f => f !== null));
+    const startFret = Math.max(0, minFret - 1);
+    const numFrets = Math.max(maxFret - minFret + 3, 5);
+    html += `<div class="cc-voicing-card"><div class="cc-label">${v.name} (ft ${startFret+1}–${startFret+numFrets})</div><div class="cc-fretboard">`;
+    for (let si = 0; si < 6; si++) {
+      const s = v.result[si];
+      html += `<div class="string-row"><span class="cc-string-label">${STRING_NAMES[si]}</span>`;
+      if (s.muted) {
+        html += `<div class="cc-fret" style="border:none"><span class="cc-muted">✕</span></div>`;
+        for (let f = 1; f < numFrets; f++) html += `<div class="cc-fret"></div>`;
+      } else {
+        for (let f = 0; f < numFrets; f++) {
+          const fretNum = startFret + f;
+          if (s.fret === fretNum) {
+            const color = s.interval === 0 ? 'cc-dot-R' :
+              s.interval === 3 || s.interval === 4 ? 'cc-dot-3' :
+              s.interval === 7 ? 'cc-dot-5' :
+              (s.interval === 10 || s.interval === 11) ? 'cc-dot-7' : '';
+            html += `<div class="cc-fret"><div class="cc-dot ${color}" title="${ccNoteName(s.note)} (${s.label})"></div></div>`;
+          } else {
+            html += `<div class="cc-fret"></div>`;
+          }
+        }
+      }
+      html += `</div>`;
+    }
+    html += `<div class="cc-fret-nums" style="padding-left:15px">`;
+    for (let f = 0; f < numFrets; f++) html += `<div class="cc-fret">${startFret + f}</div>`;
+    html += `</div>`;
+    html += `<div class="cc-legend">
+      <span><span class="cc-dot cc-dot-R cc-legend-dot"></span>R</span>
+      <span><span class="cc-dot cc-dot-3 cc-legend-dot"></span>3/b3</span>
+      <span><span class="cc-dot cc-dot-5 cc-legend-dot"></span>5</span>
+      <span><span class="cc-dot cc-dot-7 cc-legend-dot"></span>7/b7</span>
+    </div></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+window.ccGenerateFromPicker = function() {
+  const rootStr = document.getElementById('ccRootNote').value;
+  const type = document.getElementById('ccChordType').value;
+  const rootSemi = CC_NOTE_TO_SEMI[rootStr];
+  const chordName = `${rootStr}${CC_CHORD_INTERVALS[type].suffix} (${CC_CHORD_INTERVALS[type].name})`;
+  document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, ccComputeVoicing(rootSemi, type));
+};
+
+window.ccGenerateFromNotes = function() {
+  const raw = document.getElementById('ccRawNotes').value;
+  const notes = raw.split(/[,;]/).map(n => n.trim().toUpperCase()).filter(Boolean);
+  if (notes.length < 2) { document.getElementById('ccResult').innerHTML = '<div style="color:var(--danger);padding:.5rem 0">Enter at least 2 notes</div>'; return; }
+  const semis = notes.map(n => ccSemiOf(n)).filter(s => s !== undefined);
+  if (semis.length !== notes.length) { document.getElementById('ccResult').innerHTML = '<div style="color:var(--danger);padding:.5rem 0">Invalid note name detected</div>'; return; }
+  const uniqueSemis = [...new Set(semis.map(s => ((s % 12) + 12) % 12))].sort((a,b) => a-b);
+  let bestMatch = null, bestScore = -1;
+  for (const rootSemi of uniqueSemis) {
+    for (const [typeKey, typeInfo] of Object.entries(CC_CHORD_INTERVALS)) {
+      const chordNotes = typeInfo.intervals.map(i => (rootSemi + i) % 12);
+      const matchCount = uniqueSemis.filter(n => chordNotes.includes(n)).length;
+      const extraCount = uniqueSemis.filter(n => !chordNotes.includes(n)).length;
+      const score = matchCount - extraCount * 2;
+      if (uniqueSemis.every(n => chordNotes.includes(n)) && score > bestScore) {
+        bestScore = score;
+        bestMatch = { rootSemi, typeKey, chordNotes };
+      }
+    }
+  }
+  if (!bestMatch) {
+    bestMatch = { rootSemi: uniqueSemis[0], typeKey: 'major', chordNotes: CC_CHORD_INTERVALS.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
+  }
+  const rootName = ccNoteName(bestMatch.rootSemi);
+  const typeInfo = CC_CHORD_INTERVALS[bestMatch.typeKey];
+  const chordName = `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
+  document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, ccComputeVoicing(bestMatch.rootSemi, bestMatch.typeKey)) +
+    `<div style="margin-top:.75rem;font-size:.78rem;color:var(--muted)">Identified from: ${notes.join(', ')} → ${chordName}</div>`;
+};
+
+// Load siteConfig for chord creator toggle
+async function ccLoadConfig() {
+  try {
+    const snap = await getDoc(doc(db,'siteConfig','main'));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const content = data.content||{};
+    window._ccEnabled = content.chordCreatorEnabled !== false;
+    const nav = document.getElementById('nav-chord-creator');
+    if (nav) {
+      const profile = window._studentProfile||{};
+      const studentOverride = profile.chordCreatorEnabled;
+      const show = window._ccEnabled && (studentOverride === undefined || studentOverride === true);
+      nav.style.display = show ? '' : 'none';
+    }
+  } catch(e) { console.warn('ccLoadConfig error:', e); }
+}
+window.ccLoadConfig = ccLoadConfig;
+
+// Override showPanel to trigger chord creator config load
+const _origShowPanel = window.showPanel;
+window.showPanel = function(name, el) {
+  if (name === 'chord-creator') {
+    ccLoadConfig();
+    setTimeout(() => window.ccGenerateFromPicker?.(), 50);
+  }
+  _origShowPanel(name, el);
+};
 
 // Focus email on load
 setTimeout(() => document.getElementById('siEmail')?.focus(), 100);

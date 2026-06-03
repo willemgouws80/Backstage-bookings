@@ -528,6 +528,16 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <div class="fg"><label>Facebook URL</label><input type="url" id="socialFacebook" placeholder="https://facebook.com/yourpage"></div>
         <div class="btn-row"><button class="btn btn-gold" onclick="saveContent()">Save Social Links</button></div>
       </div>
+
+      <!-- CHORD CREATOR -->
+      <div class="card">
+        <div class="card-title">Chord Creator <small style="font-weight:400;color:var(--muted)">Interactive chord diagrams in student portal</small></div>
+        <div class="toggle-row">
+          <div class="toggle-label">Enable Chord Creator<small>Show chord tool in student portal (per-student override in portal)</small></div>
+          <label class="toggle"><input type="checkbox" id="chordCreatorEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="btn-row"><button class="btn btn-gold" onclick="saveContent()">Save Chord Creator</button></div>
+      </div>
     </div>
 
     <!-- PAYMENTS -->
@@ -1699,8 +1709,10 @@ async function loadContent() {
     // Toggle states
     const te = document.getElementById('testimonialsEnabled');
     const ge = document.getElementById('galleryEnabled');
+    const ce = document.getElementById('chordCreatorEnabled');
     if (te) te.checked = c.testimonialsEnabled !== false;
     if (ge) ge.checked = c.galleryEnabled !== false;
+    if (ce) ce.checked = c.chordCreatorEnabled !== false;
 
     // Testimonials
     _contentTestimonials = Array.isArray(c.testimonials) ? c.testimonials : [];
@@ -1837,6 +1849,7 @@ window.saveContent = async function() {
   // Toggle states
   const testimonialsEnabled = document.getElementById('testimonialsEnabled').checked;
   const galleryEnabled      = document.getElementById('galleryEnabled').checked;
+  const chordCreatorEnabled = document.getElementById('chordCreatorEnabled').checked;
 
   try {
     const ref  = doc(db,'siteConfig','main');
@@ -1850,6 +1863,7 @@ window.saveContent = async function() {
         gallery:     _contentGallery,
         testimonialsEnabled,
         galleryEnabled,
+        chordCreatorEnabled,
         socialInstagram,
         socialFacebook
       }
