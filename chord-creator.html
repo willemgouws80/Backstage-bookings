@@ -69,7 +69,7 @@
   .dot-9{background:#81c784}
   .fretboard .string-row {
     display: flex; align-items: center; height: 22px;
-    border-bottom: 1.5px solid rgba(255,255,255,.12); position: relative;
+    border-bottom: 2px solid rgba(255,255,255,.18); position: relative;
   }
   .fretboard .string-row:last-child { border-bottom: none; }
   .fret { 
@@ -82,6 +82,7 @@
     width: 13px; height: 13px; border-radius: 50%;
     background: var(--gold); position: absolute; z-index: 2;
     box-shadow: 0 1px 3px rgba(0,0,0,.4); cursor: pointer;
+    left: 50%; transform: translateX(-50%);
   }
   .dot:hover { transform: scale(1.25); }
   .dot .tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:#111;border:1px solid var(--gold);border-radius:2px;padding:.2rem .45rem;font-size:.6rem;color:var(--gold);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
@@ -270,14 +271,14 @@ const BASIC_SHAPES = {
 
 // Per-type barre patterns (E form and A form)
 const BARRE_PATTERNS = {
-  major: { eForm:{baseString:0,strings:[0,2,2,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,2,0]} },
-  minor: { eForm:{baseString:0,strings:[0,2,2,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,1,0]} },
-  dom7:  { eForm:{baseString:0,strings:[0,2,0,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,2,0]} },
-  maj7:  { eForm:{baseString:0,strings:[0,2,1,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,1,2,0]} },
-  min7:  { eForm:{baseString:0,strings:[0,2,0,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,1,0]} },
-  sus2:  { eForm:{baseString:0,strings:[0,2,4,4,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,0,0]} },
-  sus4:  { eForm:{baseString:0,strings:[0,2,2,2,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,3,0]} },
-  add9:  { eForm:{baseString:0,strings:[0,2,2,1,0,2]}, aForm:{baseString:1,strings:[-1,0,2,4,2,0]} },
+  major: { eForm:{baseString:0,strings:[0,2,2,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,2]} },
+  minor: { eForm:{baseString:0,strings:[0,2,2,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,1,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,1]} },
+  dom7:  { eForm:{baseString:0,strings:[0,2,0,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,1,2]} },
+  maj7:  { eForm:{baseString:0,strings:[0,2,1,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,1,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,2,2]} },
+  min7:  { eForm:{baseString:0,strings:[0,2,0,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,1,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,1,1]} },
+  sus2:  { eForm:{baseString:0,strings:[0,2,4,4,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,0,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,0]} },
+  sus4:  { eForm:{baseString:0,strings:[0,2,2,2,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,3,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,3]} },
+  add9:  { eForm:{baseString:0,strings:[0,2,2,1,0,2]}, aForm:{baseString:1,strings:[-1,0,2,4,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,5,2]} },
 };
 
 // Color class for a given interval
@@ -424,6 +425,21 @@ function generateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
     if (spanOk(va)) result.push(va);
   }
 
+  // 5. D form (root on D string)
+  if (patterns && patterns.dForm) {
+    const barreD = barreFromShape(rootSemi, patterns.dForm, 'D form');
+    const vd = buildVoicing(rootSemi, typeKey, barreD.frets, barreD.name, false);
+    if (spanOk(vd)) result.push(vd);
+  }
+
+  // 6. E form treble (muted low strings)
+  if (patterns) {
+    const etr = { baseString:0, strings: patterns.eForm.strings.map((f,i) => i < 2 ? -1 : f) };
+    const barreETr = barreFromShape(rootSemi, etr, 'Treble');
+    const vet = buildVoicing(rootSemi, typeKey, barreETr.frets, barreETr.name, false);
+    if (spanOk(vet)) result.push(vet);
+  }
+
   return result;
 }
 
@@ -440,7 +456,7 @@ function renderChord(name, voicings) {
     const startFret = Math.max(0, minFret - 1);
     const numFrets = Math.max(maxFret - minFret + 3, 5);
     const hasNut = startFret === 0;
-    const label = v.isBasic ? '★ ' + v.name : v.name;
+    let label = v.isBasic ? '★ ' + v.name : v.name;
     if (v.slashLabel) label += ' · ' + v.slashLabel;
     if (v.isBasic && !v.name.includes('/')) label += ' <span style="color:var(--gold)">(root on top)</span>';
 

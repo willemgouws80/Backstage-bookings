@@ -180,12 +180,12 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .cc-nut{width:5px;flex-shrink:0;background:var(--muted);border-radius:1px;margin:0;height:22px;align-self:stretch;display:flex;align-items:center;justify-content:center}
 .cc-fret-nums .cc-nut{height:auto;background:var(--muted);width:5px;margin:0;border-radius:1px}
 .cc-dot-9{background:#81c784}
-.cc-fretboard .string-row{display:flex;align-items:center;height:22px;border-bottom:1.5px solid rgba(255,255,255,.12);position:relative}
+.cc-fretboard .string-row{display:flex;align-items:center;height:22px;border-bottom:2px solid rgba(255,255,255,.18);position:relative}
 .cc-fretboard .string-row:last-child{border-bottom:none}
 .cc-fret {width:28px;height:22px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;border-right:1px solid rgba(255,255,255,.08)}
 .cc-fret:last-child{border-right:none}
 
-.cc-dot{width:13px;height:13px;border-radius:50%;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer}
+.cc-dot{width:13px;height:13px;border-radius:50%;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer;left:50%;transform:translateX(-50%)}
 .cc-dot:hover{transform:scale(1.25)}
 .cc-dot .cc-tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--gold);border-radius:2px;padding:.2rem .45rem;font-size:.6rem;color:var(--gold);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
 .cc-dot:hover .cc-tip{opacity:1}
@@ -1041,14 +1041,14 @@ const CC_BASIC_SHAPES = {
 };
 
 const CC_BARRE_PATTERNS = {
-  major: { eForm:{baseString:0,strings:[0,2,2,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,2,0]} },
-  minor: { eForm:{baseString:0,strings:[0,2,2,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,1,0]} },
-  dom7:  { eForm:{baseString:0,strings:[0,2,0,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,2,0]} },
-  maj7:  { eForm:{baseString:0,strings:[0,2,1,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,1,2,0]} },
-  min7:  { eForm:{baseString:0,strings:[0,2,0,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,1,0]} },
-  sus2:  { eForm:{baseString:0,strings:[0,2,4,4,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,0,0]} },
-  sus4:  { eForm:{baseString:0,strings:[0,2,2,2,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,3,0]} },
-  add9:  { eForm:{baseString:0,strings:[0,2,2,1,0,2]}, aForm:{baseString:1,strings:[-1,0,2,4,2,0]} },
+  major: { eForm:{baseString:0,strings:[0,2,2,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,2]} },
+  minor: { eForm:{baseString:0,strings:[0,2,2,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,1,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,1]} },
+  dom7:  { eForm:{baseString:0,strings:[0,2,0,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,1,2]} },
+  maj7:  { eForm:{baseString:0,strings:[0,2,1,1,0,0]}, aForm:{baseString:1,strings:[-1,0,2,1,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,2,2]} },
+  min7:  { eForm:{baseString:0,strings:[0,2,0,0,0,0]}, aForm:{baseString:1,strings:[-1,0,2,0,1,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,1,1]} },
+  sus2:  { eForm:{baseString:0,strings:[0,2,4,4,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,0,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,0]} },
+  sus4:  { eForm:{baseString:0,strings:[0,2,2,2,0,0]}, aForm:{baseString:1,strings:[-1,0,2,2,3,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,3,3]} },
+  add9:  { eForm:{baseString:0,strings:[0,2,2,1,0,2]}, aForm:{baseString:1,strings:[-1,0,2,4,2,0]}, dForm:{baseString:2,strings:[-1,-1,0,2,5,2]} },
 };
 
 function _ccColor(interval) {
@@ -1173,6 +1173,17 @@ function ccGenerateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
     const barreA = ccBarreFromShape(rootSemi, patterns.aForm, 'A form');
     const va = ccBuildVoicing(rootSemi, typeKey, barreA.frets, barreA.name, false);
     if (ccSpanOk(va)) result.push(va);
+    // D form (root on D string)
+    if (patterns.dForm) {
+      const barreD = ccBarreFromShape(rootSemi, patterns.dForm, 'D form');
+      const vd = ccBuildVoicing(rootSemi, typeKey, barreD.frets, barreD.name, false);
+      if (ccSpanOk(vd)) result.push(vd);
+    }
+    // E form treble (muted low strings)
+    const etr = { baseString:0, strings: patterns.eForm.strings.map((f,i) => i < 2 ? -1 : f) };
+    const barreETr = ccBarreFromShape(rootSemi, etr, 'Treble');
+    const vet = ccBuildVoicing(rootSemi, typeKey, barreETr.frets, barreETr.name, false);
+    if (ccSpanOk(vet)) result.push(vet);
   }
 
   return result;
