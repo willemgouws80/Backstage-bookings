@@ -176,27 +176,30 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
 
 /* CHORD CREATOR */
-.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.4rem .2rem;position:relative}
-.cc-fretboard .string-row{display:flex;align-items:center;height:20px;border-bottom:1.5px solid var(--muted);position:relative}
+.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.3rem .15rem;position:relative}
+.cc-fretboard .string-row{display:flex;align-items:center;height:22px;border-bottom:1.5px solid rgba(255,255,255,.12);position:relative}
 .cc-fretboard .string-row:last-child{border-bottom:none}
-.cc-fret {width:26px;height:20px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06)}
+.cc-fret {width:28px;height:22px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;border-right:1px solid rgba(255,255,255,.08)}
 .cc-fret:last-child{border-right:none}
-.cc-dot{width:12px;height:12px;border-radius:50%;position:absolute;z-index:2}
+.cc-dot{width:13px;height:13px;border-radius:50%;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
 .cc-dot-R{background:var(--gold)}
 .cc-dot-3{background:#f06292}
 .cc-dot-5{background:#64b5f6}
 .cc-dot-7{background:#ce93d8}
-.cc-muted{color:var(--danger);font-size:.9rem;font-weight:700}
+.cc-muted{color:var(--danger);font-size:.95rem;font-weight:700}
 .cc-fnum{font-size:.5rem;color:var(--muted)}
-.cc-fret-nums{display:flex;margin-top:.2rem}
-.cc-fret-nums .cc-fret{font-size:.55rem;color:var(--muted);border:none}
-.cc-voicing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:.75rem}
-.cc-voicing-card{background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:.75rem;text-align:center}
-.cc-voicing-card .cc-label{font-size:.65rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.1em;text-transform:uppercase}
-.cc-string-label{font-size:.6rem;color:var(--muted);width:12px;text-align:right;margin-right:3px;flex-shrink:0}
-.cc-chord-name{font-size:1.2rem;margin-bottom:.5rem;color:var(--gold)}
-.cc-legend{display:flex;gap:.4rem;justify-content:center;margin-top:.3rem;font-size:.55rem;color:var(--muted)}
+.cc-fret-nums{display:flex;margin-top:.2rem;padding-left:15px}
+.cc-fret-nums .cc-fret{font-size:.55rem;color:var(--muted);border:none;width:28px;text-align:center}
+.cc-voicing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1.25rem;margin-top:.75rem}
+.cc-voicing-card{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:.85rem .65rem;text-align:center;transition:border-color .3s}
+.cc-voicing-card:hover{border-color:rgba(201,145,26,.35)}
+.cc-voicing-card .cc-label{font-size:.68rem;color:var(--muted);margin-bottom:.5rem;letter-spacing:.08em;text-transform:uppercase}
+.cc-string-label{font-size:.62rem;color:var(--muted);width:13px;text-align:right;margin-right:4px;flex-shrink:0;font-weight:500}
+.cc-chord-name{font-size:1.25rem;margin-bottom:.6rem;color:var(--gold);font-family:'Cormorant Garamond',serif;font-weight:300}
+.cc-legend{display:flex;gap:.5rem;justify-content:center;margin-top:.35rem;font-size:.55rem;color:var(--muted)}
 .cc-legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
+.cc-nut{height:5px;background:var(--muted);border-radius:1px;margin:0 0 2px 17px;width:calc(100% - 17px);flex-shrink:0}
+.cc-fret.nut-area{border-right:none}
 @media(max-width:600px){.cc-voicing-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -1145,7 +1148,7 @@ function ccRenderChord(name, voicings, bassSemi) {
     ? name + ' (bass: ' + ccNoteName(bassSemi) + ')'
     : name;
   let html = `<div class="cc-chord-name">${displayName}</div><div class="cc-voicing-grid">`;
-  voicings.forEach((v, vi) => {
+  voicings.forEach(v => {
     const label = v.isBasic ? '★ ' + v.name : v.slashLabel ? v.slashLabel + ' · ' + v.name : v.name;
     const frets = v.result.map(r => r.fret);
     const validFrets = frets.filter(f => f !== null);
@@ -1153,31 +1156,36 @@ function ccRenderChord(name, voicings, bassSemi) {
     const maxFret = validFrets.length ? Math.max(...validFrets) : 0;
     const startFret = Math.max(0, minFret - 1);
     const numFrets = Math.max(maxFret - minFret + 3, 5);
+    const hasNut = startFret === 0;
+
     html += `<div class="cc-voicing-card"><div class="cc-label">${label}${v.isBasic ? ' <span style="color:var(--gold);font-weight:600">(root on top)</span>' : ''}</div><div class="cc-fretboard">`;
+    if (hasNut) html += `<div class="cc-nut"></div>`;
     for (let si = 0; si < 6; si++) {
       const s = v.result[si];
       html += `<div class="string-row"><span class="cc-string-label">${STRING_NAMES[si]}</span>`;
       if (s.muted) {
-        html += `<div class="cc-fret" style="border:none"><span class="cc-muted">✕</span></div>`;
+        html += `<div class="cc-fret${hasNut ? ' nut-area' : ''}" style="border:none"><span class="cc-muted">✕</span></div>`;
         for (let f = 1; f < numFrets; f++) html += `<div class="cc-fret"></div>`;
       } else {
         for (let f = 0; f < numFrets; f++) {
           const fretNum = startFret + f;
+          const cls = hasNut && f === 0 ? 'cc-fret nut-area' : 'cc-fret';
           if (s.fret === fretNum) {
             const color = s.interval === 0 ? 'cc-dot-R' :
               s.interval === 3 || s.interval === 4 ? 'cc-dot-3' :
               s.interval === 7 ? 'cc-dot-5' :
               (s.interval === 10 || s.interval === 11) ? 'cc-dot-7' : '';
-            html += `<div class="cc-fret"><div class="cc-dot ${color}" title="${ccNoteName(s.note)} (${s.label})"></div></div>`;
+            html += `<div class="${cls}"><div class="cc-dot ${color}" title="${ccNoteName(s.note)} (${s.label})"></div></div>`;
           } else {
-            html += `<div class="cc-fret"></div>`;
+            html += `<div class="${cls}"></div>`;
           }
         }
       }
       html += `</div>`;
     }
-    html += `<div class="cc-fret-nums" style="padding-left:15px">`;
-    for (let f = 0; f < numFrets; f++) html += `<div class="cc-fret">${startFret + f}</div>`;
+    html += `<div class="cc-fret-nums">`;
+    const startNum = hasNut ? 1 : 0;
+    for (let f = startNum; f < numFrets; f++) html += `<div class="cc-fret">${startFret + f}</div>`;
     html += `</div>`;
     html += `<div class="cc-legend">
       <span><span class="cc-dot cc-dot-R cc-legend-dot"></span>R</span>

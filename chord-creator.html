@@ -62,35 +62,38 @@
   }
   .fretboard {
     display: flex; flex-direction: column; gap: 0;
-    padding: .5rem .25rem; position: relative;
+    padding: .3rem .15rem; position: relative;
   }
   .fretboard .string-row {
     display: flex; align-items: center; height: 22px;
-    border-bottom: 1.5px solid var(--muted); position: relative;
+    border-bottom: 1.5px solid rgba(255,255,255,.12); position: relative;
   }
   .fretboard .string-row:last-child { border-bottom: none; }
   .fret { 
     width: 28px; height: 22px; display: flex; align-items: center;
     justify-content: center; position: relative; flex-shrink: 0;
-    border-right: 1px solid rgba(255,255,255,.06);
+    border-right: 1px solid rgba(255,255,255,.08);
   }
   .fret:last-child { border-right: none; }
+  .fret.nut-area { border-right: none; }
   .dot {
-    width: 14px; height: 14px; border-radius: 50%;
+    width: 13px; height: 13px; border-radius: 50%;
     background: var(--gold); position: absolute; z-index: 2;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
   }
   .dot-3 { background: #f06292; }
   .dot-5 { background: #64b5f6; }
   .dot-7 { background: #ce93d8; }
   .dot-9 { background: #81c784; }
   .dot-R { background: var(--gold); }
-  .muted-mark { color: var(--danger); font-size: 1rem; font-weight: 700; }
+  .muted-mark { color: var(--danger); font-size: .95rem; font-weight: 700; }
   .open-mark { color: var(--muted); font-size: .65rem; }
-  .fnum { font-size: .55rem; color: var(--muted); }
+  .fnum { font-size: .5rem; color: var(--muted); }
   .fret-nums {
-    display: flex; margin-top: .25rem;
+    display: flex; margin-top: .2rem; padding-left: 15px;
   }
-  .fret-nums .fret { font-size: .6rem; color: var(--muted); border: none; }
+  .fret-nums .fret { font-size: .55rem; color: var(--muted); border: none; width: 28px; text-align: center; }
+  .nut { height: 5px; background: var(--muted); border-radius: 1px; margin: 0 0 2px 17px; width: calc(100% - 17px); flex-shrink: 0; }
   .note-label {
     font-size: .6rem; color: rgba(255,255,255,.7);
     position: absolute; right: -14px; font-weight: 600;
@@ -373,28 +376,32 @@ function renderChord(name, voicings) {
     const maxFret = validFrets.length ? Math.max(...validFrets) : 0;
     const startFret = Math.max(0, minFret - 1);
     const numFrets = Math.max(maxFret - minFret + 3, 5);
+    const hasNut = startFret === 0;
     const label = v.isBasic && !v.name.includes('/') ? '★ ' + v.name + ' <span style="color:var(--gold)">(root on top)</span>' : v.name;
     html += `<div class="voicing-card"><div class="label">${label}</div><div class="fretboard">`;
+    if (hasNut) html += `<div class="nut"></div>`;
     for (let si = 0; si < 6; si++) {
       const s = v.result[si];
       html += `<div class="string-row"><span class="string-label">${STRING_NAMES[si]}</span>`;
       if (s.muted) {
-        html += `<div class="fret" style="border:none"><span class="muted-mark">✕</span></div>`;
+        html += `<div class="fret${hasNut ? ' nut-area' : ''}" style="border:none"><span class="muted-mark">✕</span></div>`;
         for (let f = 1; f < numFrets; f++) html += `<div class="fret"></div>`;
       } else {
         for (let f = 0; f < numFrets; f++) {
           const fretNum = startFret + f;
+          const cls = hasNut && f === 0 ? 'fret nut-area' : 'fret';
           if (s.fret === fretNum) {
-            html += `<div class="fret"><div class="dot ${s.colorClass}" title="${noteName(s.note)} (${s.label})"></div></div>`;
+            html += `<div class="${cls}"><div class="dot ${s.colorClass}" title="${noteName(s.note)} (${s.label})"></div></div>`;
           } else {
-            html += `<div class="fret"></div>`;
+            html += `<div class="${cls}"></div>`;
           }
         }
       }
       html += `</div>`;
     }
-    html += `<div class="fret-nums" style="padding-left:18px">`;
-    for (let f = 0; f < numFrets; f++) html += `<div class="fret">${startFret + f}</div>`;
+    html += `<div class="fret-nums">`;
+    const startNum = hasNut ? 1 : 0;
+    for (let f = startNum; f < numFrets; f++) html += `<div class="fret">${startFret + f}</div>`;
     html += `</div>`;
     html += `<div style="display:flex;gap:.5rem;justify-content:center;margin-top:.4rem;font-size:.6rem;color:var(--muted)">
       <span><span class="dot dot-R" style="position:static;display:inline-block;width:8px;height:8px"></span>R</span>
