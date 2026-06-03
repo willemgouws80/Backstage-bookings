@@ -840,12 +840,53 @@ service firebase.storage {
         </div>
         <div class="two-col">
           <div class="fg"><label>Client Phone</label><input type="tel" id="invClientPhone" placeholder="+27 82 XXX XXXX"></div>
-          <div class="fg"><label>Description</label><input type="text" id="invDescription" placeholder="e.g. Monthly guitar lessons"></div>
-        </div>
-        <div class="two-col">
-          <div class="fg"><label>Amount (R)</label><input type="number" id="invAmount" min="0" step="0.01" placeholder="0.00"></div>
           <div class="fg"><label>Due Date</label><input type="date" id="invDueDate"></div>
         </div>
+
+        <!-- Line items -->
+        <div class="card-title" style="margin-top:1.5rem">Line Items</div>
+        <div id="invLineItemsContainer"></div>
+        <button class="btn btn-outline btn-sm" onclick="addInvLineItem()" style="margin-bottom:1.5rem">+ Add Item</button>
+
+        <!-- Totals -->
+        <div style="background:var(--black);border:1px solid var(--border);border-radius:1px;padding:1.25rem;margin-bottom:1rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;font-size:.9rem;color:var(--muted)">
+            <span>Subtotal</span><span id="invSubtotal">R 0</span>
+          </div>
+          <div id="invDiscountRow" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;font-size:.9rem;color:var(--success)">
+              <span>Discount</span><span id="invDiscountAmount">-R 0</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Total</span>
+            <span id="invTotal" style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold)">R 0</span>
+          </div>
+        </div>
+
+        <!-- Discount toggle (shows only when checked) -->
+        <div style="margin-bottom:1rem">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+            <input type="checkbox" id="invDiscountToggle" onchange="toggleInvDiscount()">
+            <span style="font-size:.85rem;color:var(--muted)">Apply Discount</span>
+          </label>
+          <div id="invDiscountFields" style="display:none;margin-top:.75rem">
+            <div class="two-col">
+              <div class="fg">
+                <label>Type</label>
+                <select id="invDiscountType" onchange="updateInvTotals()">
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed (R)</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Value</label>
+                <input type="number" id="invDiscountValue" min="0" step="0.01" placeholder="0" oninput="updateInvTotals()">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="fg"><label>Notes</label><textarea id="invNotes" rows="2" placeholder="Optional notes for the invoice"></textarea></div>
         <div class="btn-row">
           <button class="btn btn-gold" onclick="saveDirectInvoice()">Save Invoice</button>
@@ -3206,17 +3247,19 @@ function renderInvoicesList(invoices) {
   document.getElementById('invoicesList').innerHTML = invoices.length
     ? invoices.map(inv=>{
       const isAuto = inv.source === 'auto';
+      const isDirect = !isAuto && !inv.quoteId && !inv.quoteNumber;
       return `<div class="list-item" style="flex-wrap:wrap;gap:.75rem">
         <div class="li-content">
           <div class="li-title">
-            ${inv.invoiceNumber} — ${isAuto ? inv.studentName : inv.clientName || inv.studentName || ''}
+            ${isDirect ? `${inv.clientName} (${inv.invoiceNumber})` : isAuto ? `${inv.studentName} (${inv.invoiceNumber})` : `${inv.clientName} (${inv.invoiceNumber})`}
             ${isAuto ? '<span class="status-badge status-pending" style="margin-left:.3rem;font-size:.65rem">Auto</span>' : ''}
+            ${inv.discount ? '<span class="status-badge status-pending" style="margin-left:.3rem;font-size:.65rem">Discount</span>' : ''}
             <span class="status-badge ${inv.status==='paid'?'status-confirmed':'status-pending'}" style="margin-left:.5rem">${inv.status||'unpaid'}</span>
           </div>
           <div class="li-meta">
             ${isAuto ? (inv.studentEmail||'') + ' · ' + (inv.plan||'') : (inv.clientEmail||'')}
             · R${Number(isAuto ? inv.amount : inv.total||0).toLocaleString()}
-            ${isAuto ? ` · ${inv.month}/${inv.year}` : inv.quoteNumber ? ` · From ${inv.quoteNumber}` : inv.description ? ` · ${inv.description}` : ''}
+            ${isAuto ? ` · ${inv.month}/${inv.year}` : inv.quoteNumber ? ` · From ${inv.quoteNumber}` : inv.items?.length ? ` · ${inv.items.length} item${inv.items.length===1?'':'s'}` : ''}
             · ${inv.createdAt||inv.generatedAt ? new Date(inv.createdAt||inv.generatedAt).toLocaleDateString('en-ZA') : ''}
             ${inv.paidAt ? ` · Paid ${new Date(inv.paidAt).toLocaleDateString('en-ZA')}` : ''}
           </div>
@@ -3252,9 +3295,15 @@ window.deleteInvoice = async function(id) {
 };
 
 // ── DIRECT INVOICE CREATION ──
+let _invLineItems = [];
+let _invLiCounter = 0;
+
 window.showInvoiceForm = function() {
+  _invLineItems = [{desc:'',qty:1,unit:0}];
+  _invLiCounter = 0;
   document.getElementById('invoiceFormCard').style.display = 'block';
   document.getElementById('invoiceFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+  renderInvLineItems();
 };
 
 window.hideInvoiceForm = function() {
@@ -3262,32 +3311,143 @@ window.hideInvoiceForm = function() {
   document.getElementById('invClientName').value = '';
   document.getElementById('invClientEmail').value = '';
   document.getElementById('invClientPhone').value = '';
-  document.getElementById('invDescription').value = '';
-  document.getElementById('invAmount').value = '';
   document.getElementById('invDueDate').value = '';
   document.getElementById('invNotes').value = '';
+  document.getElementById('invDiscountToggle').checked = false;
+  document.getElementById('invDiscountFields').style.display = 'none';
+  document.getElementById('invDiscountRow').style.display = 'none';
+  document.getElementById('invDiscountValue').value = '';
+  _invLineItems = [];
+};
+
+window.addInvLineItem = function() {
+  const id = ++_invLiCounter;
+  _invLineItems.push({_id:id, desc:'', qty:1, unit:0});
+  mountInvRow(id, '', 1, 0);
+  updateInvTotals();
+};
+
+function mountInvRow(id, desc, qty, unit) {
+  const S = 'padding:.65rem .8rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:\'Barlow\',sans-serif;font-size:.88rem;width:100%;box-sizing:border-box';
+  const row = document.createElement('div');
+  row.className = 'li-row';
+  row.dataset.id = id;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 80px 120px 36px;gap:.6rem;margin-bottom:.6rem;align-items:center';
+  row.innerHTML =
+    '<input class="li-desc" type="text"   placeholder="Description" style="' + S + '">' +
+    '<input class="li-qty"  type="number" min="1"  placeholder="Qty"   style="' + S + ';text-align:center">' +
+    '<input class="li-unit" type="number" min="0"  placeholder="Price" style="' + S + ';text-align:right">' +
+    '<button class="li-del" style="background:var(--danger);border:none;color:#fff;border-radius:1px;cursor:pointer;font-size:1rem;height:36px;width:36px">✕</button>';
+
+  row.querySelector('.li-desc').value = desc;
+  row.querySelector('.li-qty').value  = qty;
+  row.querySelector('.li-unit').value = unit;
+
+  const find = () => _invLineItems.find(x => x._id === id);
+  row.querySelector('.li-desc').addEventListener('input', e => { const it=find(); if(it) it.desc=e.target.value; });
+  row.querySelector('.li-qty').addEventListener('input',  e => { const it=find(); if(it){ it.qty=Number(e.target.value)||1;  updateInvTotals(); }});
+  row.querySelector('.li-unit').addEventListener('input', e => { const it=find(); if(it){ it.unit=Number(e.target.value)||0; updateInvTotals(); }});
+  row.querySelector('.li-del').addEventListener('click',  () => {
+    _invLineItems = _invLineItems.filter(x => x._id !== id);
+    row.remove();
+    updateInvTotals();
+  });
+
+  document.getElementById('invLineItemsContainer').appendChild(row);
+}
+
+function renderInvLineItems() {
+  _invLiCounter = 0;
+  document.getElementById('invLineItemsContainer').innerHTML = '';
+  _invLineItems = _invLineItems.map(item => {
+    const id = ++_invLiCounter;
+    const it = {...item, _id:id};
+    mountInvRow(id, it.desc||'', it.qty||1, it.unit||0);
+    return it;
+  });
+  updateInvTotals();
+}
+
+function syncInvLineItemsFromDOM() {
+  document.querySelectorAll('#invLineItemsContainer .li-row').forEach(row => {
+    const id = Number(row.dataset.id);
+    const it = _invLineItems.find(x => x._id === id);
+    if (it) {
+      it.desc = row.querySelector('.li-desc').value;
+      it.qty  = Number(row.querySelector('.li-qty').value)  || 1;
+      it.unit = Number(row.querySelector('.li-unit').value) || 0;
+    }
+  });
+}
+
+function updateInvTotals() {
+  const sub = _invLineItems.reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.unit)||0),0);
+  document.getElementById('invSubtotal').textContent = `R ${sub.toLocaleString()}`;
+
+  const hasDiscount = document.getElementById('invDiscountToggle').checked;
+  const discountType = document.getElementById('invDiscountType').value;
+  const discountVal = Number(document.getElementById('invDiscountValue').value) || 0;
+
+  let discountAmount = 0;
+  if (hasDiscount && discountVal > 0) {
+    discountAmount = discountType === 'percentage' ? sub * (discountVal / 100) : discountVal;
+    if (discountAmount > sub) discountAmount = sub;
+    document.getElementById('invDiscountRow').style.display = '';
+    document.getElementById('invDiscountAmount').textContent = `-R ${discountAmount.toLocaleString()}`;
+  } else {
+    document.getElementById('invDiscountRow').style.display = 'none';
+  }
+
+  const total = sub - discountAmount;
+  document.getElementById('invTotal').textContent = `R ${total.toLocaleString()}`;
+}
+
+window.toggleInvDiscount = function() {
+  const checked = document.getElementById('invDiscountToggle').checked;
+  document.getElementById('invDiscountFields').style.display = checked ? '' : 'none';
+  if (!checked) document.getElementById('invDiscountRow').style.display = 'none';
+  updateInvTotals();
 };
 
 window.saveDirectInvoice = async function() {
   const name = document.getElementById('invClientName').value.trim();
   if (!name) { toast('Please enter a client name','error'); return; }
-  const amount = Number(document.getElementById('invAmount').value) || 0;
-  if (!amount) { toast('Please enter an amount','error'); return; }
+  syncInvLineItemsFromDOM();
+  const validItems = _invLineItems.filter(i=>i.desc);
+  if (!validItems.length) { toast('Please add at least one line item','error'); return; }
+  const sub = validItems.reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.unit)||0),0);
+  if (!sub) { toast('Line items must have a price','error'); return; }
+
+  const hasDiscount = document.getElementById('invDiscountToggle').checked;
+  const discountType = document.getElementById('invDiscountType').value;
+  const discountVal = Number(document.getElementById('invDiscountValue').value) || 0;
+  let discountAmount = 0;
+  if (hasDiscount && discountVal > 0) {
+    discountAmount = discountType === 'percentage' ? sub * (discountVal / 100) : discountVal;
+    if (discountAmount > sub) discountAmount = sub;
+  }
+  const total = sub - discountAmount;
+
   try {
     const allInv = await getDocs(collection(db,'invoices'));
     const invNumber = `INV-${String(allInv.size+1).padStart(3,'0')}`;
-    await addDoc(collection(db,'invoices'), {
+    const invoice = {
       invoiceNumber: invNumber,
       clientName: name,
       clientEmail: document.getElementById('invClientEmail').value.trim(),
       clientPhone: document.getElementById('invClientPhone').value.trim(),
-      description: document.getElementById('invDescription').value.trim(),
-      total: amount,
+      items: validItems.map(i=>({desc:i.desc,qty:i.qty,unit:i.unit})),
+      subtotal: sub,
+      total,
       dueDate: document.getElementById('invDueDate').value || '',
       notes: document.getElementById('invNotes').value.trim(),
       status: 'unpaid',
       createdAt: new Date().toISOString()
-    });
+    };
+    if (hasDiscount && discountVal > 0) {
+      invoice.discount = {type: discountType, value: discountVal, amount: discountAmount};
+    }
+    await addDoc(collection(db,'invoices'), invoice);
     hideInvoiceForm();
     toast(`Invoice ${invNumber} created!`,'success');
     loadInvoices();
