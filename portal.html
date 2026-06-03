@@ -465,8 +465,18 @@ window.resetPassword = function() {
 async function loadResources() {
   try {
     const snap = await getDocs(query(collection(db,'resources'), orderBy('createdAt','desc')));
-    const items = [];
-    snap.forEach(d => items.push({id:d.id,...d.data()}));
+    const all = [];
+    snap.forEach(d => all.push({id:d.id,...d.data()}));
+    const email = _currentUser.email;
+    const plans = new Set();
+    const planSnap = await getDocs(query(collection(db,'bookings'), where('email','==',email)));
+    planSnap.forEach(d => { const b = d.data(); if (b.plan) plans.add(b.plan); });
+    const items = all.filter(r => {
+      if (!r.targetType || r.targetType === 'all') return true;
+      if (r.targetType === 'individual') return r.targetEmail === email;
+      if (r.targetType === 'group') return r.targetGroupName && plans.has(r.targetGroupName);
+      return true;
+    });
     renderResources(items);
   } catch(e) { document.getElementById('resourcesList').innerHTML = '<div style="color:var(--danger);font-size:.85rem">Could not load resources.</div>'; }
 }
@@ -475,7 +485,7 @@ function renderResources(items) {
   const container = document.getElementById('resourcesList');
   if (!items.length) { container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem 0">No resources available yet.</div>'; return; }
   container.innerHTML = items.map(r => {
-    const url = r.fileURL||'#';
+    const url = r.fileUrl||r.fileURL||'#';
     const icon = r.fileType?.startsWith('video') ? '▶️' : r.fileType?.startsWith('audio') ? '🎵' : '📄';
     return `<div class="card" style="margin-bottom:.5rem;padding:.75rem 1rem;display:flex;align-items:center;gap:1rem">
       <span style="font-size:1.2rem">${icon}</span>

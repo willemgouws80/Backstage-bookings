@@ -946,6 +946,21 @@ service firebase.storage {
             <input type="file" id="resFile" accept=".pdf" style="padding:.5rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);width:100%">
           </div>
         </div>
+        <div class="fg"><label>Send to</label>
+          <select id="resTargetType" onchange="toggleResTarget()">
+            <option value="all">All Students</option>
+            <option value="individual">Specific Student</option>
+            <option value="group">Group (by plan name)</option>
+          </select>
+        </div>
+        <div id="resTargetIndividual" style="display:none" class="fg">
+          <label>Student Email</label>
+          <input type="email" id="resTargetEmail" placeholder="student@example.com">
+        </div>
+        <div id="resTargetGroup" style="display:none" class="fg">
+          <label>Plan / Group Name</label>
+          <input type="text" id="resTargetGroupName" placeholder="e.g. Guitar Beginners">
+        </div>
         <div class="hint" style="margin-bottom:1rem">Files are stored in Firebase Storage. Max 10 MB per file.</div>
         <div id="resUploadProgress" style="display:none;margin-bottom:1rem">
           <div style="background:var(--surface3);border-radius:2px;height:6px;overflow:hidden">
@@ -3689,7 +3704,16 @@ window.toggleResourceForm = function() {
     document.getElementById('resDesc').value = '';
     document.getElementById('resFile').value = '';
     document.getElementById('resUploadProgress').style.display = 'none';
+    document.getElementById('resTargetType').value = 'all';
+    document.getElementById('resTargetIndividual').style.display = 'none';
+    document.getElementById('resTargetGroup').style.display = 'none';
   }
+};
+
+window.toggleResTarget = function() {
+  const val = document.getElementById('resTargetType').value;
+  document.getElementById('resTargetIndividual').style.display = val === 'individual' ? '' : 'none';
+  document.getElementById('resTargetGroup').style.display = val === 'group' ? '' : 'none';
 };
 
 window.uploadResource = async function() {
@@ -3728,12 +3752,18 @@ window.uploadResource = async function() {
       },
       async () => {
         const url = await getDownloadURL(uploadTask.snapshot.ref);
-        await addDoc(collection(db,'resources'), {
+        const targetType = document.getElementById('resTargetType').value;
+        const doc = {
           title, description: desc, category: cat,
           fileUrl: url, filePath: filePath,
           fileSize: file.size, fileName: file.name,
-          uploadedAt: new Date().toISOString()
-        });
+          targetType,
+          uploadedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        };
+        if (targetType === 'individual') doc.targetEmail = document.getElementById('resTargetEmail').value.trim();
+        if (targetType === 'group') doc.targetGroupName = document.getElementById('resTargetGroupName').value.trim();
+        await addDoc(collection(db,'resources'), doc);
         toast('Resource uploaded!');
         btn.textContent = 'Upload →'; btn.disabled = false;
         document.getElementById('resUploadProgress').style.display = 'none';
