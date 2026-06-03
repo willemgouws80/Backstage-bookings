@@ -958,7 +958,7 @@ service firebase.storage {
           <input type="email" id="resTargetEmail" placeholder="student@example.com">
         </div>
         <div id="resTargetGroup" style="display:none" class="fg">
-          <label>Plan / Group Name</label>
+          <label>Course / Plan Name</label>
           <input type="text" id="resTargetGroupName" placeholder="e.g. Guitar Beginners">
         </div>
         <div class="hint" style="margin-bottom:1rem">Files are stored in Firebase Storage. Max 10 MB per file.</div>
@@ -3679,13 +3679,17 @@ window.loadResources = async function() {
       const cat = r.category||'General';
       const d = r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString('en-ZA') : '—';
       const size = r.fileSize ? (r.fileSize/1024).toFixed(0)+' KB' : '';
+      let targetLabel = 'Everyone';
+      if (r.targetType === 'individual') targetLabel = r.targetEmail || '1 student';
+      else if (r.targetType === 'group') targetLabel = r.targetGroupName || 'Group';
       return `<div class="list-item">
         <div class="li-content">
-          <div class="li-title">${r.title||'Untitled'}</div>
+          <div class="li-title">${r.title||'Untitled'} <span style="font-weight:400;font-size:.75rem;color:var(--muted);margin-left:.5rem">(${targetLabel})</span></div>
           <div class="li-meta">${r.description||''} · ${cat} · ${d}${size?' · '+size:''}</div>
         </div>
         <div class="li-actions">
           <a href="${r.fileUrl}" target="_blank" class="btn btn-outline btn-sm">Download</a>
+          <button class="btn btn-outline btn-sm" onclick="window.editResource('${r.id}')">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="window.deleteResource('${r.id}','${r.filePath||''}','${encodeURIComponent(r.title||'')}')">Delete</button>
         </div>
       </div>`;
@@ -3695,11 +3699,32 @@ window.loadResources = async function() {
   }
 };
 
+let _editingResourceId = null;
+
+window.editResource = async function(id) {
+  const snap = await getDoc(doc(db,'resources',id));
+  if (!snap.exists()) { toast('Resource not found','error'); return; }
+  const r = snap.data();
+  _editingResourceId = id;
+  document.getElementById('resTitle').value = r.title||'';
+  document.getElementById('resDesc').value = r.description||'';
+  document.getElementById('resCat').value = r.category||'General';
+  document.getElementById('resTargetType').value = r.targetType||'all';
+  document.getElementById('resTargetEmail').value = r.targetEmail||'';
+  document.getElementById('resTargetGroupName').value = r.targetGroupName||'';
+  document.getElementById('resUploadBtn').textContent = 'Save Changes';
+  document.getElementById('resUploadProgress').style.display = 'none';
+  document.getElementById('resourceFormCard').style.display = 'block';
+  document.getElementById('resourceFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+  toggleResTarget();
+};
+
 window.toggleResourceForm = function() {
   const card = document.getElementById('resourceFormCard');
   const isHidden = card.style.display === 'none' || !card.style.display;
   card.style.display = isHidden ? 'block' : 'none';
   if (!isHidden) {
+    _editingResourceId = null;
     document.getElementById('resTitle').value = '';
     document.getElementById('resDesc').value = '';
     document.getElementById('resFile').value = '';
@@ -3707,6 +3732,7 @@ window.toggleResourceForm = function() {
     document.getElementById('resTargetType').value = 'all';
     document.getElementById('resTargetIndividual').style.display = 'none';
     document.getElementById('resTargetGroup').style.display = 'none';
+    document.getElementById('resUploadBtn').textContent = 'Upload →';
   }
 };
 
@@ -3722,9 +3748,29 @@ window.uploadResource = async function() {
   const cat = document.getElementById('resCat').value;
   const file = document.getElementById('resFile').files[0];
   const btn = document.getElementById('resUploadBtn');
-  const err = document.getElementById('resourcesList');
 
   if (!title) { toast('Please enter a title.','error'); return; }
+
+  const targetType = document.getElementById('resTargetType').value;
+
+  // Editing existing resource — no file upload needed
+  if (_editingResourceId) {
+    const update = {title, description: desc, category: cat, targetType, updatedAt: new Date().toISOString()};
+    if (targetType === 'individual') update.targetEmail = document.getElementById('resTargetEmail').value.trim();
+    else update.targetEmail = null;
+    if (targetType === 'group') update.targetGroupName = document.getElementById('resTargetGroupName').value.trim();
+    else update.targetGroupName = null;
+    try {
+      await setDoc(doc(db,'resources',_editingResourceId), update, {merge:true});
+      toast('Resource updated!','success');
+      _editingResourceId = null;
+      window.toggleResourceForm();
+      window.loadResources();
+    } catch(e) { toast('Error: '+e.message,'error'); }
+    return;
+  }
+
+  // New resource — require file
   if (!file) { toast('Please select a PDF file.','error'); return; }
   if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
     toast('Only PDF files are supported.','error'); return;
@@ -3752,7 +3798,6 @@ window.uploadResource = async function() {
       },
       async () => {
         const url = await getDownloadURL(uploadTask.snapshot.ref);
-        const targetType = document.getElementById('resTargetType').value;
         const doc = {
           title, description: desc, category: cat,
           fileUrl: url, filePath: filePath,
