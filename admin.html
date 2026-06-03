@@ -825,8 +825,34 @@ service firebase.storage {
     <div class="panel" id="panel-invoices">
       <div class="page-header">
         <h1><em>Invoices</em></h1>
-        <button class="btn btn-gold btn-sm" onclick="window.generateMonthlyInvoices(true)" title="Generate monthly invoices for individual lesson students">+ Generate Monthly</button>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-gold btn-sm" onclick="showInvoiceForm()">+ New Invoice</button>
+          <button class="btn btn-outline btn-sm" onclick="window.generateMonthlyInvoices(true)" title="Generate monthly invoices for individual lesson students">+ Generate Monthly</button>
+        </div>
       </div>
+
+      <!-- Invoice form -->
+      <div class="card" id="invoiceFormCard" style="display:none">
+        <div class="card-title">New Invoice</div>
+        <div class="two-col">
+          <div class="fg"><label>Client Name</label><input type="text" id="invClientName" placeholder="Full name"></div>
+          <div class="fg"><label>Client Email</label><input type="email" id="invClientEmail" placeholder="email@example.com"></div>
+        </div>
+        <div class="two-col">
+          <div class="fg"><label>Client Phone</label><input type="tel" id="invClientPhone" placeholder="+27 82 XXX XXXX"></div>
+          <div class="fg"><label>Description</label><input type="text" id="invDescription" placeholder="e.g. Monthly guitar lessons"></div>
+        </div>
+        <div class="two-col">
+          <div class="fg"><label>Amount (R)</label><input type="number" id="invAmount" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="fg"><label>Due Date</label><input type="date" id="invDueDate"></div>
+        </div>
+        <div class="fg"><label>Notes</label><textarea id="invNotes" rows="2" placeholder="Optional notes for the invoice"></textarea></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="saveDirectInvoice()">Save Invoice</button>
+          <button class="btn btn-outline" onclick="hideInvoiceForm()">Cancel</button>
+        </div>
+      </div>
+
       <div id="invoicesList"><div class="loading-text">Loading invoices…</div></div>
     </div>
 
@@ -2802,6 +2828,18 @@ function renderStudentsList(students) {
             ${s.bookings.map(b=>`<div style="font-size:.82rem;color:var(--muted);padding:.2rem 0">${b.plan||'—'} · ${b.prefDay||b.chosenSlot||'—'} · <span class="status-badge status-${b.status||'pending'}">${b.status||'pending'}</span></div>`).join('')}
           </div>
         </div>
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:end">
+          <div>
+            <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.35rem">Phone</div>
+            <span id="phoneDisplay-${i}" style="font-size:.88rem">${s.phone||'—'}</span>
+            <input type="tel" id="phoneInput-${i}" value="${s.phone||''}" style="display:none;padding:.5rem .65rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-size:.88rem;width:200px">
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-outline btn-sm" id="editPhoneBtn-${i}" onclick="toggleEditPhone(${i})">Edit</button>
+            <button class="btn btn-gold btn-sm" id="savePhoneBtn-${i}" style="display:none" onclick="saveStudentPhone('${s.email}', ${i})">Save</button>
+            <button class="btn btn-outline btn-sm" id="cancelPhoneBtn-${i}" style="display:none" onclick="cancelEditPhone(${i})">Cancel</button>
+          </div>
+        </div>
         <div style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Progress Notes</div>
         <div class="notes-list" id="notes-${i}">
           <div style="font-size:.85rem;color:var(--muted)">Loading notes…</div>
@@ -2874,6 +2912,49 @@ window.deleteNote = async function(noteId, email, idx) {
     await deleteDoc(doc(db,'studentNotes',noteId));
     toast('Note deleted','success');
     loadNotes(email, idx);
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── STUDENT PHONE EDIT ──
+window.toggleEditPhone = function(idx) {
+  document.getElementById(`phoneDisplay-${idx}`).style.display = 'none';
+  document.getElementById(`phoneInput-${idx}`).style.display = '';
+  document.getElementById(`editPhoneBtn-${idx}`).style.display = 'none';
+  document.getElementById(`savePhoneBtn-${idx}`).style.display = '';
+  document.getElementById(`cancelPhoneBtn-${idx}`).style.display = '';
+};
+
+window.cancelEditPhone = function(idx) {
+  document.getElementById(`phoneDisplay-${idx}`).style.display = '';
+  document.getElementById(`phoneInput-${idx}`).style.display = 'none';
+  document.getElementById(`editPhoneBtn-${idx}`).style.display = '';
+  document.getElementById(`savePhoneBtn-${idx}`).style.display = 'none';
+  document.getElementById(`cancelPhoneBtn-${idx}`).style.display = 'none';
+};
+
+window.saveStudentPhone = async function(email, idx) {
+  const phone = document.getElementById(`phoneInput-${idx}`).value.trim();
+  try {
+    // Save to students collection (used by portal)
+    await setDoc(doc(db,'students',email), {email, phone, updatedAt: new Date().toISOString()}, {merge:true});
+    // Also update all bookings with this email
+    const snap = await getDocs(collection(db,'bookings'));
+    const updates = [];
+    snap.forEach(d => {
+      const b = d.data();
+      if ((b.email||'').toLowerCase() === email.toLowerCase()) {
+        updates.push(updateDoc(doc(db,'bookings',d.id), {phone, updatedAt: new Date().toISOString()}));
+      }
+    });
+    await Promise.all(updates);
+    // Update local student object
+    const student = window._students?.[idx];
+    if (student) {
+      student.phone = phone;
+      document.getElementById(`phoneDisplay-${idx}`).textContent = phone || '—';
+    }
+    cancelEditPhone(idx);
+    toast('Phone updated!','success');
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
@@ -3128,14 +3209,14 @@ function renderInvoicesList(invoices) {
       return `<div class="list-item" style="flex-wrap:wrap;gap:.75rem">
         <div class="li-content">
           <div class="li-title">
-            ${inv.invoiceNumber} — ${isAuto ? inv.studentName : inv.clientName}
+            ${inv.invoiceNumber} — ${isAuto ? inv.studentName : inv.clientName || inv.studentName || ''}
             ${isAuto ? '<span class="status-badge status-pending" style="margin-left:.3rem;font-size:.65rem">Auto</span>' : ''}
             <span class="status-badge ${inv.status==='paid'?'status-confirmed':'status-pending'}" style="margin-left:.5rem">${inv.status||'unpaid'}</span>
           </div>
           <div class="li-meta">
             ${isAuto ? (inv.studentEmail||'') + ' · ' + (inv.plan||'') : (inv.clientEmail||'')}
             · R${Number(isAuto ? inv.amount : inv.total||0).toLocaleString()}
-            ${isAuto ? ` · ${inv.month}/${inv.year}` : ` · From ${inv.quoteNumber||'—'}`}
+            ${isAuto ? ` · ${inv.month}/${inv.year}` : inv.quoteNumber ? ` · From ${inv.quoteNumber}` : inv.description ? ` · ${inv.description}` : ''}
             · ${inv.createdAt||inv.generatedAt ? new Date(inv.createdAt||inv.generatedAt).toLocaleDateString('en-ZA') : ''}
             ${inv.paidAt ? ` · Paid ${new Date(inv.paidAt).toLocaleDateString('en-ZA')}` : ''}
           </div>
@@ -3168,6 +3249,49 @@ window.deleteInvoice = async function(id) {
     toast('Invoice deleted','success');
     loadInvoices();
   } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── DIRECT INVOICE CREATION ──
+window.showInvoiceForm = function() {
+  document.getElementById('invoiceFormCard').style.display = 'block';
+  document.getElementById('invoiceFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+window.hideInvoiceForm = function() {
+  document.getElementById('invoiceFormCard').style.display = 'none';
+  document.getElementById('invClientName').value = '';
+  document.getElementById('invClientEmail').value = '';
+  document.getElementById('invClientPhone').value = '';
+  document.getElementById('invDescription').value = '';
+  document.getElementById('invAmount').value = '';
+  document.getElementById('invDueDate').value = '';
+  document.getElementById('invNotes').value = '';
+};
+
+window.saveDirectInvoice = async function() {
+  const name = document.getElementById('invClientName').value.trim();
+  if (!name) { toast('Please enter a client name','error'); return; }
+  const amount = Number(document.getElementById('invAmount').value) || 0;
+  if (!amount) { toast('Please enter an amount','error'); return; }
+  try {
+    const allInv = await getDocs(collection(db,'invoices'));
+    const invNumber = `INV-${String(allInv.size+1).padStart(3,'0')}`;
+    await addDoc(collection(db,'invoices'), {
+      invoiceNumber: invNumber,
+      clientName: name,
+      clientEmail: document.getElementById('invClientEmail').value.trim(),
+      clientPhone: document.getElementById('invClientPhone').value.trim(),
+      description: document.getElementById('invDescription').value.trim(),
+      total: amount,
+      dueDate: document.getElementById('invDueDate').value || '',
+      notes: document.getElementById('invNotes').value.trim(),
+      status: 'unpaid',
+      createdAt: new Date().toISOString()
+    });
+    hideInvoiceForm();
+    toast(`Invoice ${invNumber} created!`,'success');
+    loadInvoices();
+  } catch(e) { toast('Error: '+e.message,'error'); showBanner(e.message); }
 };
 
 // ── AUTO-INVOICE GENERATION (29th of each month) ──
