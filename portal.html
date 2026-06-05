@@ -1344,14 +1344,16 @@ window.ccGenerateFromNotes = function() {
   if (!bestMatch) {
     bestMatch = { rootSemi: uniqueSemis[0], typeKey: 'major', chordNotes: CC_CHORD_TYPES.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
   }
-  const rootName = ccNoteName(bestMatch.rootSemi);
+  const rootSemi = bestMatch.rootSemi;
+  const rootName = CC_NOTES[((rootSemi % 12) + 12) % 12];
+  const displayRoot = CC_useFlats ? CC_FLAT_NOTES[rootSemi] : rootName;
   const typeInfo = CC_CHORD_TYPES[bestMatch.typeKey];
   const firstSemi = ((ccSemiOf(notes[0]) % 12) + 12) % 12;
-  const bassSemi = bestMatch.chordNotes.includes(firstSemi) && firstSemi !== bestMatch.rootSemi ? firstSemi : null;
+  const bassSemi = bestMatch.chordNotes.includes(firstSemi) && firstSemi !== rootSemi ? firstSemi : null;
   const displayName = bassSemi !== null
-    ? `${rootName}${typeInfo.suffix} / ${ccNoteName(bassSemi)} (${typeInfo.name})`
-    : `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
-  const voicings = ccGenerateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName, bassSemi);
+    ? `${displayRoot}${typeInfo.suffix} / ${ccNoteName(bassSemi)} (${typeInfo.name})`
+    : `${displayRoot}${typeInfo.suffix} (${typeInfo.name})`;
+  const voicings = ccGenerateVoicings(rootSemi, bestMatch.typeKey, rootName, bassSemi);
   document.getElementById('ccResult').innerHTML = ccRenderChord(displayName, voicings, bassSemi) +
     `<div style="margin-top:.75rem;font-size:.78rem;color:var(--muted)">Identified from: ${notes.join(', ')} → ${displayName}</div>`;
 };

@@ -588,15 +588,17 @@ function generateFromNotes() {
   if (!bestMatch) {
     bestMatch = { rootSemi:uniqueSemis[0], typeKey:'major', chordNotes:CHORD_TYPES.major.intervals.map(i => (uniqueSemis[0] + i) % 12) };
   }
-  const rootName = noteName(bestMatch.rootSemi);
+  const rootSemi = bestMatch.rootSemi;
+  const rootName = NOTES[((rootSemi % 12) + 12) % 12];
+  const displayRoot = _useFlats ? FLAT_NOTES[rootSemi] : rootName;
   const typeInfo = CHORD_TYPES[bestMatch.typeKey];
   const typeLabel = typeInfo.suffix ? typeInfo.suffix.replace(/^(.)/, (_,c) => ' ' + c) : '';
-  const chordName = `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
+  const chordName = `${displayRoot}${typeInfo.suffix} (${typeInfo.name})`;
   // Auto-detect bass from first note in raw input (ignores the bass dropdown)
   const firstSemi = ((semiOf(notes[0]) % 12) + 12) % 12;
   const bassSemi = bestMatch.chordNotes.includes(firstSemi) && firstSemi !== bestMatch.rootSemi ? firstSemi : null;
   const voicings = generateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName, bassSemi);
-  const displayName = bassSemi ? `${rootName}${typeInfo.suffix} / ${noteName(bassSemi)}` : chordName;
+  const displayName = bassSemi ? `${displayRoot}${typeInfo.suffix} / ${noteName(bassSemi)}` : chordName;
   document.getElementById('result').innerHTML = renderChord(displayName, voicings) +
     `<div style="margin-top:1rem;font-size:.82rem;color:var(--muted)">Identified: ${notes.join(', ')} → ${displayName}</div>`;
 }
