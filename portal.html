@@ -1093,27 +1093,32 @@ function ccSpanOk(voicing) {
 function ccApplySlash(voicing, bassSemi, rootSemi) {
   if (bassSemi === rootSemi || bassSemi === undefined || bassSemi === null) return voicing;
   for (let tryIdx = 0; tryIdx < 6; tryIdx++) {
-    if (voicing.result[tryIdx].muted) continue;
     const res = voicing.result.map(r => ({...r}));
-    const curNote = ((CC_OPEN[tryIdx] + res[tryIdx].fret) % 12 + 12) % 12;
-    const diff = ((bassSemi - curNote) % 12 + 12) % 12;
-    if (diff === 0) return voicing;
-    const newFret = res[tryIdx].fret + diff;
+    let newFret;
+    if (voicing.result[tryIdx].muted) {
+      newFret = ((bassSemi - CC_OPEN[tryIdx]) % 12 + 12) % 12;
+    } else {
+      const curNote = ((CC_OPEN[tryIdx] + res[tryIdx].fret) % 12 + 12) % 12;
+      const diff = ((bassSemi - curNote) % 12 + 12) % 12;
+      newFret = res[tryIdx].fret + diff;
+    }
+    res[tryIdx].muted = false;
     res[tryIdx].fret = newFret;
     res[tryIdx].note = ((CC_OPEN[tryIdx] + newFret) % 12 + 12) % 12;
     const interval = ((res[tryIdx].note - rootSemi) % 12 + 12) % 12;
     res[tryIdx].interval = interval;
     res[tryIdx].label = interval === 0 ? 'R' : CC_INTERVAL_LABELS[interval] || interval;
     res[tryIdx].colorClass = _ccColor(interval);
+    res[tryIdx].inChord = true;
+    for (let i = 0; i < tryIdx; i++) {
+      if (!res[i].muted) {
+        res[i].muted = true; res[i].fret = null; res[i].note = null;
+        res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
+      }
+    }
     const frets = res.map(r => r.fret).filter(f => f !== null);
     const span = frets.length >= 2 ? Math.max(...frets) - Math.min(...frets) : 0;
     if (span <= 5) {
-      for (let i = 0; i < tryIdx; i++) {
-        if (!res[i].muted) {
-          res[i].muted = true; res[i].fret = null; res[i].note = null;
-          res[i].interval = null; res[i].label = null; res[i].inChord = false; res[i].colorClass = '';
-        }
-      }
       return { ...voicing, result:res, slashLabel:'/'+ccNoteName(bassSemi) };
     }
   }
