@@ -364,6 +364,54 @@ function applySlash(voicing, bassSemi, rootSemi) {
   return voicing;
 }
 
+// Generate a minimal voicing from scratch — no doubled notes, muted in between
+function generateSimplified(rootSemi, typeKey, rootStr, bassSemi) {
+  const typeInfo = CHORD_TYPES[typeKey];
+  const requiredIntervals = typeInfo.intervals;
+  const requiredSemis = requiredIntervals.map(iv => ((rootSemi + iv) % 12 + 12) % 12);
+  const lowestSemi = (bassSemi !== undefined && bassSemi !== null) ? bassSemi : rootSemi;
+  const intervalSet = new Set(requiredIntervals);
+  let bestFrets = null, bestScore = Infinity;
+  for (let li = 0; li < 6; li++) {
+    const lf = ((lowestSemi - OPEN[li]) % 12 + 12) % 12;
+    if (lf > 12) continue;
+    const need = new Set(requiredSemis);
+    need.delete(lowestSemi);
+    const frets = Array(6).fill(null);
+    frets[li] = lf; const fv = [lf];
+    for (let i = li + 1; i < 6; i++) {
+      let bf = null, bn = null;
+      for (let f = 0; f <= 12; f++) {
+        const note = (OPEN[i] + f) % 12;
+        if (need.has(note)) {
+          const span = Math.max(...fv, f) - Math.min(...fv, f);
+          if (fv.length < 2 || span <= 5) { bf = f; bn = note; break; }
+        }
+      }
+      if (bf !== null) { frets[i] = bf; fv.push(bf); need.delete(bn); }
+    }
+    if (need.size === 0) {
+      let score = 0, nc = 0;
+      frets.forEach(f => { if (f !== null) { score += f; nc++; if (f === 0) score -= 0.5; } });
+      score += nc * 2 + li * 0.01;
+      if (score < bestScore) { bestScore = score; bestFrets = frets; }
+    }
+  }
+  if (!bestFrets) return null;
+  const result = bestFrets.map((fret, si) => {
+    if (fret === null) return { muted:true, fret:null, note:null, interval:null, label:null, inChord:false, colorClass:'' };
+    const noteSemi = ((OPEN[si] + fret) % 12 + 12) % 12;
+    const interval = ((noteSemi - rootSemi) % 12 + 12) % 12;
+    return {
+      muted:false, fret, note:noteSemi, interval,
+      label: interval === 0 ? 'R' : INTERVAL_LABELS[interval] || interval,
+      inChord: intervalSet.has(interval),
+      colorClass: intervalColor(interval)
+    };
+  });
+  return { name:'Simple', isBasic:false, result };
+}
+
 // Generate all voicings for a chord, sorted with useful first
 function generateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
   const patterns = BARRE_PATTERNS[typeKey];
@@ -447,6 +495,10 @@ function generateVoicings(rootSemi, typeKey, rootStr, bassSemi) {
     const vet = buildVoicing(rootSemi, typeKey, barreETr.frets, barreETr.name, false);
     if (spanOk(vet)) result.push(vet);
   }
+
+  // 7. Simplified voicing (from scratch, no doubled notes)
+  const simplified = generateSimplified(rootSemi, typeKey, rootStr, bassSemi);
+  if (simplified && spanOk(simplified)) result.push(simplified);
 
   return result;
 }
