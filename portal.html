@@ -1339,8 +1339,9 @@ window.ccGenerateFromNotes = function() {
   }
   const rootName = ccNoteName(bestMatch.rootSemi);
   const typeInfo = CC_CHORD_TYPES[bestMatch.typeKey];
-  const bassSemi = document.getElementById('ccBassNote')?.value ? CC_NOTE_TO_SEMI[document.getElementById('ccBassNote').value] : null;
-  const displayName = bassSemi !== null && bassSemi !== bestMatch.rootSemi
+  const firstSemi = ((ccSemiOf(notes[0]) % 12) + 12) % 12;
+  const bassSemi = bestMatch.chordNotes.includes(firstSemi) && firstSemi !== bestMatch.rootSemi ? firstSemi : null;
+  const displayName = bassSemi !== null
     ? `${rootName}${typeInfo.suffix} / ${ccNoteName(bassSemi)} (${typeInfo.name})`
     : `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
   const voicings = ccGenerateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName, bassSemi);

@@ -599,12 +599,11 @@ function generateFromNotes() {
   const typeInfo = CHORD_TYPES[bestMatch.typeKey];
   const typeLabel = typeInfo.suffix ? typeInfo.suffix.replace(/^(.)/, (_,c) => ' ' + c) : '';
   const chordName = `${rootName}${typeInfo.suffix} (${typeInfo.name})`;
-  const bassStr = document.getElementById('bassNote')?.value;
-  const bassSemi = bassStr ? NOTE_TO_SEMI[bassStr] : null;
+  // Auto-detect bass from first note in raw input (ignores the bass dropdown)
+  const firstSemi = ((semiOf(notes[0]) % 12) + 12) % 12;
+  const bassSemi = bestMatch.chordNotes.includes(firstSemi) && firstSemi !== bestMatch.rootSemi ? firstSemi : null;
   const voicings = generateVoicings(bestMatch.rootSemi, bestMatch.typeKey, rootName, bassSemi);
-  const displayName = bassSemi && bassSemi !== bestMatch.rootSemi
-    ? `${rootName}${typeInfo.suffix} / ${noteName(bassSemi)}`
-    : chordName;
+  const displayName = bassSemi ? `${rootName}${typeInfo.suffix} / ${noteName(bassSemi)}` : chordName;
   document.getElementById('result').innerHTML = renderChord(displayName, voicings) +
     `<div style="margin-top:1rem;font-size:.82rem;color:var(--muted)">Identified: ${notes.join(', ')} → ${displayName}</div>`;
 }
