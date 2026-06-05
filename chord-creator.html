@@ -199,25 +199,14 @@
 <script>
 // ── CHORD CREATOR ENGINE ──
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLAT_NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+let _useFlats = false;
 const NOTE_TO_SEMI = {};
 NOTES.forEach((n,i) => NOTE_TO_SEMI[n] = i);
 
-const CHORD_TYPES = {
-  major:  { name: 'Major',      intervals: [0, 4, 7],          suffix: '' },
-  minor:  { name: 'Minor',      intervals: [0, 3, 7],          suffix: 'm' },
-  dom7:   { name: 'Dominant 7', intervals: [0, 4, 7, 10],      suffix: '7' },
-  maj7:   { name: 'Major 7',    intervals: [0, 4, 7, 11],      suffix: 'maj7' },
-  min7:   { name: 'Minor 7',    intervals: [0, 3, 7, 10],      suffix: 'm7' },
-  sus2:   { name: 'Sus 2',      intervals: [0, 2, 7],          suffix: 'sus2' },
-  sus4:   { name: 'Sus 4',      intervals: [0, 5, 7],          suffix: 'sus4' },
-  add9:   { name: 'Add 9',      intervals: [0, 2, 4, 7],       suffix: 'add9' },
-};
-
-const INTERVAL_LABELS = { 0:'R', 1:'b2', 2:'2', 3:'b3', 4:'3', 5:'4', 6:'b5',
-  7:'5', 8:'#5', 9:'6', 10:'b7', 11:'7' };
-
 function noteName(semi) {
-  return NOTES[((semi % 12) + 12) % 12];
+  const arr = _useFlats ? FLAT_NOTES : NOTES;
+  return arr[((semi % 12) + 12) % 12];
 }
 
 function semiOf(note) {
@@ -560,15 +549,18 @@ function renderChord(name, voicings) {
 }
 
 function generateFromPicker() {
-  const rootStr = document.getElementById('rootNote').value;
+  const sel = document.getElementById('rootNote');
+  const rootStr = sel.value;
+  _useFlats = /[A-G]b/.test(sel.options[sel.selectedIndex].text);
   const type = document.getElementById('chordType').value;
   const bassStr = document.getElementById('bassNote')?.value;
   const rootSemi = NOTE_TO_SEMI[rootStr];
   const bassSemi = bassStr ? NOTE_TO_SEMI[bassStr] : null;
   const typeInfo = CHORD_TYPES[type];
+  const displayRoot = _useFlats ? FLAT_NOTES[rootSemi] : rootStr;
   const chordName = bassSemi && bassSemi !== rootSemi
-    ? `${rootStr}${typeInfo.suffix} / ${noteName(bassSemi)}`
-    : `${rootStr}${typeInfo.suffix} (${typeInfo.name})`;
+    ? `${displayRoot}${typeInfo.suffix} / ${noteName(bassSemi)}`
+    : `${displayRoot}${typeInfo.suffix} (${typeInfo.name})`;
   const voicings = generateVoicings(rootSemi, type, rootStr, bassSemi);
   document.getElementById('result').innerHTML = renderChord(chordName, voicings);
 }
@@ -576,6 +568,7 @@ function generateFromPicker() {
 function generateFromNotes() {
   const raw = document.getElementById('rawNotes').value;
   const notes = raw.split(/[,;]/).map(n => n.trim().toUpperCase()).filter(Boolean);
+  _useFlats = notes.some(n => /^[A-G]b$/i.test(n));
   if (notes.length < 2) { document.getElementById('result').innerHTML = '<div class="error">Enter at least 2 notes</div>'; return; }
   const semis = notes.map(n => semiOf(n)).filter(s => s !== undefined);
   if (semis.length !== notes.length) { document.getElementById('result').innerHTML = '<div class="error">Invalid note name detected</div>'; return; }

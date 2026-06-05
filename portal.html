@@ -968,6 +968,8 @@ window.toast = toast;
 
 // ── CHORD CREATOR ──
 const CC_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CC_FLAT_NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+let CC_useFlats = false;
 const CC_NOTE_TO_SEMI = {};
 CC_NOTES.forEach((n,i) => CC_NOTE_TO_SEMI[n] = i);
 
@@ -988,7 +990,8 @@ const CC_INTERVAL_LABELS = { 0:'R', 1:'b2', 2:'2', 3:'b3', 4:'3', 5:'4', 6:'b5',
 const CC_OPEN = [4, 9, 2, 7, 11, 4];
 
 function ccNoteName(semi) {
-  return CC_NOTES[((semi % 12) + 12) % 12];
+  const arr = CC_useFlats ? CC_FLAT_NOTES : CC_NOTES;
+  return arr[((semi % 12) + 12) % 12];
 }
 
 function ccSemiOf(note) {
@@ -1301,15 +1304,18 @@ function ccRenderChord(name, voicings, bassSemi) {
 }
 
 window.ccGenerateFromPicker = function() {
-  const rootStr = document.getElementById('ccRootNote').value;
+  const sel = document.getElementById('ccRootNote');
+  const rootStr = sel.value;
+  CC_useFlats = /[A-G]b/.test(sel.options[sel.selectedIndex].text);
   const type = document.getElementById('ccChordType').value;
   const bassStr = document.getElementById('ccBassNote')?.value;
   const rootSemi = CC_NOTE_TO_SEMI[rootStr];
   const bassSemi = bassStr ? CC_NOTE_TO_SEMI[bassStr] : null;
   const typeInfo = CC_CHORD_TYPES[type];
+  const displayRoot = CC_useFlats ? CC_FLAT_NOTES[rootSemi] : rootStr;
   const chordName = bassSemi !== null && bassSemi !== rootSemi
-    ? `${rootStr}${typeInfo.suffix} / ${ccNoteName(bassSemi)} (${typeInfo.name})`
-    : `${rootStr}${typeInfo.suffix} (${typeInfo.name})`;
+    ? `${displayRoot}${typeInfo.suffix} / ${ccNoteName(bassSemi)} (${typeInfo.name})`
+    : `${displayRoot}${typeInfo.suffix} (${typeInfo.name})`;
   const voicings = ccGenerateVoicings(rootSemi, type, rootStr, bassSemi);
   document.getElementById('ccResult').innerHTML = ccRenderChord(chordName, voicings, bassSemi);
 };
@@ -1317,6 +1323,7 @@ window.ccGenerateFromPicker = function() {
 window.ccGenerateFromNotes = function() {
   const raw = document.getElementById('ccRawNotes').value;
   const notes = raw.split(/[,;]/).map(n => n.trim().toUpperCase()).filter(Boolean);
+  CC_useFlats = notes.some(n => /^[A-G]b$/i.test(n));
   if (notes.length < 2) { document.getElementById('ccResult').innerHTML = '<div style="color:var(--danger);padding:.5rem 0">Enter at least 2 notes</div>'; return; }
   const semis = notes.map(n => ccSemiOf(n)).filter(s => s !== undefined);
   if (semis.length !== notes.length) { document.getElementById('ccResult').innerHTML = '<div style="color:var(--danger);padding:.5rem 0">Invalid note name detected</div>'; return; }
