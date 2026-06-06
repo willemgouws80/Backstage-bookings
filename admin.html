@@ -3705,7 +3705,7 @@ function buildBankingPdf() {
   <div class="rw"><strong>Bank Name:</strong> ${accBank}</div>
   <div class="rw"><strong>Account Number:</strong> ${accNo}</div>
   <div class="rw"><strong>Branch Code:</strong> ${branch}</div>
-  <div class="rw"><strong>Reference:</strong> <input type="text" id="pdfRef" value="${refVal}" style="background:transparent;border:none;border-bottom:1px dashed #C9911A;color:#C9911A;font-family:'Georgia',serif;font-size:.95rem;padding:2px 6px;min-width:240px;outline:none" onfocus="this.select()"></div>
+  <div class="rw"><strong>Reference:</strong> <input type="text" id="pdfRef" value="${refVal}" style="background:transparent;border:none;border-bottom:1px dashed #C9911A;color:#C9911A;font-family:'Georgia',serif;font-size:.95rem;padding:2px 6px;min-width:240px;outline:none" onfocus="this.select()" onkeydown="if(event.key==='Enter'){var r=document.getElementById('pdfRef');if(r&&r.value==='(Your name or invoice number)')r.value='';window.print()}"></div>
 </div>
 <div class="txt">Please let me know if you need any additional information or if there are any other steps I should take.</div>
 <div class="cl">Kind regards,</div>
@@ -3716,13 +3716,9 @@ function buildBankingPdf() {
 </div>
 <div class="ft no-print">Backstage Worship Music School</div>
 <div class="no-print" style="margin-top:2rem;text-align:center">
-  <button onclick="beforePrint()" style="background:#C9911A;color:#fff;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px;margin-right:1rem">🖨 Print / Save as PDF</button>
+  <button onclick="var r=document.getElementById('pdfRef');if(r&&r.value==='(Your name or invoice number)')r.value='';window.print()" style="background:#C9911A;color:#fff;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px;margin-right:1rem">🖨 Print / Save as PDF</button>
   <button onclick="window.close()" style="background:transparent;color:#7a7060;border:1px solid #ccc;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px">Close</button>
 </div>
-<script>
-function beforePrint(){var r=document.getElementById('pdfRef');if(r&&r.value==='(Your name or invoice number)')r.value='';window.print()}
-document.getElementById('pdfRef').addEventListener('keydown',function(e){if(e.key==='Enter')beforePrint()});
-</script>
 </body></html>`;
 }
 
