@@ -3672,7 +3672,7 @@ function buildBankingPdf() {
   const email = form('contactEmail') || biz.email || '';
   const location = form('contactLocation') || biz.location || '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Banking Details</title>
-<base href="${window.location.origin}/">
+<base href="${window.location.href.replace(/\/[^\/]*$/,'/')}">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Georgia',serif;background:#fff;color:#1a1a1a;padding:3rem;max-width:800px;margin:0 auto;line-height:1.7}
