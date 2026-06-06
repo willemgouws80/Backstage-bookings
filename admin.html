@@ -609,6 +609,11 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         </div>
         <div class="fg"><label>Branch Code</label><input type="text" id="bankBranch" placeholder="250655"></div>
       </div>
+      <div class="card">
+        <div class="card-title">Banking PDF Letter</div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1rem;line-height:1.7">Generate a professional PDF letter with your banking details to send to students and clients.</p>
+        <button class="btn btn-gold" onclick="downloadBankingPdf()">📄 Download Banking PDF</button>
+      </div>
       <div class="btn-row"><button class="btn btn-gold" onclick="saveContact()">Save → Live Instantly</button></div>
     </div>
 
@@ -3652,6 +3657,75 @@ function buildPrintDoc(data, type) {
   </div>
   </body></html>`;
 }
+
+function buildBankingPdf() {
+  const form = id => document.getElementById(id)?.value || '';
+  const biz = window._siteConfig?.contact || {};
+  const bank = window._siteConfig?.banking || {};
+  const accName = form('bankName') || bank.accountName || 'Backstage Worship Music School';
+  const accBank = form('bankBank') || bank.bank || '';
+  const accNo = form('bankAccNo') || bank.accountNumber || '';
+  const branch = form('bankBranch') || bank.branchCode || '';
+  const phone = form('contactPhone') || biz.phone || '';
+  const email = form('contactEmail') || biz.email || '';
+  const location = form('contactLocation') || biz.location || '';
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Banking Details</title>
+<base href="${window.location.origin}/">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Georgia',serif;background:#fff;color:#1a1a1a;padding:3rem;max-width:800px;margin:0 auto;line-height:1.7}
+  @media print{.no-print{display:none}}
+  .hdr{display:flex;align-items:center;gap:1.25rem;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:2px solid #C9911A}
+  .hdr img{width:60px;height:60px;object-fit:contain;border-radius:4px}
+  .hdr .lbl{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;font-family:'Arial',sans-serif}
+  .hdr .bn{font-size:1.3rem;color:#1a1a1a;margin-top:.15rem}
+  .subj{font-size:1.1rem;font-weight:600;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a}
+  .txt{font-size:.95rem;color:#444;margin-bottom:1rem}
+  .bx{margin:1.5rem 0;padding:1.25rem 1.5rem;border:1px solid #e0e0e0;border-radius:4px;background:#fafafa}
+  .bx .bt{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;margin-bottom:.75rem;font-family:'Arial',sans-serif}
+  .bx .rw{font-size:.95rem;color:#555;line-height:2.2}
+  .bx .rw strong{color:#1a1a1a;display:inline-block;width:130px}
+  .cl{font-size:.95rem;color:#444;margin-top:2rem}
+  .sig{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid #e0e0e0;font-size:.95rem;color:#444;line-height:1.9}
+  .sig strong{color:#1a1a1a}
+  .ft{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e0e0e0;font-size:.8rem;color:#999;text-align:center}
+</style></head><body>
+<div class="hdr">
+  <img src="New_Backstage_logo.png" alt="Logo" onerror="this.style.display='none'">
+  <div><div class="lbl">Music School</div><div class="bn">${accName}</div></div>
+</div>
+<div class="subj">Banking Details for Payment</div>
+<div class="txt">Dear Sir / Madam,</div>
+<div class="txt">I hope you are doing well. As requested, please find my banking details below for the processing of the payment:</div>
+<div class="bx">
+  <div class="bt">Banking Details</div>
+  <div class="rw"><strong>Business Name:</strong> ${accName}</div>
+  <div class="rw"><strong>Bank Name:</strong> ${accBank}</div>
+  <div class="rw"><strong>Account Number:</strong> ${accNo}</div>
+  <div class="rw"><strong>Branch Code:</strong> ${branch}</div>
+  <div class="rw"><strong>Reference:</strong> <span style="color:#C9911A">(Student name or invoice number)</span></div>
+</div>
+<div class="txt">Please let me know if you need any additional information or if there are any other steps I should take.</div>
+<div class="cl">Kind regards,</div>
+<div class="sig">
+  <strong>${accName}</strong><br>
+  ${location ? location + '<br>' : ''}
+  ${phone}${phone && email ? ' &middot; ' : ''}${email}
+</div>
+<div class="ft no-print">Backstage Worship Music School</div>
+<div class="no-print" style="margin-top:2rem;text-align:center">
+  <button onclick="window.print()" style="background:#C9911A;color:#fff;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px;margin-right:1rem">🖨 Print / Save as PDF</button>
+  <button onclick="window.close()" style="background:transparent;color:#7a7060;border:1px solid #ccc;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px">Close</button>
+</div>
+</body></html>`;
+}
+
+window.downloadBankingPdf = function() {
+  const w = window.open('','_blank');
+  w.document.write(buildBankingPdf());
+  w.document.close();
+  w.onload = () => w.focus();
+};
 
 window.printQuote = function(id) {
   const q = window._quotes?.find(q=>q.id===id);
