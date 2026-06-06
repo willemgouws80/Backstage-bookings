@@ -3678,9 +3678,9 @@ function buildBankingPdf() {
   body{font-family:'Georgia',serif;background:#fff;color:#1a1a1a;padding:3rem;max-width:800px;margin:0 auto;line-height:1.7}
   @media print{.no-print{display:none}}
   .hdr{display:flex;align-items:center;gap:1.25rem;margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:2px solid #C9911A}
-  .hdr img{width:60px;height:60px;object-fit:contain;border-radius:4px}
-  .hdr .lbl{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#C9911A;font-family:'Arial',sans-serif}
-  .hdr .bn{font-size:1.3rem;color:#1a1a1a;margin-top:.15rem}
+  .logo-wrap{background:#090805;padding:8px;border-radius:4px;display:inline-flex}
+  .logo-wrap img{width:60px;height:60px;object-fit:contain;display:block}
+  .hdr .bn{font-size:1.3rem;color:#1a1a1a}
   .subj{font-size:1.1rem;font-weight:600;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid #e0e0e0;color:#1a1a1a}
   .txt{font-size:.95rem;color:#444;margin-bottom:1rem}
   .bx{margin:1.5rem 0;padding:1.25rem 1.5rem;border:1px solid #e0e0e0;border-radius:4px;background:#fafafa}
@@ -3693,8 +3693,8 @@ function buildBankingPdf() {
   .ft{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e0e0e0;font-size:.8rem;color:#999;text-align:center}
 </style></head><body>
 <div class="hdr">
-  <img src="New_Backstage_logo.png" alt="Logo" onerror="this.style.display='none'">
-  <div><div class="lbl">Music School</div><div class="bn">Backstage Worship</div></div>
+  <div class="logo-wrap"><img src="New_Backstage_logo.png" alt="Logo" onerror="this.style.display='none'"></div>
+  <div><div class="bn">Backstage Worship</div></div>
 </div>
 <div class="subj">Banking Details for Payment</div>
 <div class="txt">Dear Sir / Madam,</div>
