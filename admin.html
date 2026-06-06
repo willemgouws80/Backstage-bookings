@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Backstage Admin</title>
+<title>Backstage Worship Admin</title>
 <link rel="icon" href="New_Backstage_logo.png" sizes="any">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -608,6 +608,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
           <div class="fg"><label>Account Number</label><input type="text" id="bankAccNo" placeholder="XXXX XXXX XXX"></div>
         </div>
         <div class="fg"><label>Branch Code</label><input type="text" id="bankBranch" placeholder="250655"></div>
+        <div class="fg"><label>Reference Template</label><input type="text" id="bankRef" placeholder="e.g. Your name or invoice number" value="(Your name or invoice number)"></div>
       </div>
       <div class="card">
         <div class="card-title">Banking PDF Letter</div>
@@ -1915,14 +1916,14 @@ async function loadContact() {
     const d = snap.data();
     if (d.contact) { document.getElementById('contactPhone').value=d.contact.phone||''; document.getElementById('contactEmail').value=d.contact.email||''; document.getElementById('contactLocation').value=d.contact.location||''; }
     if (d.whatsapp) { document.getElementById('waTemplate').value=d.whatsapp.template||''; }
-    if (d.banking)  { document.getElementById('bankName').value=d.banking.accountName||''; document.getElementById('bankBank').value=d.banking.bank||''; document.getElementById('bankAccNo').value=d.banking.accountNumber||''; document.getElementById('bankBranch').value=d.banking.branchCode||''; }
+    if (d.banking)  { document.getElementById('bankName').value=d.banking.accountName||''; document.getElementById('bankBank').value=d.banking.bank||''; document.getElementById('bankAccNo').value=d.banking.accountNumber||''; document.getElementById('bankBranch').value=d.banking.branchCode||''; document.getElementById('bankRef').value=d.banking.reference||'(Your name or invoice number)'; }
   } catch(e) {}
 }
 
 window.saveContact = async function() {
   const contact = {phone:document.getElementById('contactPhone').value, email:document.getElementById('contactEmail').value, location:document.getElementById('contactLocation').value};
   const whatsapp = {template:document.getElementById('waTemplate').value};
-  const banking  = {accountName:document.getElementById('bankName').value, bank:document.getElementById('bankBank').value, accountNumber:document.getElementById('bankAccNo').value, branchCode:document.getElementById('bankBranch').value};
+  const banking  = {accountName:document.getElementById('bankName').value, bank:document.getElementById('bankBank').value, accountNumber:document.getElementById('bankAccNo').value, branchCode:document.getElementById('bankBranch').value, reference:document.getElementById('bankRef').value};
   try {
     const ref=doc(db,'siteConfig','main');
     const snap=await getDoc(ref);
@@ -3666,6 +3667,7 @@ function buildBankingPdf() {
   const accBank = form('bankBank') || bank.bank || '';
   const accNo = form('bankAccNo') || bank.accountNumber || '';
   const branch = form('bankBranch') || bank.branchCode || '';
+  const refVal = form('bankRef') || bank.reference || '(Your name or invoice number)';
   const phone = form('contactPhone') || biz.phone || '';
   const email = form('contactEmail') || biz.email || '';
   const location = form('contactLocation') || biz.location || '';
@@ -3703,7 +3705,7 @@ function buildBankingPdf() {
   <div class="rw"><strong>Bank Name:</strong> ${accBank}</div>
   <div class="rw"><strong>Account Number:</strong> ${accNo}</div>
   <div class="rw"><strong>Branch Code:</strong> ${branch}</div>
-  <div class="rw"><strong>Reference:</strong> <span style="color:#C9911A">(Student name or invoice number)</span></div>
+  <div class="rw"><strong>Reference:</strong> <input type="text" id="pdfRef" value="${refVal}" style="background:transparent;border:none;border-bottom:1px dashed #C9911A;color:#C9911A;font-family:'Georgia',serif;font-size:.95rem;padding:2px 6px;min-width:240px;outline:none" onfocus="this.select()"></div>
 </div>
 <div class="txt">Please let me know if you need any additional information or if there are any other steps I should take.</div>
 <div class="cl">Kind regards,</div>
@@ -3714,9 +3716,13 @@ function buildBankingPdf() {
 </div>
 <div class="ft no-print">Backstage Worship Music School</div>
 <div class="no-print" style="margin-top:2rem;text-align:center">
-  <button onclick="window.print()" style="background:#C9911A;color:#fff;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px;margin-right:1rem">🖨 Print / Save as PDF</button>
+  <button onclick="beforePrint()" style="background:#C9911A;color:#fff;border:none;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px;margin-right:1rem">🖨 Print / Save as PDF</button>
   <button onclick="window.close()" style="background:transparent;color:#7a7060;border:1px solid #ccc;padding:.75rem 2rem;font-size:1rem;cursor:pointer;border-radius:2px">Close</button>
 </div>
+<script>
+function beforePrint(){var r=document.getElementById('pdfRef');if(r&&r.value==='(Your name or invoice number)')r.value='';window.print()}
+document.getElementById('pdfRef').addEventListener('keydown',function(e){if(e.key==='Enter')beforePrint()});
+</script>
 </body></html>`;
 }
 
