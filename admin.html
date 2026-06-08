@@ -2299,11 +2299,17 @@ window.togglePrivateAttendance = async function(email, date, existingId) {
     if (ratingData) { baseData.rating = ratingData.rating; baseData.notes = ratingData.notes; }
     if (existingId && next !== 'unmarked') {
       await updateDoc(doc(db,'attendance',existingId), baseData);
+      if (!window._privAttRecords) window._privAttRecords = {};
+      window._privAttRecords[date] = { ...window._privAttRecords[date], ...baseData, id: existingId };
     } else if (existingId && next === 'unmarked') {
       await deleteDoc(doc(db,'attendance',existingId));
+      if (window._privAttRecords) delete window._privAttRecords[date];
     } else if (next !== 'unmarked') {
-      await addDoc(collection(db,'attendance'), baseData);
+      const ref = await addDoc(collection(db,'attendance'), baseData);
+      if (!window._privAttRecords) window._privAttRecords = {};
+      window._privAttRecords[date] = { ...baseData, id: ref.id };
     }
+    toast('Attendance saved!','success');
     window.loadAttendanceView();
   } catch(e) { toast('Could not save: '+e.message,'error'); }
 };
@@ -2334,6 +2340,7 @@ window.toggleAttendance = async function(email, date, courseId, existingId) {
       if (!window._attRecords[key]) window._attRecords[key] = {};
       window._attRecords[key] = { id:ref.id, status:next, ...baseData };
     }
+    toast('Attendance saved!','success');
     // Refresh grid
     renderCourseAttendance(courseId);
   } catch(e) { toast('Could not save: '+e.message,'error'); }
