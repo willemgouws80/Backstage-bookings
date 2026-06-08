@@ -3008,8 +3008,6 @@ window.loadPracticeSessions = async function(email, idx) {
       if ((data.email||'').toLowerCase() === email.toLowerCase()) sessions.push({id:d.id, ...data});
     });
     sessions.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
-    const sessions = [];
-    snap.forEach(d => sessions.push({id:d.id,...d.data()}));
     if (!sessions.length) {
       container.innerHTML = '<div style="font-size:.85rem;color:var(--muted)">No practice sessions logged yet.</div>';
       return;
