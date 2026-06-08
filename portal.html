@@ -1055,7 +1055,7 @@ async function loadStudentData() {
   onSnapshot(attQ, snap => {
     _attendanceRecords = [];
     snap.forEach(d => _attendanceRecords.push({id:d.id,...d.data()}));
-    _attendanceRecords.sort((a,b) => ((b.date||'') > (a.date||'') ? 1 : -1));
+    _attendanceRecords.sort((a,b) => ((b.sessionDate||b.date||'') > (a.sessionDate||a.date||'') ? 1 : -1));
     renderAttendance();
   }, e => console.error('attendance snapshot error:', e));
 
@@ -1216,11 +1216,12 @@ function renderAttendance() {
 
   document.getElementById('attendanceList').innerHTML = _attendanceRecords.length
     ? _attendanceRecords.map(r => {
-        const d = r.date ? new Date(r.date+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : '—';
+        const d = (r.sessionDate||r.date) ? new Date((r.sessionDate||r.date)+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : '—';
         const cls = r.status === 'present' ? 'att-present' : r.status === 'absent' ? 'att-absent' : '';
+        const stars = r.rating ? ' ★'.repeat(r.rating) : '';
         return `<div class="attendance-row">
           <span class="att-date">${d}</span>
-          <span class="att-status ${cls}">${r.status||'—'}</span>
+          <span class="att-status ${cls}">${r.status||'—'}${stars}</span>
           <span class="att-note">${r.notes||''}</span>
         </div>`;
       }).join('')
