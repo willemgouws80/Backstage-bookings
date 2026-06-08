@@ -3019,7 +3019,7 @@ async function loadPracticeSessions(email, idx) {
           '<span style="font-size:.7rem;opacity:.5;margin-left:auto;white-space:nowrap">'+d+'</span></div>';
       }).join('');
   } catch(e) {
-    container.innerHTML = '<div style="font-size:.85rem;color:var(--danger)">Could not load practice data</div>';
+    container.innerHTML = '<div style="font-size:.85rem;color:var(--danger)">Could not load practice data: ' + e.message + '</div>';
   }
 }
 
