@@ -550,7 +550,9 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
           <label class="toggle"><input type="checkbox" id="yocoEnabled" checked><span class="toggle-slider"></span></label>
         </div>
         <div class="fg" style="margin-top:1rem"><label>Yoco Public Key</label><input type="text" id="yocoPublicKey" placeholder="pk_live_…"></div>
-        <div class="fg"><label>Yoco Secret Key</label><input type="password" id="yocoSecretKey" placeholder="sk_live_…"></div>
+        <div class="fg"><label>Yoco Secret Key</label><input type="password" id="yocoSecretKey" placeholder="sk_live_…">
+          <div class="hint">Stored in admin-only Firestore (not sent to customers). Also set via <code style="color:var(--gold)">firebase functions:secrets:set YOCO_SECRET_KEY</code> for server-side payment processing.</div>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">Stripe (Online Payments)</div>
@@ -1889,6 +1891,11 @@ async function loadPayments() {
     if (pay.eft)         { document.getElementById('eftEnabled').checked=!!pay.eft.enabled; }
     if (pay.cash)        { document.getElementById('cashEnabled').checked=!!pay.cash.enabled; }
     if (pay.cardMachine) { document.getElementById('cardMachineEnabled').checked=!!pay.cardMachine.enabled; }
+    // Load Yoco secret key from admin-only doc
+    const secretSnap = await getDoc(doc(db,'admin','yoco'));
+    if (secretSnap.exists() && secretSnap.data().secretKey) {
+      document.getElementById('yocoSecretKey').value = secretSnap.data().secretKey;
+    }
   } catch(e) {}
 }
 
@@ -1904,6 +1911,11 @@ window.savePayments = async function() {
     const ref=doc(db,'siteConfig','main');
     const snap=await getDoc(ref);
     await setDoc(ref,{...(snap.exists()?snap.data():{}),payments});
+    // Save Yoco secret key to admin-only doc (not exposed to public)
+    const secretKey = document.getElementById('yocoSecretKey').value;
+    if (secretKey) {
+      await setDoc(doc(db,'admin','yoco'), { secretKey });
+    }
     toast('Payment settings saved!','success');
   } catch(e) { toast('Save failed — check Firestore Rules','error'); showBanner(`Could not save payments: ${e.message}`); }
 };
@@ -2125,7 +2137,7 @@ async function renderCourseAttendance(courseId) {
       const a = d.data();
       if (a.courseId === courseId) {
         const key = `${a.studentEmail}__${a.sessionDate}`;
-        attRecords[key] = {id:d.id, status:a.status};
+        attRecords[key] = {id:d.id, status:a.status, rating:a.rating, notes:a.notes};
       }
     });
   } catch(e) { console.warn('Attendance records error:',e); }
@@ -2146,11 +2158,13 @@ async function renderCourseAttendance(courseId) {
       const key    = `${email}__${s.date}`;
       const record = attRecords[key];
       const status = record?.status || 'unmarked';
-      const icon   = status==='present' ? '✓' : status==='absent' ? '✗' : '·';
+      const rating = record?.rating || '';
+      const icon   = status==='present' ? (rating ? '★' : '✓') : status==='absent' ? '✗' : '·';
       const cls    = status==='present' ? 'att-present' : status==='absent' ? 'att-absent' : 'att-unmarked';
+      const titleExtra = rating ? ' ★ Rating: '+rating+'/5' : '';
       return `<td><button class="att-cell ${cls}"
         onclick="toggleAttendance('${email}','${s.date}','${courseId}','${record?.id||''}')"
-        title="${name} — ${s.date}">${icon}</button></td>`;
+        title="${name} — ${s.date}${titleExtra}">${icon}</button></td>`;
     }).join('');
     return `<tr>
       <td class="student-name-cell">${name}<div style="font-size:.75rem;color:var(--muted)">${email}</div></td>
@@ -2220,19 +2234,26 @@ window.toggleAttendance = async function(email, date, courseId, existingId) {
   const current = window._attRecords?.[key]?.status || 'unmarked';
   const next    = current === 'unmarked' ? 'present' : current === 'present' ? 'absent' : 'unmarked';
 
+  // If marking present, ask for rating
+  let ratingData = null;
+  if (next === 'present') {
+    const studentName = ((window._attEnrolled||[]).find(b => (b.email||b.id) === email)?.firstName||'').trim() || email;
+    ratingData = await window.showRatingModal(studentName);
+  }
+
   try {
+    const baseData = { courseId, studentEmail: email, sessionDate: date, status: next, updatedAt: new Date().toISOString() };
+    if (ratingData) { baseData.rating = ratingData.rating; baseData.notes = ratingData.notes; }
     if (existingId && next !== 'unmarked') {
-      await updateDoc(doc(db,'attendance',existingId), {status:next});
-      window._attRecords[key].status = next;
+      await updateDoc(doc(db,'attendance',existingId), baseData);
+      window._attRecords[key] = { ...window._attRecords[key], ...baseData };
     } else if (existingId && next === 'unmarked') {
       await deleteDoc(doc(db,'attendance',existingId));
       delete window._attRecords[key];
     } else if (next !== 'unmarked') {
-      const ref = await addDoc(collection(db,'attendance'), {
-        courseId, studentEmail:email, sessionDate:date, status:next, updatedAt:new Date().toISOString()
-      });
+      const ref = await addDoc(collection(db,'attendance'), baseData);
       if (!window._attRecords[key]) window._attRecords[key] = {};
-      window._attRecords[key] = {id:ref.id, status:next};
+      window._attRecords[key] = { id:ref.id, status:next, ...baseData };
     }
     // Refresh grid
     renderCourseAttendance(courseId);
@@ -2926,6 +2947,10 @@ function renderStudentsList(students) {
         </div>
         <textarea class="note-input" id="noteInput-${i}" placeholder="Add a progress note — what was covered, improvements, goals for next lesson…"></textarea>
         <button class="btn btn-gold btn-sm" onclick="addNote('${s.email}', ${i})">Save Note</button>
+        <div style="margin-top:1.5rem;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Practice Log <span style="text-transform:none;color:var(--muted);font-size:.65rem">(auto-logged by student)</span></div>
+        <div class="practice-log" id="practiceLog-${i}">
+          <div style="font-size:.85rem;color:var(--muted)">Loading practice data…</div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -2941,7 +2966,10 @@ window.toggleStudent = function(id) {
     // Load notes for this student
     const idx = id.replace('s','');
     const student = window._students?.[idx];
-    if (student) loadNotes(student.email, idx);
+    if (student) {
+      loadNotes(student.email, idx);
+      loadPracticeSessions(student.email, idx);
+    }
   }
 };
 
@@ -2967,6 +2995,31 @@ async function loadNotes(email, idx) {
       </div>`).join('');
   } catch(e) {
     container.innerHTML = '<div style="font-size:.85rem;color:var(--muted)">Could not load notes</div>';
+  }
+}
+
+async function loadPracticeSessions(email, idx) {
+  const container = document.getElementById(`practiceLog-${idx}`);
+  try {
+    const snap = await getDocs(query(collection(db,'practiceSessions'), where('email','==',email), orderBy('createdAt','desc')));
+    const sessions = [];
+    snap.forEach(d => sessions.push({id:d.id,...d.data()}));
+    if (!sessions.length) {
+      container.innerHTML = '<div style="font-size:.85rem;color:var(--muted)">No practice sessions logged yet.</div>';
+      return;
+    }
+    const totalMin = sessions.reduce((s,p) => s + (p.minutes||0), 0);
+    container.innerHTML = '<div style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem">Total: <strong style="color:var(--gold)">'+totalMin+' min</strong> across '+sessions.length+' session'+(sessions.length===1?'':'s')+'</div>' +
+      sessions.slice(0,20).map(s => {
+        const d = s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        return '<div style="display:flex;gap:.75rem;align-items:baseline;padding:.35rem 0;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)">' +
+          '<span style="color:var(--gold);font-weight:500;white-space:nowrap">'+(s.minutes||0)+' min</span>' +
+          '<span>'+(s.title||'Practice')+'</span>' +
+          (s.notes?'<span style="opacity:.6">— '+s.notes+'</span>':'') +
+          '<span style="font-size:.7rem;opacity:.5;margin-left:auto;white-space:nowrap">'+d+'</span></div>';
+      }).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="font-size:.85rem;color:var(--danger)">Could not load practice data</div>';
   }
 }
 
@@ -4058,6 +4111,21 @@ setInterval(async () => {
 #chat-input-wrap button{padding:.6rem 1rem;border-radius:6px;border:none;background:var(--gold);color:var(--black);font-weight:600;cursor:pointer;font-family:inherit;font-size:.85rem}
 #chat-input-wrap button:disabled{opacity:.5;cursor:default}
 @media(max-width:480px){#chat-modal{width:calc(100vw - 2rem);right:1rem;bottom:5rem}}
+
+/* RATING MODAL */
+#ratingOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:none;justify-content:center;align-items:center}
+#ratingOverlay.show{display:flex}
+#ratingModal{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:2rem;width:90%;max-width:420px;position:relative}
+#ratingModal h3{font-size:1.1rem;margin-bottom:1.5rem;color:var(--text)}
+#ratingModal .close-modal{position:absolute;top:.75rem;right:1rem;cursor:pointer;color:var(--muted);font-size:1.2rem;background:none;border:none}
+#ratingModal .close-modal:hover{color:var(--text)}
+.rating-stars{display:flex;gap:.3rem;margin-bottom:1.25rem;font-size:1.8rem;cursor:pointer}
+.rating-stars span{color:var(--border);transition:color .2s}
+.rating-stars span.active{color:var(--gold)}
+.rating-stars span:hover{color:var(--gold-light)}
+
+/* PRACTICE LOG */
+.practice-log{max-height:300px;overflow-y:auto;background:rgba(0,0,0,.15);border-radius:4px;padding:.75rem}
 </style>
 
 <button id="chat-btn" onclick="chatToggle()" title="Ask AI assistant">💬</button>
@@ -4248,6 +4316,59 @@ window.chatSend = chatSend;
 function escapeHtml(s) {
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── RATING MODAL ──
+let _ratingResolve = null;
+const RATING_MODAL_HTML = `<div id="ratingOverlay">
+  <div id="ratingModal">
+    <button class="close-modal" onclick="closeRatingModal()">✕</button>
+    <h3 id="ratingModalTitle">Rate this lesson</h3>
+    <div class="rating-stars" id="ratingStars">
+      <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+    </div>
+    <textarea id="ratingNotes" placeholder="Lesson notes (optional)…" style="width:100%;padding:.65rem;background:var(--black);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:.85rem;min-height:60px;resize:vertical;font-family:inherit;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:.75rem;margin-top:1.25rem;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="closeRatingModal()">Skip</button>
+      <button class="btn btn-gold btn-sm" onclick="submitRating()" id="ratingSubmitBtn">Save Rating</button>
+    </div>
+  </div>
+</div>`;
+
+window.showRatingModal = function(studentName) {
+  return new Promise(resolve => {
+    _ratingResolve = resolve;
+    const overlay = document.getElementById('ratingOverlay');
+    if (!overlay) {
+      document.body.insertAdjacentHTML('beforeend', RATING_MODAL_HTML);
+    }
+    document.getElementById('ratingOverlay').classList.add('show');
+    document.getElementById('ratingModalTitle').textContent = 'Rate ' + (studentName||'this student');
+    // Reset
+    document.querySelectorAll('#ratingStars span').forEach(s => s.classList.remove('active'));
+    document.getElementById('ratingNotes').value = '';
+    document.getElementById('ratingStars').onclick = function(e) {
+      if (e.target.dataset.v) {
+        const val = parseInt(e.target.dataset.v);
+        document.querySelectorAll('#ratingStars span').forEach((s,i) => s.classList.toggle('active', i < val));
+      }
+    };
+  });
+};
+
+window.submitRating = function() {
+  const stars = document.querySelectorAll('#ratingStars span.active').length;
+  const notes = document.getElementById('ratingNotes').value.trim();
+  closeRatingModal();
+  if (_ratingResolve) {
+    _ratingResolve(stars ? { rating: stars, notes } : null);
+    _ratingResolve = null;
+  }
+};
+
+window.closeRatingModal = function() {
+  document.getElementById('ratingOverlay')?.classList.remove('show');
+  if (_ratingResolve) { _ratingResolve(null); _ratingResolve = null; }
+};
 </script>
 </body>
 </html>

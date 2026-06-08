@@ -5,23 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Backstage Portal</title>
 <link rel="icon" href="New_Backstage_logo.png" sizes="any">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Backstage">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#C9911A;--gold-light:#e8b040;--gold-dim:rgba(201,145,26,.12);--black:#090805;--surface:#111009;--surface2:#1a1810;--surface3:#232116;--border:rgba(201,145,26,.16);--text:#f0ead8;--muted:#7a7060;--danger:#c0392b;--success:#27ae60}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;opacity:.6}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;opacity:.4}
+
+/* GUITAR STRINGS BG */
+#bgStrings{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.5s ease}
+#bgStrings.loaded{opacity:1}
+#bgStrings svg{width:100%;height:100%}
+#bgStrings path{stroke:var(--gold);stroke-width:0.5;fill:none;opacity:0.04}
+
+/* FLOATING NOTES */
+.note-particle{position:fixed;pointer-events:none;z-index:1;font-size:1.1rem;opacity:0;animation:floatNote linear infinite}
+@keyframes floatNote{0%{transform:translateY(100vh) rotate(0deg);opacity:0}8%{opacity:0.035}92%{opacity:0.035}100%{transform:translateY(-5vh) rotate(360deg);opacity:0}}
 
 /* LOGIN SCREEN */
-#authScreen{position:fixed;inset:0;background:var(--black);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem}
+#authScreen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem}
 #authScreen.hidden{display:none}
-.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
+.auth-box{background:rgba(17,16,9,.75);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(201,145,26,.12);border-radius:6px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
 .auth-logo{width:80px;height:80px;object-fit:contain;margin-bottom:1.5rem}
 .auth-box h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;margin-bottom:.4rem}
 .auth-box h2 em{font-style:italic;color:var(--gold)}
 .auth-box p{font-size:.85rem;color:var(--muted);margin-bottom:2rem}
 .auth-error{color:var(--danger);font-size:.85rem;margin-bottom:1rem;min-height:1.2rem}
-.auth-tabs{display:flex;border:1px solid var(--border);border-radius:1px;overflow:hidden;margin-bottom:1.5rem}
+.auth-tabs{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:1.5rem}
 .auth-tab{flex:1;padding:.7rem .5rem;background:transparent;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-right:1px solid var(--border)}
 .auth-tab:last-child{border-right:none}
 .auth-tab.active{background:var(--gold-dim);color:var(--gold)}
@@ -30,7 +45,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .auth-switch a{color:var(--gold);cursor:pointer;text-decoration:underline}
 
 /* TOP BAR */
-.topbar{background:linear-gradient(90deg,#0f0d07,#1a1810);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar{background:linear-gradient(90deg,#0f0d07,#1a1810,#0f0d07);background-size:200% 100%;border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;animation:topbarShimmer 8s ease-in-out infinite}
+@keyframes topbarShimmer{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
 .tb-logo{display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--text)}
 .tb-logo img{width:40px;height:40px;object-fit:contain;border-radius:3px}
 .tb-logo-text{display:flex;flex-direction:column;line-height:1.1;text-align:left}
@@ -39,23 +55,25 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .tb-right{display:flex;align-items:center;gap:1rem}
 .tb-greeting{font-size:.82rem;color:var(--muted)}
 .tb-greeting strong{color:var(--text)}
-.tb-link{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:1px;transition:all .3s;background:transparent;cursor:pointer}
+.tb-link{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:4px;transition:all .3s;background:transparent;cursor:pointer}
 .tb-link:hover{color:var(--gold);border-color:var(--gold)}
 @media(max-width:640px){.tb-greeting{display:none}.topbar{padding:.7rem 1rem}}
 
 /* LAYOUT */
 .app{display:flex;flex:1;overflow:hidden}
-.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
+.sidebar{width:200px;background:rgba(17,16,9,.8);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-right:1px solid var(--border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
 .sidebar-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:.5rem 1.5rem;margin-top:1rem;display:block}
 .sidebar-label:first-child{margin-top:0}
-.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;color:var(--muted);cursor:pointer;transition:all .3s;font-size:.85rem;border-left:2px solid transparent;user-select:none}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;color:var(--muted);cursor:pointer;transition:all .3s;font-size:.85rem;border-left:2px solid transparent;user-select:none;position:relative}
 .nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
 .nav-item.active{color:var(--gold);background:var(--gold-dim);border-left-color:var(--gold)}
-.nav-item .icon{font-size:1rem;width:20px;text-align:center}
+.nav-item .icon{display:inline-block;transition:transform .15s ease}
+.nav-item:hover .icon{animation:stringPluck .45s ease}
+@keyframes stringPluck{0%{transform:scaleY(1)}15%{transform:scaleY(1.35) scaleX(.8)}35%{transform:scaleY(.85)}55%{transform:scaleY(1.08)}75%{transform:scaleY(.95)}100%{transform:scaleY(1)}}
 .main{flex:1;overflow-y:auto;padding:2rem}
-.panel{display:none}
-.panel.active{display:block;animation:fadeIn .3s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel{display:none;will-change:transform,opacity}
+.panel.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
 /* PAGE HEADER */
 .page-header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
@@ -64,12 +82,15 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 /* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:2rem}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.25rem 1rem;text-align:center}
+.stat{background:rgba(17,16,9,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1rem;text-align:center;position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease}
+.stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7}
 .stat-val{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--gold);line-height:1;margin-bottom:.25rem}
 .stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 
 /* CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.75rem;margin-bottom:1.5rem}
+.card{background:rgba(17,16,9,.6);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(201,145,26,.1);border-radius:6px;padding:1.75rem;margin-bottom:1.5rem;transition:box-shadow .3s ease}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 .card-title{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between}
 
 /* FORM */
@@ -206,9 +227,122 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .cc-legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
 @media(max-width:800px){.cc-voicing-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.cc-voicing-grid{grid-template-columns:1fr}}
+
+/* STRING SKELETONS */
+.skeleton-group{display:flex;flex-direction:column;gap:3px;padding:.8rem 0}
+.sk-string{height:2px;background:linear-gradient(90deg,transparent 0%,rgba(201,145,26,.15) 50%,transparent 100%);background-size:200% 100%;border-radius:1px;animation:stringShimmer 2s ease-in-out infinite}
+.sk-string:nth-child(1){width:100%}.sk-string:nth-child(2){width:92%}.sk-string:nth-child(3){width:96%}.sk-string:nth-child(4){width:88%}.sk-string:nth-child(5){width:94%}.sk-string:nth-child(6){width:86%}
+@keyframes stringShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* NEXT LESSON GLOW */
+.next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.1) 0%,var(--surface2) 100%);border:1px solid var(--gold);box-shadow:0 0 20px rgba(201,145,26,.05);border-radius:6px;padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+
+/* METRONOME BEAT BARS */
+.metro-beat{width:14px;min-height:6px;border-radius:2px;background:var(--surface3);transition:all .1s ease;align-self:center}
+.metro-beat.active{background:var(--gold);min-height:20px;box-shadow:0 0 8px rgba(201,145,26,.4)}
+
+/* TUNER CURSOR */
+#panel-tuner.active #tunerNeck{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L3 21L12 18L21 21Z' fill='%23C9911A' opacity='.9'/%3E%3C/svg%3E") 12 18, auto}
+
+/* LIST ITEMS GLASS */
+.list-item{background:rgba(26,24,16,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:transform .2s ease,box-shadow .2s ease}
+.list-item:hover{transform:translateX(3px);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+
+/* HERO GREETING */
+.hero-greeting{position:relative;overflow:hidden;border-radius:8px;margin-bottom:2rem;padding:2.5rem 2rem;min-height:160px}
+.hero-greeting::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,145,26,.08) 0%,transparent 50%,rgba(201,145,26,.04) 100%);border-radius:8px;z-index:0}
+.hero-greeting .hero-bg{position:absolute;inset:0;overflow:hidden;border-radius:8px;z-index:0}
+.hero-greeting .hero-bg svg{position:absolute;right:-20px;bottom:-20px;width:260px;height:260px;opacity:.08}
+.hero-greeting .hero-bg .hero-strings{position:absolute;right:20px;bottom:30px}
+.hero-greeting .hero-bg .hero-strings line{stroke:var(--gold);stroke-width:.5;opacity:.15}
+.hero-greeting .hero-content{position:relative;z-index:1}
+.hero-greeting .hero-time{font-size:.7rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
+.hero-greeting h1{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--text);margin:0}
+.hero-greeting h1 em{font-style:italic;color:var(--gold);font-weight:400}
+.hero-greeting .hero-sub{font-size:.85rem;color:var(--muted);margin-top:.5rem}
+
+/* PANEL ICONS */
+.panel-icon{display:inline-block;width:36px;height:36px;margin-right:10px;vertical-align:middle;position:relative;flex-shrink:0}
+.panel-icon svg{width:100%;height:100%}
+.panel-icon svg .icon-gold{fill:var(--gold);opacity:.7}
+.panel-icon svg .icon-muted{fill:var(--muted3, var(--muted));opacity:.4}
+.panel-icon.animated svg{animation:iconPulse 3s ease-in-out infinite}
+@keyframes iconPulse{0%,100%{opacity:1}50%{opacity:.6}}
+.page-header{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.page-header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;display:flex;align-items:center}
+
+/* STREAK FIRE */
+.streak-fire{display:inline-block;font-size:1.4rem;animation:fireFlicker 1.2s ease-in-out infinite;vertical-align:middle;margin-left:4px}
+@keyframes fireFlicker{0%,100%{transform:scale(1) rotate(0deg);opacity:1}25%{transform:scale(1.1) rotate(-5deg);opacity:.9}50%{transform:scale(.95) rotate(3deg);opacity:.95}75%{transform:scale(1.05) rotate(-2deg)}}
+
+/* CONFETTI CANVAS */
+#confettiCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
+
+/* EMPTY STATE SVG */
+.empty-state-svg{width:60px;height:60px;margin:0 auto .75rem;opacity:.3}
+.empty-state-svg svg{width:100%;height:100%}
+.empty-state-svg svg path,.empty-state-svg svg circle,.empty-state-svg svg line{stroke:var(--gold);fill:none;stroke-width:1.5}
+.empty-state-svg svg .fill{fill:var(--gold);opacity:.4}
+
+/* COUNT-UP */
+.count-up{display:inline-block}
+
+/* CHART BAR ANIMATION */
+.chart-bar{transition:height .6s cubic-bezier(.34,1.56,.64,1)!important}
+
+/* INSTRUMENT PARTICLES */
+.instrument-particle{position:fixed;pointer-events:none;z-index:1;opacity:0;animation:instrumentFloat linear infinite}
+@keyframes instrumentFloat{0%{transform:translateY(100vh) rotate(0deg) scale(.5);opacity:0}10%{opacity:.025}90%{opacity:.025}100%{transform:translateY(-10vh) rotate(360deg) scale(1);opacity:0}}
+
+/* ── DASHBOARD REDESIGN ── */
+.dash-hero{position:relative;overflow:hidden;border-radius:8px;margin-bottom:2rem;padding:3rem 2.5rem;min-height:260px;border:1px solid var(--border);background:radial-gradient(ellipse 90% 70% at 50% -10%,rgba(201,145,26,.12) 0%,transparent 65%),linear-gradient(rgba(9,8,5,.55),rgba(9,8,5,.7)),url('https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=1600&q=80');background-size:cover;background-position:center 25%}
+.dash-hero-bg{position:absolute;inset:0;overflow:hidden;border-radius:8px;z-index:0}
+.dash-hero-glow{position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(201,145,26,.08) 0%,transparent 70%);pointer-events:none}
+.dash-ring{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;border:1px solid rgba(201,145,26,.1);animation:dashBreathe 7s ease-in-out infinite;pointer-events:none}
+.dash-ring-2{width:500px;height:500px;top:-30px;border-color:rgba(201,145,26,.06);animation:dashBreathe 7s ease-in-out infinite .8s}
+.dash-ring-3{width:350px;height:350px;top:10px;border-color:rgba(201,145,26,.04);animation:dashBreathe 7s ease-in-out infinite 1.6s}
+@keyframes dashBreathe{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.02)}}
+.dash-hero-content{position:relative;z-index:1}
+.dash-hero-time{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.dash-hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:300;color:var(--text);margin:0 0 .3rem;line-height:1.1}
+.dash-hero-title em{font-style:italic;color:var(--gold)}
+.dash-hero-sub{font-size:.9rem;color:var(--muted);margin-bottom:1.5rem}
+.dash-hero-stats{display:flex;gap:2rem}
+.dash-hero-stat{text-align:center;position:relative}
+.dash-hero-stat+.dash-hero-stat::before{content:'';position:absolute;left:-1rem;top:50%;transform:translateY(-50%);width:1px;height:28px;background:var(--border)}
+.dash-hero-stat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:var(--gold);line-height:1}
+.dash-hero-stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* Quick action cards */
+.dash-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.dash-action-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1.25rem;text-align:center;transition:all .25s ease;position:relative;overflow:hidden}
+.dash-action-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
+.dash-action-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.3);border-color:rgba(201,145,26,.3)}
+.dash-action-card:hover::before{opacity:.8}
+.dash-action-icon{font-size:2.2rem;margin-bottom:.6rem;display:block}
+.dash-action-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400;color:var(--text);margin-bottom:.2rem}
+.dash-action-desc{font-size:.78rem;color:var(--muted);line-height:1.4}
+
+/* Compact stats row */
+.dash-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-bottom:2rem}
+.dash-stat-item{background:rgba(17,16,9,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;text-align:center}
+.dash-stat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;color:var(--text);line-height:1.2}
+.dash-stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 </style>
 </head>
 <body>
+
+<!-- ANIMATED GUITAR STRINGS BG -->
+<div id="bgStrings">
+  <svg viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice">
+    <path d="M-10,100 Q200,100 410,100"><animate attributeName="d" dur="5s" repeatCount="indefinite" values="M-10,100 Q200,100 410,100;M-10,100 Q200,97 410,100;M-10,100 Q200,103 410,100;M-10,100 Q200,100 410,100"/></path>
+    <path d="M-10,160 Q200,160 410,160"><animate attributeName="d" dur="4.2s" repeatCount="indefinite" values="M-10,160 Q200,160 410,160;M-10,160 Q200,157 410,160;M-10,160 Q200,163 410,160;M-10,160 Q200,160 410,160"/></path>
+    <path d="M-10,220 Q200,220 410,220"><animate attributeName="d" dur="6s" repeatCount="indefinite" values="M-10,220 Q200,220 410,220;M-10,220 Q200,218 410,220;M-10,220 Q200,222 410,220;M-10,220 Q200,220 410,220"/></path>
+    <path d="M-10,280 Q200,280 410,280"><animate attributeName="d" dur="3.8s" repeatCount="indefinite" values="M-10,280 Q200,280 410,280;M-10,280 Q200,277 410,280;M-10,280 Q200,283 410,280;M-10,280 Q200,280 410,280"/></path>
+    <path d="M-10,340 Q200,340 410,340"><animate attributeName="d" dur="4.5s" repeatCount="indefinite" values="M-10,340 Q200,340 410,340;M-10,340 Q200,337 410,340;M-10,340 Q200,343 410,340;M-10,340 Q200,340 410,340"/></path>
+    <path d="M-10,400 Q200,400 410,400"><animate attributeName="d" dur="5.5s" repeatCount="indefinite" values="M-10,400 Q200,400 410,400;M-10,400 Q200,397 410,400;M-10,400 Q200,403 410,400;M-10,400 Q200,400 410,400"/></path>
+  </svg>
+</div>
 
 <!-- AUTH SCREEN -->
 <div id="authScreen">
@@ -271,12 +405,22 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   <aside class="sidebar" id="sidebar">
     <span class="sidebar-label">Overview</span>
     <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span> Dashboard</div>
+    <span class="sidebar-label">🎸 Tools</span>
+    <div class="nav-item" onclick="showPanel('practice',this)"><span class="icon">⏱</span> Practice</div>
+    <div class="nav-item" onclick="showPanel('metronome',this)"><span class="icon">🎯</span> Metronome</div>
+    <div class="nav-item" onclick="showPanel('chord-practice',this)"><span class="icon">🔄</span> Chord Practice</div>
+    <div class="nav-item" id="nav-chord-creator" onclick="showPanel('chord-creator',this)" style="display:none"><span class="icon">🎸</span> Chord Creator</div>
+    <div class="nav-item" onclick="showPanel('ear-training',this)"><span class="icon">👂</span> Ear Training</div>
+    <div class="nav-item" onclick="showPanel('tuner',this)"><span class="icon">🎛️</span> Tuner</div>
+    <div class="nav-item" onclick="showPanel('repertoire',this)"><span class="icon">📋</span> Repertoire</div>
+    <div class="nav-item" onclick="showPanel('achievements',this)"><span class="icon">🏆</span> Achievements</div>
+    <span class="sidebar-label">📋 Info</span>
     <div class="nav-item" onclick="showPanel('lessons',this)"><span class="icon">🎵</span> My Lessons</div>
+    <div class="nav-item" onclick="showPanel('progress',this)"><span class="icon">📈</span> Progress</div>
     <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
     <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
     <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon">📂</span> Resources</div>
-    <div class="nav-item" id="nav-chord-creator" onclick="showPanel('chord-creator',this)" style="display:none"><span class="icon">🎸</span> Chord Creator</div>
-    <span class="sidebar-label">Account</span>
+    <span class="sidebar-label">👤 Account</span>
     <div class="nav-item" onclick="showPanel('profile',this)"><span class="icon">👤</span> My Profile</div>
   </aside>
 
@@ -285,17 +429,65 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
     <!-- DASHBOARD -->
     <div class="panel active" id="panel-dashboard">
-      <div class="page-header"><h1>Welcome back, <em id="dashName">Student</em></h1></div>
-      <div id="nextLessonBlock"></div>
-      <div class="stats-grid">
-        <div class="stat"><div class="stat-val" id="statUpcoming">—</div><div class="stat-lbl">Upcoming Lessons</div></div>
-        <div class="stat"><div class="stat-val" id="statCompleted">—</div><div class="stat-lbl">Completed</div></div>
-        <div class="stat"><div class="stat-val" id="statAttendance">—</div><div class="stat-lbl">Attendance Rate</div></div>
-        <div class="stat"><div class="stat-val" id="statDue">—</div><div class="stat-lbl">Amount Due</div></div>
+      <!-- Hero -->
+      <div class="dash-hero" id="dashHero">
+        <div class="dash-hero-bg">
+          <div class="dash-ring"></div>
+          <div class="dash-ring dash-ring-2"></div>
+          <div class="dash-ring dash-ring-3"></div>
+          <div class="dash-hero-glow"></div>
+        </div>
+        <div class="dash-hero-content">
+          <div class="dash-hero-time" id="heroTimeOfDay">Good morning</div>
+          <h1 class="dash-hero-title">Hey <em id="dashName">Student</em></h1>
+          <p class="dash-hero-sub" id="heroMotivation">Ready to make music today?</p>
+          <div class="dash-hero-stats">
+            <div class="dash-hero-stat" id="dashStreakBlock"><span class="dash-hero-stat-num" id="dashStreakNum">0</span><span class="dash-hero-stat-lbl">Day Streak</span></div>
+            <div class="dash-hero-stat"><span class="dash-hero-stat-num" id="dashSessionsNum">0</span><span class="dash-hero-stat-lbl">Sessions</span></div>
+            <div class="dash-hero-stat"><span class="dash-hero-stat-num" id="dashLevelNum">1</span><span class="dash-hero-stat-lbl">Level</span></div>
+          </div>
+        </div>
       </div>
+
+      <!-- Quick Actions -->
+      <div class="dash-actions">
+        <div class="dash-action-card" onclick="showPanel('practice')" style="cursor:pointer">
+          <div class="dash-action-icon">⏱</div>
+          <div class="dash-action-title">Practice</div>
+          <div class="dash-action-desc">Start a practice session</div>
+        </div>
+        <div class="dash-action-card" onclick="showPanel('tuner')" style="cursor:pointer">
+          <div class="dash-action-icon">🎛️</div>
+          <div class="dash-action-title">Tune Guitar</div>
+          <div class="dash-action-desc">Get in tune before you play</div>
+        </div>
+        <div class="dash-action-card" onclick="showPanel('ear-training')" style="cursor:pointer">
+          <div class="dash-action-icon">👂</div>
+          <div class="dash-action-title">Ear Training</div>
+          <div class="dash-action-desc">Train your musical ear</div>
+        </div>
+        <div class="dash-action-card" onclick="showPanel('chord-practice')" style="cursor:pointer">
+          <div class="dash-action-icon">🔄</div>
+          <div class="dash-action-title">Chord Practice</div>
+          <div class="dash-action-desc">Master your chord changes</div>
+        </div>
+      </div>
+
+      <!-- Next Lesson -->
+      <div id="nextLessonBlock"></div>
+
+      <!-- Stats: simple compact row -->
+      <div class="dash-stats-row">
+        <div class="dash-stat-item"><span class="dash-stat-num count-up" id="statUpcoming">—</span><span class="dash-stat-lbl">Upcoming</span></div>
+        <div class="dash-stat-item"><span class="dash-stat-num count-up" id="statCompleted">—</span><span class="dash-stat-lbl">Completed</span></div>
+        <div class="dash-stat-item"><span class="dash-stat-num" id="statAttendance">—</span><span class="dash-stat-lbl">Attendance</span></div>
+        <div class="dash-stat-item"><span class="dash-stat-num" id="statDue">—</span><span class="dash-stat-lbl">Due</span></div>
+      </div>
+
+      <!-- Recent Activity -->
       <div class="card">
-        <div class="card-title">Recent Lessons</div>
-        <div id="recentLessons"><div class="loading-text">Loading your lessons…</div></div>
+        <div class="card-title">Recent Practice</div>
+        <div id="recentPracticeDash"><div class="loading-text">Loading…</div></div>
       </div>
       <div id="announcementsBlock" style="display:none"></div>
     </div>
@@ -303,7 +495,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <!-- MY LESSONS -->
     <div class="panel" id="panel-lessons">
       <div class="page-header">
-        <h1>My <em>Lessons</em></h1>
+        <h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" class="icon-gold" opacity=".2"/><line x1="4" y1="4" x2="4" y2="20" stroke="var(--gold)" stroke-width="1.5"/><circle cx="16" cy="16" r="3" class="icon-gold" opacity=".4"/><path d="M16 14v4l3-2z" fill="var(--gold)" opacity=".4"/><line x1="8" y1="8" x2="15" y2="8" stroke="var(--muted3)" stroke-width="1"/><line x1="8" y1="12" x2="13" y2="12" stroke="var(--muted3)" stroke-width="1"/></svg></span>My <em>Lessons</em></h1>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
           <button class="btn btn-outline btn-sm" onclick="filterLessons('all')">All</button>
           <button class="btn btn-outline btn-sm" onclick="filterLessons('upcoming')">Upcoming</button>
@@ -319,7 +511,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
     <!-- ATTENDANCE -->
     <div class="panel" id="panel-attendance">
-      <div class="page-header"><h1>My <em>Attendance</em></h1></div>
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12a6 6 0 0112 0" stroke="var(--gold)" stroke-width="1.5" class="icon-gold" opacity=".4"/><path d="M9 12a3 3 0 016 0" stroke="var(--gold)" stroke-width="1.5" class="icon-gold" opacity=".6"/><circle cx="12" cy="12" r="1" class="icon-gold"/><line x1="12" y1="3" x2="12" y2="5" stroke="var(--muted3)" stroke-width="1"/><line x1="19" y1="5" x2="17.5" y2="6.5" stroke="var(--muted3)" stroke-width="1"/><line x1="5" y1="5" x2="6.5" y2="6.5" stroke="var(--muted3)" stroke-width="1"/></svg></span>My <em>Attendance</em></h1></div>
       <div class="card">
         <div class="card-title">
           Attendance Record
@@ -331,7 +523,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
     <!-- INVOICES -->
     <div class="panel" id="panel-invoices">
-      <div class="page-header"><h1>My <em>Invoices</em></h1></div>
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" class="icon-gold" opacity=".3"/><line x1="2" y1="10" x2="22" y2="10" stroke="var(--gold)" stroke-width="1.5"/><line x1="6" y1="15" x2="10" y2="15" stroke="var(--muted3)" stroke-width="1.2"/><line x1="6" y1="17" x2="8" y2="17" stroke="var(--muted3)" stroke-width="1.2"/></svg></span>My <em>Invoices</em></h1></div>
       <div class="card">
         <div class="card-title">
           Payment History
@@ -343,7 +535,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
     <!-- RESOURCES -->
     <div class="panel" id="panel-resources">
-      <div class="page-header"><h1>My <em>Resources</em></h1></div>
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M4 3h16v18H4z" class="icon-gold" opacity=".2"/><line x1="4" y1="3" x2="4" y2="21" stroke="var(--gold)" stroke-width="1.5"/><line x1="8" y1="7" x2="16" y2="7" stroke="var(--muted3)" stroke-width="1"/><line x1="8" y1="11" x2="14" y2="11" stroke="var(--muted3)" stroke-width="1"/><line x1="8" y1="15" x2="12" y2="15" stroke="var(--muted3)" stroke-width="1"/></svg></span>My <em>Resources</em></h1></div>
       <div class="card">
         <div class="card-title">
           Songs &amp; Worksheets
@@ -355,7 +547,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
     <!-- CHORD CREATOR -->
     <div class="panel" id="panel-chord-creator">
-      <div class="page-header"><h1>Chord <em>Creator</em></h1></div>
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="6" class="icon-gold" opacity=".3"/><circle cx="12" cy="10" r="2" class="icon-gold"/><line x1="6" y1="18" x2="18" y2="18" stroke="var(--muted3)" stroke-width="1.2"/><line x1="4" y1="21" x2="20" y2="21" stroke="var(--muted3)" stroke-width="1"/><circle cx="8" cy="10" r="1" fill="var(--gold)" opacity=".4"/><circle cx="16" cy="10" r="1" fill="var(--gold)" opacity=".4"/></svg></span>Chord <em>Creator</em></h1></div>
 
       <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;background:var(--surface);border:1px solid var(--border);padding:1.25rem;border-radius:2px;margin-bottom:1.5rem">
         <div class="fg" style="margin:0;flex:1;min-width:140px">
@@ -408,9 +600,208 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       <div id="ccResult"></div>
     </div>
 
+    <!-- PRACTICE ASSISTANT -->
+    <div class="panel" id="panel-practice">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" class="icon-gold"/><line x1="12" y1="9" x2="12" y2="13" stroke="var(--gold)" stroke-width="1.5"/><line x1="12" y1="13" x2="15" y2="15" stroke="var(--gold)" stroke-width="1.5"/><line x1="12" y1="3" x2="12" y2="5" stroke="var(--muted3)" stroke-width="1.5"/><line x1="6" y1="5" x2="7.5" y2="6.5" stroke="var(--muted3)" stroke-width="1.5"/><line x1="18" y1="5" x2="16.5" y2="6.5" stroke="var(--muted3)" stroke-width="1.5"/></svg></span>Practice <em>Assistant</em></h1></div>
+      <div class="card" style="text-align:center">
+        <div class="card-title">Timer</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:300;color:var(--gold);margin:1rem 0" id="practiceTimer">00:00</div>
+        <div class="btn-row" style="justify-content:center">
+          <button class="btn btn-gold" id="practiceStartBtn" onclick="togglePracticeTimer()">▶ Start</button>
+          <button class="btn btn-outline" id="practiceResetBtn" onclick="resetPracticeTimer()">↺ Reset</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Log This Session</div>
+        <div class="fg"><label>What did you practice?</label><input type="text" id="practiceTitle" placeholder="e.g. Scales, Chord progression"></div>
+        <div class="fg"><label>Notes</label><textarea id="practiceNotes" rows="2" placeholder="How did it go? What needs work?"></textarea></div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">
+          <span style="font-size:.82rem;color:var(--muted)">Duration: <strong id="practiceLogDuration">0 min</strong></span>
+        </div>
+        <button class="btn btn-gold" onclick="logPracticeSession()">✓ Log Session</button>
+      </div>
+      <div class="card">
+        <div class="card-title">History</div>
+        <div id="practiceHistory"><div class="loading-text">Loading practice sessions…</div></div>
+      </div>
+    </div>
+
+    <!-- PROGRESS TRACKING -->
+    <div class="panel" id="panel-progress">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><line x1="4" y1="20" x2="20" y2="20" stroke="var(--muted3)" stroke-width="1.5"/><rect x="6" y="12" width="3" height="8" class="icon-gold" rx=".5"/><rect x="11" y="7" width="3" height="13" class="icon-gold" rx=".5" opacity=".6"/><rect x="16" y="10" width="3" height="10" class="icon-gold" rx=".5" opacity=".4"/></svg></span>My <em>Progress</em></h1></div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val" id="progPracticeTotal">—</div><div class="stat-lbl">Total Practice Sessions</div></div>
+        <div class="stat"><div class="stat-val" id="progPracticeMinutes">—</div><div class="stat-lbl">Total Practice Minutes</div></div>
+        <div class="stat"><div class="stat-val" id="progAttendanceRate">—</div><div class="stat-lbl">Attendance Rate</div></div>
+        <div class="stat"><div class="stat-val" id="progLessonsCompleted">—</div><div class="stat-lbl">Lessons Completed</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Practice Minutes per Week</div>
+        <div id="progressChart" style="min-height:220px"><div class="loading-text">Loading chart…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Teacher Ratings</div>
+        <div id="ratingsList">${emptyStateSVG('star','No ratings yet. Ratings appear after attended lessons.')}</div>
+      </div>
+    </div>
+
+    <!-- METRONOME -->
+    <div class="panel" id="panel-metronome">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="3" width="12" height="3" rx="1" class="icon-gold" opacity=".5"/><line x1="12" y1="6" x2="12" y2="20" stroke="var(--gold)" stroke-width="1.5"/><circle cx="12" cy="20" r="2.5" class="icon-gold"/><line x1="12" y1="14" x2="16" y2="16" stroke="var(--muted3)" stroke-width="1" opacity=".5"/></svg></span>Metro<em>nome</em></h1></div>
+      <div class="card" style="text-align:center">
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:.5rem;margin:.5rem 0">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:300;color:var(--gold)" id="metroBpmDisplay">120</div>
+          <input type="number" id="metroBpmInput" min="20" max="280" value="120" onchange="document.getElementById('metroBpm').value=this.value;metroUpdateBpm(this.value)" style="width:65px;font-size:1.1rem;padding:.25rem;background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text);text-align:center">
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-top:-.3rem">BPM</div>
+        <input type="range" id="metroBpm" min="20" max="280" value="120" oninput="metroUpdateBpm(this.value)" style="width:80%;max-width:300px;margin:.75rem auto;display:block;accent-color:var(--gold)">
+        <div class="two-col" style="max-width:300px;margin:0 auto">
+          <div class="fg"><label>Time Sig</label><select id="metroTimeSig" onchange="metroUpdateTimeSig()"><option value="4">4/4</option><option value="3">3/4</option><option value="2">2/4</option><option value="6">6/8</option><option value="5">5/4</option><option value="7">7/8</option></select></div>
+          <div class="fg"><label>Subdivision</label><select id="metroSub" onchange="metroStop()"><option value="1">None</option><option value="2">Eighth</option><option value="3">Triplet</option><option value="4">Sixteenth</option></select></div>
+        </div>
+        <div style="display:flex;gap:4px;justify-content:center;align-items:flex-end;margin:1rem 0;min-height:24px" id="metroBeatStrip"></div>
+        <div class="btn-row" style="justify-content:center">
+          <button class="btn btn-gold" id="metroStartBtn" onclick="metroToggle()">▶ Start</button>
+          <button class="btn btn-outline" onclick="metroStop()">⏹ Stop</button>
+          <button class="btn btn-outline" onclick="metroTapTempo()">👆 Tap Tempo</button>
+        </div>
+        <div style="margin-top:1rem;font-size:.82rem;color:var(--muted)" id="metroSessionTime">Session: 0:00</div>
+      </div>
+    </div>
+
+    <!-- CHORD PRACTICE -->
+    <div class="panel" id="panel-chord-practice">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="6" class="icon-gold" opacity=".3"/><circle cx="12" cy="10" r="2" class="icon-gold"/><line x1="6" y1="18" x2="18" y2="18" stroke="var(--muted3)" stroke-width="1.2"/><line x1="4" y1="21" x2="20" y2="21" stroke="var(--muted3)" stroke-width="1"/><circle cx="8" cy="10" r="1" fill="var(--gold)" opacity=".4"/><circle cx="16" cy="10" r="1" fill="var(--gold)" opacity=".4"/></svg></span>Chord <em>Practice</em></h1></div>
+      <div class="card" style="text-align:center">
+        <div class="card-title">Settings</div>
+        <div class="two-col">
+          <div class="fg"><label>Key</label><select id="cpKey"><option>C</option><option>G</option><option>D</option><option>A</option><option>E</option><option>F</option><option>Bb</option><option>Eb</option></select></div>
+          <div class="fg"><label>Progression</label><select id="cpProgression"><option value="I-IV-V">I-IV-V</option><option value="I-V-vi-IV">I-V-vi-IV</option><option value="I-vi-IV-V">I-vi-IV-V</option><option value="ii-V-I">ii-V-I</option><option value="I-IV-vi-V">I-IV-vi-V</option><option value="I-iii-IV-V">I-iii-IV-V</option><option value="custom">Custom</option></select></div>
+        </div>
+        <div class="fg" id="cpCustomRow" style="display:none"><label>Custom Chords (Roman numerals, comma-separated)</label><input type="text" id="cpCustom" placeholder="I, IV, V, I"></div>
+        <div class="two-col">
+          <div class="fg"><label>Beats per Chord</label><input type="number" id="cpBeats" value="4" min="1" max="16"></div>
+          <div class="fg"><label>Strum Pattern</label><select id="cpStrum">
+            <option value="quarters">Quarter Notes (↓ ↓ ↓ ↓)</option>
+            <option value="eighths">8th Notes (↓↑↓↑↓↑↓↑)</option>
+            <option value="rock1">Basic Rock (↓ ↓ ↑ ↓)</option>
+            <option value="rock2">Rock with Up (↓ ↓↑ ↑ ↓)</option>
+            <option value="folk">Folk (↓ ↓↑ ↓ ↑)</option>
+            <option value="reggae">Reggae/Ska (↑↓↑↓↑↓↑↓)</option>
+            <option value="waltz">Waltz 3/4 (↓ ↓ ↓)</option>
+          </select></div>
+        </div>
+        <div style="margin:1rem 0;min-height:1.5rem;font-size:.82rem;color:var(--muted)" id="cpCountIn"></div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:300;color:var(--gold);margin:.5rem 0;min-height:3.5rem" id="cpCurrentChord">—</div>
+        <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem" id="cpChordDiagram"></div>
+        <div id="cpStrumDisplay" style="display:flex;gap:2px;justify-content:center;margin:1rem 0;min-height:36px"></div>
+        <div class="btn-row" style="justify-content:center">
+          <button class="btn btn-gold" id="cpStartBtn" onclick="cpToggle()">▶ Start Progression</button>
+          <button class="btn btn-outline" onclick="cpStop()">⏹ Stop</button>
+        </div>
+        <div style="margin-top:.75rem;font-size:.82rem;color:var(--muted)" id="cpStatus"></div>
+      </div>
+    </div>
+
+    <!-- EAR TRAINING -->
+    <div class="panel" id="panel-ear-training">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12a6 6 0 0112 0" stroke="var(--gold)" stroke-width="1.5" class="icon-gold" opacity=".4"/><path d="M9 12a3 3 0 016 0" stroke="var(--gold)" stroke-width="1.5" class="icon-gold" opacity=".6"/><circle cx="12" cy="12" r="1" class="icon-gold"/><line x1="12" y1="3" x2="12" y2="5" stroke="var(--muted3)" stroke-width="1"/><line x1="19" y1="5" x2="17.5" y2="6.5" stroke="var(--muted3)" stroke-width="1"/><line x1="5" y1="5" x2="6.5" y2="6.5" stroke="var(--muted3)" stroke-width="1"/></svg></span>Ear <em>Training</em></h1></div>
+      <div class="card" style="text-align:center">
+        <div class="card-title">Interval Quiz</div>
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Hear two notes. Which interval is it?</div>
+        <button class="btn btn-gold" id="etPlayBtn" onclick="etPlayInterval()" style="font-size:1.2rem;padding:1rem 2rem">▶ Play</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;max-width:320px;margin:1rem auto">
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('m2')">Minor 2nd</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('M2')">Major 2nd</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('m3')">Minor 3rd</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('M3')">Major 3rd</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('P4')">Perfect 4th</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('TT')">Tritone</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('P5')">Perfect 5th</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('m7')">Minor 7th</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('M7')">Major 7th</button>
+          <button class="btn btn-outline btn-sm" onclick="etAnswer('P8')">Octave</button>
+        </div>
+        <div style="display:flex;justify-content:center;gap:2rem;font-size:.9rem;margin-top:.75rem">
+          <span>Score: <strong id="etScore" style="color:var(--gold)">0</strong></span>
+          <span>Streak: <strong id="etStreak" style="color:var(--gold)">0</strong></span>
+        </div>
+        <div id="etResult" style="margin-top:.5rem;min-height:1.5rem;font-size:.9rem"></div>
+      </div>
+    </div>
+
+    <!-- TUNER -->
+    <div class="panel" id="panel-tuner">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" class="icon-gold" opacity=".3"/><circle cx="12" cy="12" r="4" class="icon-gold" opacity=".5"/><circle cx="12" cy="12" r="1.5" class="icon-gold"/><line x1="12" y1="5" x2="12" y2="8" stroke="var(--muted3)" stroke-width="1.2"/><line x1="5" y1="12" x2="8" y2="12" stroke="var(--muted3)" stroke-width="1.2"/></svg></span><em>Tuner</em></h1></div>
+      <div class="card" style="text-align:center">
+        <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;margin-bottom:.25rem">
+          <select id="tunerStringSelect" style="flex:1;max-width:170px">
+            <option value="auto">Auto Detect</option>
+            <option value="6">String 6 — E</option>
+            <option value="5">String 5 — A</option>
+            <option value="4">String 4 — D</option>
+            <option value="3">String 3 — G</option>
+            <option value="2">String 2 — B</option>
+            <option value="1">String 1 — e</option>
+          </select>
+          <div style="font-size:2rem;font-weight:700;color:var(--gold);font-family:'Cormorant Garamond',serif;min-width:65px" id="tunerNote">—</div>
+        </div>
+        <div id="tunerNeck" style="margin:.5rem 0;padding:6px 8px;background:var(--surface3);border-radius:8px;border:1px solid var(--border);min-height:160px"></div>
+        <div id="tunerFrets" style="font-size:.65rem;color:var(--muted3);display:flex;justify-content:space-around;padding:0 0 0 36px;margin-top:-.35rem;margin-bottom:.5rem"></div>
+        <div style="position:relative;height:48px;margin:.25rem 0 0;background:var(--surface3);border-radius:8px;overflow:hidden" id="tunerGauge">
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--muted)"></div>
+          <div id="tunerNeedle" style="position:absolute;left:50%;top:0;bottom:0;width:4px;background:var(--gold);border-radius:2px;transition:left .06s ease"></div>
+          <div style="position:absolute;left:calc(50% - 30px);top:2px;width:60px;height:calc(100% - 4px);border:2px solid rgba(212,175,55,.2);border-radius:4px"></div>
+          <div style="position:absolute;left:4px;bottom:3px;font-size:.7rem;color:var(--muted)">♭ 50¢</div>
+          <div style="position:absolute;right:4px;bottom:3px;font-size:.7rem;color:var(--muted)">50¢ ♯</div>
+        </div>
+        <div style="font-size:.85rem;color:var(--muted);margin-top:.4rem;min-height:1.2rem" id="tunerCents"></div>
+        <div style="font-size:.78rem;color:var(--muted3);min-height:.9rem" id="tunerFreq"></div>
+        <div class="btn-row" style="justify-content:center;margin-top:.5rem">
+          <button class="btn btn-gold" id="tunerBtn" onclick="tunerToggle()">🎤 Start Tuner</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPERTOIRE -->
+    <div class="panel" id="panel-repertoire">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M4 3h16v18H4z" class="icon-gold" opacity=".2"/><line x1="4" y1="3" x2="4" y2="21" stroke="var(--gold)" stroke-width="1.5"/><circle cx="16" cy="16" r="3" class="icon-gold" opacity=".4"/><path d="M16 14v4l3-2z" fill="var(--gold)" opacity=".4"/><line x1="8" y1="7" x2="14" y2="7" stroke="var(--muted3)" stroke-width="1"/><line x1="8" y1="10" x2="13" y2="10" stroke="var(--muted3)" stroke-width="1"/></svg></span>My <em>Repertoire</em></h1></div>
+      <div class="card">
+        <div class="card-title">Add Song</div>
+        <div class="two-col">
+          <div class="fg"><label>Song Title</label><input type="text" id="repTitle" placeholder="Song name"></div>
+          <div class="fg"><label>Artist</label><input type="text" id="repArtist" placeholder="Artist"></div>
+        </div>
+        <div class="two-col">
+          <div class="fg"><label>Status</label><select id="repStatus"><option value="learning">Learning</option><option value="polishing">Polishing</option><option value="ready">Performance Ready</option></select></div>
+          <div class="fg"><label>Key</label><input type="text" id="repKey" placeholder="e.g. C, Am"></div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="repAdd()">+ Add Song</button>
+      </div>
+      <div class="card">
+        <div class="card-title">My Songs</div>
+        <div id="repertoireList"><div class="loading-text">Loading repertoire…</div></div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS -->
+    <div class="panel" id="panel-achievements">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3 6 6.5.7-4.8 4.5 1.1 6.5L12 16.5 6.2 19.7l1.1-6.5L2.5 8.7 9 8z" class="icon-gold"/></svg></span>My <em>Achievements</em></h1></div>
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+        <div class="stat"><div class="stat-val" id="achStreak">0</div><div class="stat-lbl">Day Streak</div></div>
+        <div class="stat"><div class="stat-val" id="achTotalSessions">0</div><div class="stat-lbl">Sessions</div></div>
+        <div class="stat"><div class="stat-val" id="achTotalMinutes">0</div><div class="stat-lbl">Minutes</div></div>
+        <div class="stat"><div class="stat-val" id="achLevel">1</div><div class="stat-lbl">Level</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Badges</div>
+        <div id="badgesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.75rem"></div>
+      </div>
+    </div>
+
     <!-- PROFILE -->
     <div class="panel" id="panel-profile">
-      <div class="page-header"><h1>My <em>Profile</em></h1></div>
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" class="icon-gold" opacity=".5"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="var(--gold)" stroke-width="1.5" class="icon-gold" opacity=".5"/><circle cx="12" cy="8" r="2" class="icon-gold"/><path d="M8 19c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="var(--gold)" stroke-width="1" fill="none"/></svg></span>My <em>Profile</em></h1></div>
       <div class="card">
         <div class="card-title">Personal Information</div>
         <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap">
@@ -456,7 +847,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, orderBy, onSnapshot, addDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, deleteDoc, orderBy, onSnapshot, addDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
@@ -601,7 +992,7 @@ async function loadResources() {
 function renderResources(items) {
   document.getElementById('resCount').textContent = items.length+' resource'+(items.length!==1?'s':'');
   const container = document.getElementById('resourcesList');
-  if (!items.length) { container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem 0">No resources available yet.</div>'; return; }
+  if (!items.length) { container.innerHTML = emptyStateSVG('note','No resources available yet.'); return; }
   container.innerHTML = items.map(r => {
     const url = r.fileUrl||r.fileURL||'#';
     const icon = r.fileType?.startsWith('video') ? '▶️' : r.fileType?.startsWith('audio') ? '🎵' : '📄';
@@ -616,8 +1007,6 @@ function renderResources(items) {
 // ── DATA LOADING ──
 async function loadStudentData() {
   const email = _currentUser.email;
-  document.getElementById('greetingName').textContent = email.split('@')[0];
-  document.getElementById('dashName').textContent = email.split('@')[0];
 
   // Load student profile once
   const pSnap = await getDoc(doc(db,'students',email));
@@ -638,6 +1027,17 @@ async function loadStudentData() {
     window._studentProfile = profile;
     try { await setDoc(doc(db,'students',email), profile); } catch(e) { /* rules may not allow */ }
   }
+
+  // Set name from profile – always show a clean display name
+  const prof = window._studentProfile;
+  const emailPrefix = email.split('@')[0];
+  let displayName = prof.firstName || '';
+  // If no proper first name, derive one from email prefix
+  if (!displayName || displayName === emailPrefix) {
+    displayName = emailPrefix.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  document.getElementById('dashName').textContent = displayName;
+  document.getElementById('greetingName').textContent = displayName;
   renderProfile();
   ccLoadConfig();
 
@@ -667,6 +1067,15 @@ async function loadStudentData() {
     renderInvoices();
   }, e => console.error('invoices snapshot error:', e));
 
+  // Practice sessions
+  const pracQ = query(collection(db,'practiceSessions'), where('email','==',email));
+  onSnapshot(pracQ, snap => {
+    _practiceSessions = [];
+    snap.forEach(d => _practiceSessions.push({id:d.id,...d.data()}));
+    renderPracticeHistory();
+    renderProgress();
+  }, e => console.error('practice snapshot error:', e));
+
   // Announcements
   const annQ = query(collection(db,'announcements'), orderBy('createdAt','desc'));
   onSnapshot(annQ, snap => {
@@ -689,7 +1098,7 @@ async function loadStudentData() {
     snap.forEach(d => notes.push({id:d.id,...d.data()}));
     notes.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
     const container = document.getElementById('studentNotesList');
-    if (!notes.length) { container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem 0">No notes from admin yet.</div>'; return; }
+    if (!notes.length) { container.innerHTML = emptyStateSVG('note','No notes from admin yet.'); return; }
     container.innerHTML = notes.map(n => `
       <div style="padding:.75rem 0;border-bottom:1px solid var(--border);font-size:.88rem;line-height:1.6">
         <div style="font-size:.75rem;color:var(--muted);margin-bottom:.25rem">${n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</div>
@@ -702,16 +1111,33 @@ async function loadStudentData() {
 
 // ── DASHBOARD ──
 function renderDashboard() {
+  updateHeroGreeting();
   const upcoming = _bookings.filter(b => b.status !== 'cancelled' && (!b.status || b.status === 'pending' || b.status === 'confirmed'));
   const completed = _bookings.filter(b => b.status === 'completed');
   const present = _attendanceRecords.filter(r => r.status === 'present').length;
   const totalAtt = _attendanceRecords.length;
-  const rate = totalAtt ? Math.round(present/totalAtt*100) + '%' : '—';
+  const rate = totalAtt ? Math.round(present/totalAtt*100) : 0;
   const dueTotal = _invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').reduce((s,i) => s+Number(i.amount||0), 0);
 
-  document.getElementById('statUpcoming').textContent = upcoming.length;
-  document.getElementById('statCompleted').textContent = completed.length;
-  document.getElementById('statAttendance').textContent = rate;
+  // Hero stats
+  const streak = calcPracticeStreak();
+  const totalSessions = _practiceSessions.length;
+  const totalMinutes = _practiceSessions.reduce((s, p) => s + (p.minutes || 0), 0);
+  const level = Math.min(100, Math.floor(totalMinutes / 30) + 1);
+  const streakEl = document.getElementById('dashStreakNum');
+  if (streakEl) {
+    streakEl.textContent = streak;
+    if (streak >= 3) streakEl.innerHTML = streak + ' <span class="streak-fire">🔥</span>';
+  }
+  const sessionsEl = document.getElementById('dashSessionsNum');
+  if (sessionsEl) sessionsEl.textContent = totalSessions;
+  const levelEl = document.getElementById('dashLevelNum');
+  if (levelEl) levelEl.textContent = level;
+
+  // Compact stats
+  animateCountUp(document.getElementById('statUpcoming'), upcoming.length);
+  animateCountUp(document.getElementById('statCompleted'), completed.length);
+  document.getElementById('statAttendance').textContent = rate + '%';
   document.getElementById('statDue').textContent = dueTotal ? 'R '+dueTotal.toLocaleString() : 'R 0';
 
   // Next lesson
@@ -734,18 +1160,26 @@ function renderDashboard() {
   } else {
     block.innerHTML = `<div class="card" style="border-color:var(--gold);background:linear-gradient(135deg,rgba(201,145,26,.08),var(--surface))">
       <div style="text-align:center;padding:1rem">
-        <div style="font-size:2rem;margin-bottom:.5rem">🎵</div>
-        <p style="color:var(--muted);font-size:.9rem">No upcoming lessons booked yet.</p>
+        ${emptyStateSVG('note','No upcoming lessons booked yet.')}
         <a href="index.html#book" class="btn btn-gold" style="display:inline-block;margin-top:1rem">Book Your First Lesson</a>
       </div>
     </div>`;
   }
 
-  // Recent lessons
-  const recent = _bookings.slice(0,5);
-  document.getElementById('recentLessons').innerHTML = recent.length
-    ? recent.map(b => lessonRow(b)).join('')
-    : '<div class="empty-state"><span class="icon">📅</span><p>No lessons yet. Head to the booking page to get started!</p></div>';
+  // Recent practice
+  const recentPrac = [..._practiceSessions].sort((a,b)=>((b.createdAt||'')>(a.createdAt||'')?1:-1)).slice(0,5);
+  const recentContainer = document.getElementById('recentPracticeDash');
+  if (!recentPrac.length) {
+    recentContainer.innerHTML = emptyStateSVG('guitar','No practice sessions yet. Start your first session!');
+  } else {
+    recentContainer.innerHTML = recentPrac.map(s => {
+      const d = s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      return '<div class="list-item" style="margin-bottom:.4rem;padding:.6rem 1rem">' +
+        '<div class="li-content"><div class="li-title">'+(s.title||'Practice')+' <span style="color:var(--gold);font-weight:400">'+(s.minutes||0)+' min</span></div>'+
+        (s.notes?'<div class="li-meta">'+s.notes+'</div>':'')+
+        '<div class="li-meta">'+d+'</div></div></div>';
+    }).join('');
+  }
 }
 
 // ── LESSONS ──
@@ -757,7 +1191,7 @@ function renderLessons(filter) {
   if (filter === 'past') list = list.filter(b => (b.startDate||'') < now || b.status === 'completed' || b.status === 'cancelled');
   document.getElementById('lessonsList').innerHTML = list.length
     ? list.map(b => lessonRow(b)).join('')
-    : '<div class="empty-state"><span class="icon">🎵</span><p>No '+(filter!=='all'?filter+' ':'')+'lessons found.</p></div>';
+    : emptyStateSVG('note','No '+(filter!=='all'?filter+' ':'')+'lessons found.');
 }
 
 function lessonRow(b) {
@@ -790,7 +1224,7 @@ function renderAttendance() {
           <span class="att-note">${r.notes||''}</span>
         </div>`;
       }).join('')
-    : '<div class="empty-state"><span class="icon">✅</span><p>No attendance records yet. They will appear here after your first lesson.</p></div>';
+    : emptyStateSVG('star','No attendance records yet. They will appear here after your first lesson.');
 }
 
 // ── INVOICES ──
@@ -816,7 +1250,7 @@ function renderInvoices() {
           </div>
         </div>`;
       }).join('')
-    : '<div class="empty-state"><span class="icon">🧾</span><p>No invoices yet.</p></div>';
+    : emptyStateSVG('note','No invoices yet.');
 }
 
 window.downloadInvoicePDF = function(enc) {
@@ -868,6 +1302,158 @@ function countdownTo(dateStr) {
   if (days > 0) return days+' day'+(days>1?'s':'')+' away';
   if (hours > 0) return hours+' hour'+(hours>1?'s':'')+' away';
   return 'Today!';
+}
+
+// ── PRACTICE ASSISTANT ──
+let _practiceSessions = [];
+let _practiceTimerInterval = null;
+let _practiceTimerSeconds = 0;
+let _practiceTimerRunning = false;
+
+function practiceTimerDisplay(sec) {
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(sec % 60).padStart(2, '0');
+  return m + ':' + s;
+}
+
+window.togglePracticeTimer = function() {
+  if (_practiceTimerRunning) {
+    clearInterval(_practiceTimerInterval);
+    _practiceTimerRunning = false;
+    document.getElementById('practiceStartBtn').textContent = '▶ Resume';
+    return;
+  }
+  _practiceTimerRunning = true;
+  document.getElementById('practiceStartBtn').textContent = '⏸ Pause';
+  _practiceTimerInterval = setInterval(() => {
+    _practiceTimerSeconds++;
+    document.getElementById('practiceTimer').textContent = practiceTimerDisplay(_practiceTimerSeconds);
+    document.getElementById('practiceLogDuration').textContent = Math.floor(_practiceTimerSeconds / 60) + ' min';
+  }, 1000);
+};
+
+window.resetPracticeTimer = function() {
+  clearInterval(_practiceTimerInterval);
+  _practiceTimerRunning = false;
+  _practiceTimerSeconds = 0;
+  document.getElementById('practiceTimer').textContent = '00:00';
+  document.getElementById('practiceStartBtn').textContent = '▶ Start';
+  document.getElementById('practiceLogDuration').textContent = '0 min';
+};
+
+window.logPracticeSession = async function() {
+  const title = document.getElementById('practiceTitle').value.trim();
+  if (!title) { alert('Please enter what you practiced.'); return; }
+  const minutes = _practiceTimerSeconds > 0 ? Math.round(_practiceTimerSeconds / 60) : 0;
+  const notes = document.getElementById('practiceNotes').value.trim();
+  try {
+    await addDoc(collection(db, 'practiceSessions'), {
+      email: _currentUser.email,
+      title,
+      minutes: Math.max(minutes, 1),
+      notes,
+      createdAt: new Date().toISOString(),
+    });
+    document.getElementById('practiceTitle').value = '';
+    document.getElementById('practiceNotes').value = '';
+    resetPracticeTimer();
+    toast('Practice session logged!');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+};
+
+function renderPracticeHistory() {
+  const container = document.getElementById('practiceHistory');
+  if (!_practiceSessions.length) {
+    container.innerHTML = emptyStateSVG('guitar','No practice sessions yet. Start a timer and log your first session!');
+    return;
+  }
+  const sorted = [..._practiceSessions].sort((a, b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
+  container.innerHTML = sorted.slice(0, 20).map(s => {
+    const d = s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-ZA', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    return '<div class="list-item" style="margin-bottom:.4rem">' +
+      '<div class="li-content">' +
+      '<div class="li-title">' + (s.title||'Practice') + ' <span style="color:var(--gold);font-weight:400">' + (s.minutes||0) + ' min</span></div>' +
+      (s.notes ? '<div class="li-meta">' + s.notes + '</div>' : '') +
+      '<div class="li-meta">' + d + '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ── PROGRESS CHARTS ──
+function renderProgress() {
+  const totalSessions = _practiceSessions.length;
+  const totalMinutes = _practiceSessions.reduce((sum, s) => sum + (s.minutes || 0), 0);
+  const present = _attendanceRecords.filter(r => r.status === 'present').length;
+  const totalAtt = _attendanceRecords.length;
+  const rate = totalAtt ? Math.round(present / totalAtt * 100) + '%' : '—';
+  const completed = _bookings.filter(b => b.status === 'completed').length;
+
+  document.getElementById('progPracticeTotal').textContent = totalSessions;
+  document.getElementById('progPracticeMinutes').textContent = totalMinutes + ' min';
+  document.getElementById('progAttendanceRate').textContent = rate;
+  document.getElementById('progLessonsCompleted').textContent = completed;
+
+  // Weekly practice chart (last 8 weeks)
+  const weeks = [];
+  const now = new Date();
+  for (let w = 7; w >= 0; w--) {
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() - w * 7);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const weekSessions = _practiceSessions.filter(s => {
+      const d = new Date(s.createdAt);
+      return d >= weekStart && d < weekEnd;
+    });
+    const weekMinutes = weekSessions.reduce((sum, s) => sum + (s.minutes || 0), 0);
+    const label = weekStart.toLocaleDateString('en-ZA', {day:'numeric',month:'short'});
+    weeks.push({ label, minutes: weekMinutes });
+  }
+
+  const maxMin = Math.max(...weeks.map(w => w.minutes), 1);
+  const chartContainer = document.getElementById('progressChart');
+  if (!totalSessions) {
+    chartContainer.innerHTML = emptyStateSVG('chart','Start logging practice sessions to see your progress chart.');
+    return;
+  }
+
+  const barW = Math.max(30, Math.min(60, Math.floor((chartContainer.clientWidth - 60) / weeks.length)));
+  chartContainer.innerHTML = '<div style="display:flex;align-items:end;gap:' + Math.max(4, Math.floor(barW * 0.3)) + 'px;height:200px;padding:0 10px 24px;border-bottom:1px solid var(--border);position:relative">' +
+    weeks.map((w, i) => {
+      const h = Math.max(4, (w.minutes / maxMin) * 170);
+      return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0">' +
+        '<div class="chart-bar" style="width:' + barW + 'px;height:0;background:var(--gold);border-radius:2px 2px 0 0;min-height:0;position:relative" data-height="' + h + '" data-delay="' + (i * 60) + '">' +
+        '<span style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--gold);white-space:nowrap">' + w.minutes + '</span>' +
+        '</div>' +
+        '<span style="font-size:.6rem;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px">' + w.label + '</span>' +
+        '</div>';
+    }).join('') +
+    '</div>';
+
+  // Animate bars staggered
+  requestAnimationFrame(() => {
+    chartContainer.querySelectorAll('.chart-bar').forEach(el => {
+      const targetH = parseFloat(el.dataset.height);
+      const delay = parseInt(el.dataset.delay) || 0;
+      setTimeout(() => { el.style.height = targetH + 'px'; }, delay);
+    });
+  });
+
+  // Teacher ratings (from attendance records that have rating)
+  const rated = _attendanceRecords.filter(r => r.rating);
+  const ratingsContainer = document.getElementById('ratingsList');
+  if (!rated.length) {
+    ratingsContainer.innerHTML = emptyStateSVG('star','No ratings yet. Ratings appear after attended lessons.');
+    return;
+  }
+  const avg = (rated.reduce((sum, r) => sum + Number(r.rating), 0) / rated.length).toFixed(1);
+  ratingsContainer.innerHTML = '<div style="margin-bottom:1rem;font-size:.9rem;color:var(--muted)">Average rating: <strong style="color:var(--gold);font-size:1.4rem">' + avg + '</strong> / 5 (' + rated.length + ' ratings)</div>' +
+    rated.slice(-10).reverse().map(r => {
+      const d = r.date ? new Date(r.date+'T12:00:00').toLocaleDateString('en-ZA', {day:'numeric',month:'short'}) : '—';
+      const stars = '★'.repeat(Math.round(Number(r.rating))) + '☆'.repeat(5 - Math.round(Number(r.rating)));
+      return '<div class="attendance-row"><span class="att-date">' + d + '</span><span style="color:var(--gold);letter-spacing:2px">' + stars + '</span><span class="att-note">' + (r.notes||'') + '</span></div>';
+    }).join('');
 }
 
 // ── AUTH FUNCTIONS ──
@@ -1377,18 +1963,802 @@ async function ccLoadConfig() {
 }
 window.ccLoadConfig = ccLoadConfig;
 
-// Override showPanel to trigger chord creator config load
+// ── METRONOME ──
+let _metroCtx = null, _metroTimer = null, _metroBeat = 0, _metroRunning = false;
+let _metroNextTime = 0, _metroScheduleAhead = 0.1, _metroStartTime = 0;
+let _metroLastTap = [];
+let _metroOnBeat = null;
+
+function _metroEnsureCtx() {
+  if (!_metroCtx) _metroCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_metroCtx.state === 'suspended') _metroCtx.resume();
+}
+
+window.metroUpdateBpm = function(v) {
+  document.getElementById('metroBpmDisplay').textContent = v;
+  document.getElementById('metroBpmInput').value = v;
+};
+
+window.metroUpdateTimeSig = function() { if (_metroRunning) { metroStop(); } };
+
+function metroPlayClick(time, beat, sub) {
+  _metroEnsureCtx();
+  const beatsPerBar = parseInt(document.getElementById('metroTimeSig').value);
+  const isAccent = beat % beatsPerBar === 0;
+  const isSub = sub === true;
+  const osc = _metroCtx.createOscillator();
+  const gain = _metroCtx.createGain();
+  osc.connect(gain); gain.connect(_metroCtx.destination);
+  if (isSub) { osc.frequency.value = 600; gain.gain.setValueAtTime(0.2, time); }
+  else if (isAccent) { osc.frequency.value = 1200; gain.gain.setValueAtTime(0.5, time); }
+  else { osc.frequency.value = 900; gain.gain.setValueAtTime(0.35, time); }
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+  osc.start(time); osc.stop(time + 0.04);
+}
+
+function _metroSchedule() {
+  if (!_metroRunning) return;
+  const bpm = parseInt(document.getElementById('metroBpm').value);
+  const beatsPerBar = parseInt(document.getElementById('metroTimeSig').value);
+  const sub = parseInt(document.getElementById('metroSub').value);
+  const interval = 60 / bpm;
+  const subInt = interval / sub;
+
+  while (_metroNextTime < _metroCtx.currentTime + _metroScheduleAhead) {
+    const beatInBar = _metroBeat % beatsPerBar;
+    metroPlayClick(_metroNextTime, beatInBar, false);
+    for (let s = 1; s < sub; s++) {
+      metroPlayClick(_metroNextTime + s * subInt, beatInBar, true);
+    }
+    if (_metroOnBeat) _metroOnBeat(_metroBeat, _metroBeat % beatsPerBar === 0);
+    _metroBeat++;
+    _metroNextTime += interval;
+  }
+  _metroTimer = setTimeout(_metroSchedule, 25);
+
+  // Update beat strip
+  const strip = document.getElementById('metroBeatStrip');
+  const b = (_metroBeat - 1) % beatsPerBar;
+  strip.innerHTML = '';
+  for (let i = 0; i < beatsPerBar; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'metro-beat' + (i === b ? ' active' : '');
+    bar.style.height = (6 + (i === b ? (14 - (i % 3) * 2) : 0)) + 'px';
+    strip.appendChild(bar);
+  }
+
+  // Session time
+  const elapsed = Math.floor((_metroCtx.currentTime - _metroStartTime));
+  document.getElementById('metroSessionTime').textContent = 'Session: ' + Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+}
+
+window.metroToggle = function() {
+  _metroEnsureCtx();
+  if (_metroRunning) { metroStop(); return; }
+  _metroRunning = true;
+  _metroBeat = 0;
+  _metroNextTime = _metroCtx.currentTime + 0.05;
+  _metroStartTime = _metroCtx.currentTime;
+  document.getElementById('metroStartBtn').textContent = '⏸ Pause';
+  _metroSchedule();
+};
+
+window.metroStop = function() {
+  _metroRunning = false;
+  clearTimeout(_metroTimer);
+  _metroOnBeat = null;
+  document.getElementById('metroStartBtn').textContent = '▶ Start';
+  document.getElementById('metroBeatStrip').innerHTML = '';
+};
+
+window.metroTapTempo = function() {
+  const now = Date.now();
+  _metroLastTap.push(now);
+  if (_metroLastTap.length > 5) _metroLastTap.shift();
+  if (_metroLastTap.length >= 2) {
+    const diffs = [];
+    for (let i = 1; i < _metroLastTap.length; i++) diffs.push(_metroLastTap[i] - _metroLastTap[i - 1]);
+    const avg = diffs.reduce((s, d) => s + d, 0) / diffs.length;
+    const bpm = Math.round(60000 / avg);
+    if (bpm >= 20 && bpm <= 280) {
+      document.getElementById('metroBpm').value = bpm;
+      document.getElementById('metroBpmDisplay').textContent = bpm;
+    }
+  }
+};
+
+// ── CHORD PRACTICE (synced with metronome) ──
+const _CP_CHORDS = {
+  'C': { 'I': 'C', 'ii': 'Dm', 'iii': 'Em', 'IV': 'F', 'V': 'G', 'vi': 'Am', 'vii': 'Bdim' },
+  'G': { 'I': 'G', 'ii': 'Am', 'iii': 'Bm', 'IV': 'C', 'V': 'D', 'vi': 'Em', 'vii': 'F#dim' },
+  'D': { 'I': 'D', 'ii': 'Em', 'iii': 'F#m', 'IV': 'G', 'V': 'A', 'vi': 'Bm', 'vii': 'C#dim' },
+  'A': { 'I': 'A', 'ii': 'Bm', 'iii': 'C#m', 'IV': 'D', 'V': 'E', 'vi': 'F#m', 'vii': 'G#dim' },
+  'E': { 'I': 'E', 'ii': 'F#m', 'iii': 'G#m', 'IV': 'A', 'V': 'B', 'vi': 'C#m', 'vii': 'D#dim' },
+  'F': { 'I': 'F', 'ii': 'Gm', 'iii': 'Am', 'IV': 'Bb', 'V': 'C', 'vi': 'Dm', 'vii': 'Edim' },
+  'Bb': { 'I': 'Bb', 'ii': 'Cm', 'iii': 'Dm', 'IV': 'Eb', 'V': 'F', 'vi': 'Gm', 'vii': 'Adim' },
+  'Eb': { 'I': 'Eb', 'ii': 'Fm', 'iii': 'Gm', 'IV': 'Ab', 'V': 'Bb', 'vi': 'Cm', 'vii': 'Ddim' },
+};
+const CP_STRUM = {
+  'quarters': { name: 'Quarter Notes', pattern: ['D','','D','','D','','D',''] },
+  'eighths': { name: '8th Notes', pattern: ['D','U','D','U','D','U','D','U'] },
+  'rock1': { name: 'Basic Rock', pattern: ['D','','D','','','D','',''] },
+  'rock2': { name: 'Rock with Up', pattern: ['D','','D','U','','U','D',''] },
+  'folk': { name: 'Folk Strum', pattern: ['D','','D','U','D','','D','U'] },
+  'reggae': { name: 'Reggae/Ska', pattern: ['','D','','D','','D','','D'] },
+  'waltz': { name: 'Waltz 3/4', pattern: ['D','','D','','D',''] },
+};
+let _cpRunning = false, _cpChords = [], _cpState = 'idle', _cpCountDown = 0, _cpTotalBeats = 0, _cpChordIndex = 0;
+
+function _cpGetProgression() {
+  const key = document.getElementById('cpKey').value;
+  const progType = document.getElementById('cpProgression').value;
+  const map = _CP_CHORDS[key];
+  if (!map) return [];
+  if (progType === 'custom') {
+    const custom = document.getElementById('cpCustom').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    return custom.map(r => map[r] || r);
+  }
+  const progMap = { 'I-IV-V': ['I','IV','V'], 'I-V-vi-IV': ['I','V','vi','IV'], 'I-vi-IV-V': ['I','vi','IV','V'], 'ii-V-I': ['ii','V','I'], 'I-IV-vi-V': ['I','IV','vi','V'], 'I-iii-IV-V': ['I','iii','IV','V'] };
+  const romans = progMap[progType] || ['I','IV','V'];
+  return romans.map(r => map[r] || r);
+}
+
+document.getElementById('cpProgression')?.addEventListener('change', function() {
+  document.getElementById('cpCustomRow').style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+function cpShowChord(name) {
+  document.getElementById('cpCurrentChord').textContent = name;
+  const diagram = document.getElementById('cpChordDiagram');
+  const ccRootNote = document.getElementById('ccRootNote');
+  const ccChordType = document.getElementById('ccChordType');
+  if (ccRootNote && ccChordType) {
+    const match = name.match(/^([A-G][#b]?)(.*)/);
+    if (match) {
+      const root = match[1]; const suffix = match[2];
+      const typeMap = { '': 'major', 'm': 'minor', '7': 'dom7', 'maj7': 'maj7', 'm7': 'min7', 'sus2': 'sus2', 'sus4': 'sus4', 'dim': 'minor', 'aug': 'major' };
+      const ct = typeMap[suffix] || 'major';
+      ccRootNote.value = root;
+      ccChordType.value = ct;
+      const rootSemi = CC_NOTE_TO_SEMI[root];
+      if (rootSemi !== undefined) {
+        const voicings = ccGenerateVoicings(rootSemi, ct, root, null);
+        diagram.innerHTML = voicings.length ? ccRenderChord(name, [voicings[0]], null) : '<span style="font-size:.85rem;color:var(--muted)">No diagram</span>';
+        return;
+      }
+    }
+  }
+  diagram.innerHTML = '';
+}
+
+function _cpRenderStrum(barBeat) {
+  const id = document.getElementById('cpStrum').value;
+  const pattern = CP_STRUM[id];
+  if (!pattern) return;
+  const p = pattern.pattern;
+  const beatsPerBar = parseInt(document.getElementById('metroTimeSig').value) || 4;
+  const display = document.getElementById('cpStrumDisplay');
+  display.innerHTML = '';
+  const cellsPerBeat = Math.floor(p.length / beatsPerBar);
+  for (let i = 0; i < p.length; i++) {
+    const cell = document.createElement('div');
+    const ch = p[i];
+    if (ch === 'D') cell.textContent = '↓';
+    else if (ch === 'U') cell.textContent = '↑';
+    else cell.textContent = '—';
+    const beatOfCell = Math.floor(i / cellsPerBeat);
+    const isCurrent = beatOfCell === barBeat;
+    cell.style.cssText = 'width:34px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;border-radius:4px;background:' + (isCurrent ? 'var(--gold)' : 'var(--surface3)') + ';color:' + (isCurrent ? '#1a1a1a' : 'var(--muted)') + ';transition:background .08s';
+    if (i % cellsPerBeat === 0) cell.style.marginLeft = '3px';
+    display.appendChild(cell);
+  }
+}
+
+function _cpOnBeat(globalBeat, isDownbeat) {
+  if (!_cpRunning) return;
+
+  if (_cpState === 'countin') {
+    _cpCountDown--;
+    const el = document.getElementById('cpCountIn');
+    if (_cpCountDown > 0) {
+      el.textContent = 'Starting in ' + _cpCountDown + '…';
+    } else {
+      el.textContent = 'Go! 🎸';
+      _cpState = 'running';
+      _cpTotalBeats = 0;
+      _cpChordIndex = 0;
+      cpShowChord(_cpChords[0]);
+      document.getElementById('cpStatus').textContent = '1/' + _cpChords.length;
+    }
+    return;
+  }
+
+  if (_cpState === 'running') {
+    const beatsPerBar = parseInt(document.getElementById('metroTimeSig').value) || 4;
+    const beatsPerChord = parseInt(document.getElementById('cpBeats').value) || 4;
+    const barBeat = _cpTotalBeats % beatsPerBar;
+
+    _cpRenderStrum(barBeat);
+
+    if (_cpTotalBeats > 0 && _cpTotalBeats % beatsPerChord === 0) {
+      _cpChordIndex = (_cpChordIndex + 1) % _cpChords.length;
+      cpShowChord(_cpChords[_cpChordIndex]);
+      document.getElementById('cpStatus').textContent = (_cpChordIndex + 1) + '/' + _cpChords.length;
+    }
+    _cpTotalBeats++;
+  }
+}
+
+window.cpToggle = function() {
+  if (_cpRunning) { cpStop(); return; }
+  _cpChords = _cpGetProgression();
+  if (!_cpChords.length) { alert('No chords in progression'); return; }
+  // Stop metronome cleanly if running, so we start fresh
+  if (_metroRunning) { _metroRunning = false; clearTimeout(_metroTimer); _metroOnBeat = null; }
+  _cpRunning = true;
+  _cpState = 'countin';
+  _cpCountDown = 4;
+  document.getElementById('cpCountIn').textContent = 'Starting in 4…';
+  document.getElementById('cpStartBtn').textContent = '⏸ Pause';
+  document.getElementById('cpCurrentChord').textContent = '—';
+  document.getElementById('cpChordDiagram').innerHTML = '';
+  document.getElementById('cpStrumDisplay').innerHTML = '';
+  document.getElementById('cpStatus').textContent = 'Count-in…';
+  _metroOnBeat = _cpOnBeat;
+  _metroEnsureCtx();
+  _metroRunning = true;
+  _metroBeat = 0;
+  _metroNextTime = _metroCtx.currentTime + 0.05;
+  _metroStartTime = _metroCtx.currentTime;
+  document.getElementById('metroStartBtn').textContent = '⏸ Pause';
+  _metroSchedule();
+};
+
+window.cpStop = function() {
+  _cpRunning = false;
+  _cpState = 'idle';
+  if (_metroOnBeat === _cpOnBeat) _metroOnBeat = null;
+  metroStop();
+  document.getElementById('cpStartBtn').textContent = '▶ Start Progression';
+  document.getElementById('cpStatus').textContent = 'Stopped';
+  document.getElementById('cpCountIn').textContent = '';
+  document.getElementById('cpStrumDisplay').innerHTML = '';
+};
+
+// ── EAR TRAINING ──
+const _ET_INTERVALS = { 'm2': 1, 'M2': 2, 'm3': 3, 'M3': 4, 'P4': 5, 'TT': 6, 'P5': 7, 'm7': 10, 'M7': 11, 'P8': 12 };
+let _etCurrentInterval = null, _etScore = 0, _etStreak = 0;
+
+function _etPlayNote(freq, time) {
+  _metroEnsureCtx();
+  const osc = _metroCtx.createOscillator();
+  const gain = _metroCtx.createGain();
+  osc.type = 'triangle';
+  osc.connect(gain); gain.connect(_metroCtx.destination);
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.3, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8);
+  osc.start(time); osc.stop(time + 0.8);
+}
+
+window.etPlayInterval = function() {
+  _metroEnsureCtx();
+  const now = _metroCtx.currentTime;
+  const rootFreq = 220 + Math.random() * 330; // A3 to roughly E5
+  const keys = Object.keys(_ET_INTERVALS);
+  _etCurrentInterval = keys[Math.floor(Math.random() * keys.length)];
+  const semis = _ET_INTERVALS[_etCurrentInterval];
+  const targetFreq = rootFreq * Math.pow(2, semis / 12);
+  _etPlayNote(rootFreq, now);
+  _etPlayNote(targetFreq, now + 1);
+  document.getElementById('etResult').innerHTML = '<span style="color:var(--muted)">Listen carefully…</span>';
+  document.getElementById('etResult').style.color = '';
+  document.getElementById('etPlayBtn').textContent = '⟳ Play Again';
+};
+
+window.etAnswer = function(interval) {
+  if (!_etCurrentInterval) { document.getElementById('etResult').textContent = 'Click Play first!'; return; }
+  const correct = interval === _etCurrentInterval;
+  if (correct) { _etScore++; _etStreak++; } else { _etStreak = 0; }
+  document.getElementById('etScore').textContent = _etScore;
+  document.getElementById('etStreak').textContent = _etStreak;
+  document.getElementById('etResult').innerHTML = correct
+    ? '<span style="color:var(--success);font-weight:600">✓ Correct!</span>'
+    : '<span style="color:var(--danger);font-weight:600">✕ ' + interval + ' — answer was ' + _etCurrentInterval + '</span>';
+  _etCurrentInterval = null;
+};
+
+// ── TUNER ──
+const TUNER_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const GUITAR_STRINGS = [
+  { num: 6, note: 'E', octave: 2, freq: 82.41, label: 'E' },
+  { num: 5, note: 'A', octave: 2, freq: 110.00, label: 'A' },
+  { num: 4, note: 'D', octave: 3, freq: 146.83, label: 'D' },
+  { num: 3, note: 'G', octave: 3, freq: 196.00, label: 'G' },
+  { num: 2, note: 'B', octave: 3, freq: 246.94, label: 'B' },
+  { num: 1, note: 'E', octave: 4, freq: 329.63, label: 'e' },
+];
+const TUNER_FRETS = [3, 5, 7, 9, 12];
+let _tunerStream = null, _tunerCtx = null, _tunerAnalyser = null, _tunerData = null;
+let _tunerRaf = null, _tunerActive = false, _tunerSmoothFreq = 0, _tunerActiveString = -1;
+
+function _tunerBuildNeck() {
+  const neck = document.getElementById('tunerNeck');
+  const fretsEl = document.getElementById('tunerFrets');
+  neck.innerHTML = ''; fretsEl.innerHTML = '';
+  const maxFret = 13;
+  for (const f of TUNER_FRETS) {
+    const lbl = document.createElement('span');
+    lbl.textContent = f; lbl.style.cssText = 'flex:1;text-align:center';
+    fretsEl.appendChild(lbl);
+  }
+  for (const s of GUITAR_STRINGS) {
+    const row = document.createElement('div');
+    row.id = 'tunerStringRow' + s.num;
+    row.style.cssText = 'display:flex;align-items:center;height:24px;margin:1px 0;border-radius:4px;transition:background .15s';
+    const label = document.createElement('div');
+    label.textContent = s.label;
+    label.style.cssText = 'width:28px;font-size:.8rem;font-weight:700;color:var(--muted);text-align:right;padding-right:6px;flex-shrink:0;transition:color .15s';
+    label.id = 'tunerStringLabel' + s.num;
+    row.appendChild(label);
+    const track = document.createElement('div');
+    track.id = 'tunerStringTrack' + s.num;
+    track.style.cssText = 'flex:1;height:100%;position:relative;border-radius:3px;background:var(--surface2);transition:background .15s';
+    for (const f of TUNER_FRETS) {
+      const pct = f / maxFret;
+      const dot = document.createElement('div');
+      dot.style.cssText = 'position:absolute;left:' + (pct * 100) + '%;top:50%;transform:translate(-50%,-50%);width:4px;height:4px;border-radius:50%;background:var(--muted3);opacity:.6';
+      track.appendChild(dot);
+      if (f === 12) {
+        const dot2 = document.createElement('div');
+        dot2.style.cssText = 'position:absolute;left:' + (pct * 100) + '%;top:calc(50% + 5px);transform:translate(-50%,-50%);width:4px;height:4px;border-radius:50%;background:var(--muted3);opacity:.6';
+        track.appendChild(dot2);
+      }
+    }
+    row.appendChild(track);
+    neck.appendChild(row);
+  }
+}
+
+function _tunerHighlightString(num) {
+  for (const s of GUITAR_STRINGS) {
+    const row = document.getElementById('tunerStringRow' + s.num);
+    const label = document.getElementById('tunerStringLabel' + s.num);
+    const track = document.getElementById('tunerStringTrack' + s.num);
+    if (s.num === num) {
+      row.style.background = 'rgba(212,175,55,.15)';
+      label.style.color = 'var(--gold)';
+      track.style.background = 'rgba(212,175,55,.08)';
+    } else if (num === -1 && _tunerActive) {
+      row.style.background = '';
+      label.style.color = 'var(--muted)';
+      track.style.background = 'var(--surface2)';
+    } else if (!_tunerActive) {
+      row.style.background = '';
+      label.style.color = 'var(--muted)';
+      track.style.background = 'var(--surface2)';
+    }
+  }
+}
+
+function _tunerFindClosestString(noteName) {
+  for (const s of GUITAR_STRINGS) {
+    if (s.note === noteName) return s.num;
+  }
+  return -1;
+}
+
+function _tunerFreqToNote(freq) {
+  if (freq < 60 || freq > 1400) return null;
+  const midi = 12 * (Math.log(freq / 440) / Math.log(2)) + 69;
+  const rounded = Math.round(midi);
+  const cents = Math.round(100 * (midi - rounded));
+  const noteIndex = ((rounded % 12) + 12) % 12;
+  const octave = Math.floor((rounded - 12) / 12);
+  return { name: TUNER_NOTES[noteIndex], octave: Math.max(0, octave), cents, freq: Math.round(freq) };
+}
+
+function _tunerFindPeak() {
+  if (!_tunerAnalyser) return 0;
+  _tunerAnalyser.getByteFrequencyData(_tunerData);
+  let maxIdx = 0, maxVal = 0;
+  for (let i = 0; i < _tunerData.length; i++) {
+    if (_tunerData[i] > maxVal) { maxVal = _tunerData[i]; maxIdx = i; }
+  }
+  if (maxVal < 30) return 0;
+  const len = _tunerData.length;
+  const left = maxIdx > 0 ? _tunerData[maxIdx - 1] : 0;
+  const right = maxIdx < len - 1 ? _tunerData[maxIdx + 1] : 0;
+  const a = (left + right) / 2 - _tunerData[maxIdx];
+  const b = (right - left) / 2;
+  const correction = a !== 0 ? -b / (2 * a) : 0;
+  const bin = maxIdx + Math.max(-1, Math.min(1, correction));
+  return (bin * _tunerCtx.sampleRate) / _tunerAnalyser.fftSize;
+}
+
+function _tunerProcess() {
+  if (!_tunerActive) return;
+  const rawFreq = _tunerFindPeak();
+  if (rawFreq > 0) {
+    _tunerSmoothFreq = _tunerSmoothFreq > 0 ? _tunerSmoothFreq * 0.6 + rawFreq * 0.4 : rawFreq;
+    const note = _tunerFreqToNote(_tunerSmoothFreq);
+    if (note) {
+      const select = document.getElementById('tunerStringSelect');
+      const isAuto = select.value === 'auto';
+      let targetString = -1;
+      if (isAuto) {
+        targetString = _tunerFindClosestString(note.name);
+      } else {
+        targetString = parseInt(select.value);
+      }
+      _tunerHighlightString(targetString);
+      _tunerActiveString = targetString;
+
+      // In manual mode, compute cents against the target string's exact frequency
+      let displayNote = note;
+      if (!isAuto && targetString > 0) {
+        const target = GUITAR_STRINGS.find(s => s.num === targetString);
+        if (target) {
+          const targetMidi = 12 * (Math.log(target.freq / 440) / Math.log(2)) + 69;
+          const detectedMidi = 12 * (Math.log(_tunerSmoothFreq / 440) / Math.log(2)) + 69;
+          const diffCents = Math.round(100 * (detectedMidi - targetMidi));
+          displayNote = {
+            name: target.note,
+            octave: target.octave,
+            cents: diffCents,
+            freq: Math.round(_tunerSmoothFreq),
+          };
+        }
+      }
+
+      document.getElementById('tunerNote').textContent = displayNote.name + displayNote.octave;
+      document.getElementById('tunerFreq').textContent = displayNote.freq + ' Hz' + (displayNote.name !== note.name ? ' (' + note.name + note.octave + ' detected)' : '');
+      const pct = 50 + (Math.max(-50, Math.min(50, displayNote.cents)) / 50) * 50;
+      document.getElementById('tunerNeedle').style.left = pct + '%';
+      const color = Math.abs(displayNote.cents) <= 3 ? 'var(--success)' : Math.abs(displayNote.cents) <= 10 ? 'var(--gold)' : 'var(--danger)';
+      document.getElementById('tunerNeedle').style.background = color;
+      document.getElementById('tunerCents').innerHTML = Math.abs(displayNote.cents) <= 3
+        ? '<span style="color:var(--success);font-weight:600">✓ In Tune</span>'
+        : (displayNote.cents > 0
+          ? '<span style="color:var(--gold)">♯ ' + displayNote.cents + '¢ sharp</span>'
+          : '<span style="color:var(--gold)">♭ ' + Math.abs(displayNote.cents) + '¢ flat</span>');
+    }
+  } else {
+    _tunerHighlightString(-1);
+    _tunerActiveString = -1;
+  }
+  _tunerRaf = requestAnimationFrame(_tunerProcess);
+}
+
+window.tunerToggle = async function() {
+  if (_tunerActive) { tunerStop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    _tunerStream = stream;
+    _tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _tunerAnalyser = _tunerCtx.createAnalyser();
+    _tunerAnalyser.fftSize = 4096;
+    const src = _tunerCtx.createMediaStreamSource(stream);
+    src.connect(_tunerAnalyser);
+    _tunerData = new Uint8Array(_tunerAnalyser.frequencyBinCount);
+    _tunerActive = true;
+    _tunerSmoothFreq = 0;
+    _tunerBuildNeck();
+    document.getElementById('tunerBtn').textContent = '⏹ Stop Tuner';
+    document.getElementById('tunerNote').textContent = '…';
+    document.getElementById('tunerCents').textContent = 'Listening…';
+    _tunerProcess();
+  } catch (e) {
+    alert('Microphone access denied. Please allow microphone permissions and try again.');
+  }
+};
+
+window.tunerStop = function() {
+  _tunerActive = false;
+  cancelAnimationFrame(_tunerRaf);
+  if (_tunerStream) _tunerStream.getTracks().forEach(t => t.stop());
+  if (_tunerCtx) _tunerCtx.close();
+  _tunerStream = null; _tunerCtx = null; _tunerAnalyser = null; _tunerData = null; _tunerSmoothFreq = 0;
+  document.getElementById('tunerBtn').textContent = '🎤 Start Tuner';
+  document.getElementById('tunerNote').textContent = '—';
+  document.getElementById('tunerFreq').textContent = '';
+  document.getElementById('tunerCents').textContent = '';
+  document.getElementById('tunerNeedle').style.left = '50%';
+  document.getElementById('tunerNeedle').style.background = 'var(--gold)';
+  document.getElementById('tunerNeck').innerHTML = '';
+  document.getElementById('tunerFrets').innerHTML = '';
+};
+
+// ── REPERTOIRE ──
+async function loadRepertoire() {
+  try {
+    const q = query(collection(db, 'repertoire'), where('email', '==', _currentUser.email));
+    const snap = await getDocs(q);
+    const items = [];
+    snap.forEach(d => items.push({id: d.id, ...d.data()}));
+    items.sort((a, b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
+    const container = document.getElementById('repertoireList');
+    if (!items.length) { container.innerHTML = emptyStateSVG('songbook','No songs added yet. Add your first song above!'); return; }
+    container.innerHTML = items.map(s => {
+      const statusClass = s.status === 'ready' ? 'status-paid' : s.status === 'polishing' ? 'status-ongoing' : 'status-pending';
+      return '<div class="list-item"><div class="li-content"><div class="li-title">' + (s.title||'') + (s.artist ? ' <span style="color:var(--muted);font-weight:400">— ' + s.artist + '</span>' : '') + '</div><div class="li-meta">Key: ' + (s.key||'—') + ' <span class="status-badge ' + statusClass + '">' + (s.status||'learning') + '</span></div></div><div class="li-actions"><select onchange="repUpdateStatus(\'' + s.id + '\',this.value)" style="font-size:.75rem;padding:.2rem .4rem"><option value="learning"' + (s.status==='learning'?' selected':'') + '>Learning</option><option value="polishing"' + (s.status==='polishing'?' selected':'') + '>Polishing</option><option value="ready"' + (s.status==='ready'?' selected':'') + '>Ready</option></select><button class="btn btn-outline btn-sm" onclick="repDelete(\'' + s.id + '\')">✕</button></div></div>';
+    }).join('');
+  } catch(e) { document.getElementById('repertoireList').innerHTML = '<div style="color:var(--danger);font-size:.85rem">Load error: ' + e.message + '</div>'; }
+}
+
+window.repAdd = async function() {
+  const title = document.getElementById('repTitle').value.trim();
+  if (!title) { alert('Enter a song title.'); return; }
+  const artist = document.getElementById('repArtist').value.trim();
+  const status = document.getElementById('repStatus').value;
+  const key = document.getElementById('repKey').value.trim();
+  await addDoc(collection(db, 'repertoire'), {
+    email: _currentUser.email,
+    title, artist, status, key,
+    createdAt: new Date().toISOString()
+  });
+  document.getElementById('repTitle').value = '';
+  document.getElementById('repArtist').value = '';
+  document.getElementById('repKey').value = '';
+  toast('"' + title + '" added to repertoire!');
+  loadRepertoire();
+};
+
+window.repUpdateStatus = async function(id, status) {
+  await updateDoc(doc(db, 'repertoire', id), { status });
+  loadRepertoire();
+};
+
+window.repDelete = async function(id) {
+  if (!confirm('Remove this song?')) return;
+  await deleteDoc(doc(db, 'repertoire', id));
+  loadRepertoire();
+};
+
+// ── ACHIEVEMENTS ──
+const BADGES = [
+  { id: 'first', label: 'First Step', icon: '🌱', check: s => s >= 1, desc: 'Log your first practice session' },
+  { id: 'ten', label: 'Getting Started', icon: '🌿', check: s => s >= 10, desc: '10 practice sessions' },
+  { id: 'fifty', label: 'Dedicated', icon: '🌳', check: s => s >= 50, desc: '50 practice sessions' },
+  { id: 'hundred', label: 'Century', icon: '💯', check: s => s >= 100, desc: '100 practice sessions' },
+  { id: 'min30', label: 'Half Hour', icon: '⏱', check: s => s.minutes >= 30, desc: '30 total minutes' },
+  { id: 'min100', label: 'Century Minutes', icon: '⌛', check: s => s.minutes >= 100, desc: '100 total minutes' },
+  { id: 'min500', label: 'Veteran', icon: '⚔️', check: s => s.minutes >= 500, desc: '500 total minutes' },
+  { id: 'streak7', label: 'Consistent', icon: '🔥', check: s => s.streak >= 7, desc: '7-day practice streak' },
+  { id: 'streak30', label: 'Unstoppable', icon: '💪', check: s => s.streak >= 30, desc: '30-day practice streak' },
+  { id: 'attendance100', label: 'Perfect Attendance', icon: '⭐', check: s => s.attRate >= 100, desc: '100% attendance rate' },
+  { id: 'rep3', label: 'Repertoire Builder', icon: '📚', check: s => s.repCount >= 3, desc: 'Add 3 songs to repertoire' },
+  { id: 'rep10', label: 'Song Collector', icon: '🎵', check: s => s.repCount >= 10, desc: 'Add 10 songs to repertoire' },
+  { id: 'ear10', label: 'Ear Beginner', icon: '👂', check: s => s.earScore >= 10, desc: 'Score 10 in ear training' },
+  { id: 'ear50', label: 'Ear Master', icon: '🎧', check: s => s.earScore >= 50, desc: 'Score 50 in ear training' },
+];
+
+function calcPracticeStreak() {
+  const sorted = [..._practiceSessions].sort((a, b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
+  if (!sorted.length) return 0;
+  let streak = 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dates = [...new Set(sorted.map(s => s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : ''))].sort().reverse();
+  let checkDate = new Date(today);
+  for (const dStr of dates) {
+    const d = new Date(dStr + 'T12:00:00');
+    const diff = Math.round((checkDate - d) / 86400000);
+    if (diff === 0) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
+    else if (diff === 1) { streak++; checkDate = d; checkDate.setDate(checkDate.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
+function renderAchievements() {
+  const streak = calcPracticeStreak();
+  const totalSessions = _practiceSessions.length;
+  const totalMinutes = _practiceSessions.reduce((s, p) => s + (p.minutes || 0), 0);
+  const present = _attendanceRecords.filter(r => r.status === 'present').length;
+  const totalAtt = _attendanceRecords.length;
+  const attRate = totalAtt ? Math.round(present / totalAtt * 100) : 0;
+  const repCount = 0; // Will be loaded async
+
+  const level = Math.min(100, Math.floor(totalMinutes / 30) + 1);
+  const streakEl = document.getElementById('achStreak');
+  streakEl.textContent = streak;
+  if (streak >= 3) streakEl.innerHTML = streak + ' <span class="streak-fire">🔥</span>';
+  document.getElementById('achTotalSessions').textContent = totalSessions;
+  document.getElementById('achTotalMinutes').textContent = totalMinutes;
+  document.getElementById('achLevel').textContent = level;
+
+  const earned = JSON.parse(localStorage.getItem('bw_earned_badges') || '[]');
+  const stats = { sessions: totalSessions, minutes: totalMinutes, streak, attRate, repCount, earScore: _etScore };
+  const container = document.getElementById('badgesContainer');
+  let newBadgeEarned = false;
+  container.innerHTML = BADGES.map(b => {
+    const isNew = !earned.includes(b.id) && b.check(stats);
+    if (isNew) { earned.push(b.id); newBadgeEarned = true; }
+    const has = earned.includes(b.id) || b.check(stats);
+    return '<div style="background:var(--surface2);border:1px solid ' + (has ? 'var(--gold)' : 'var(--border)') + ';border-radius:2px;padding:.75rem .5rem;text-align:center;opacity:' + (has ? '1' : '.35') + '">' +
+      '<div style="font-size:1.5rem;margin-bottom:.3rem">' + b.icon + '</div>' +
+      '<div style="font-size:.68rem;color:var(--' + (has ? 'gold' : 'muted') + ');font-family:\'Barlow Condensed\',sans-serif;letter-spacing:.08em;text-transform:uppercase">' + b.label + '</div>' +
+      '<div style="font-size:.6rem;color:var(--muted);margin-top:.2rem">' + b.desc + '</div>' +
+      '</div>';
+  }).join('');
+  if (earned.length) localStorage.setItem('bw_earned_badges', JSON.stringify([...new Set(earned)]));
+  if (newBadgeEarned) setTimeout(showConfetti, 100);
+}
+
+// ── REPERTOIRE LISTENER (in loadStudentData) ──
+// Repertoire is loaded on-demand when panel is shown (via listener below)
+
+// Override showPanel to trigger chord creator config load and progress render
 const _origShowPanel = window.showPanel;
 window.showPanel = function(name, el) {
+  if (name === 'dashboard') {
+    renderDashboard();
+  }
   if (name === 'chord-creator') {
     ccLoadConfig();
     setTimeout(() => window.ccGenerateFromPicker?.(), 50);
   }
+  if (name === 'progress') {
+    renderProgress();
+  }
+  if (name === 'achievements') {
+    setTimeout(renderAchievements, 100);
+  }
+  if (name === 'repertoire') {
+    loadRepertoire();
+  }
+  if (name === 'metronome') {
+    setTimeout(() => metroUpdateBpm(document.getElementById('metroBpm').value), 50);
+  }
   _origShowPanel(name, el);
 };
+
+// Activate guitar strings background
+setTimeout(() => document.getElementById('bgStrings')?.classList.add('loaded'), 100);
+
+// ── CONFETTI ──
+function showConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const particles = [];
+  const colors = ['#d4af37','#c9911a','#f0d68a','#fff','#e8c44a'];
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: canvas.width/2+(Math.random()-0.5)*200,
+      y: canvas.height/2,
+      vx: (Math.random()-0.5)*8,
+      vy: -Math.random()*10-2,
+      size: 3+Math.random()*5,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      life: 1, gravity: 0.15+Math.random()*0.1
+    });
+  }
+  let start = performance.now();
+  function frame(now) {
+    const dt = Math.min((now-start)/16,3); start=now;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      if(p.life<=0)return;
+      p.x+=p.vx*dt;p.vy+=p.gravity*dt;p.y+=p.vy*dt;p.life-=0.015*dt;
+      if(p.life>0){
+        alive=true;ctx.globalAlpha=Math.max(p.life,0);
+        ctx.fillStyle=p.color;ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size*0.6);
+        ctx.globalAlpha=1;
+      }
+    });
+    if(alive) requestAnimationFrame(frame); else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── COUNT-UP ──
+function animateCountUp(el, target) {
+  if (!el||isNaN(target)) return;
+  const current = parseInt(el.textContent) || 0;
+  if (current >= target) return;
+  const duration = Math.min(1200, 400 + target*20);
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now-start)/duration,1);
+    const eased = 1-Math.pow(1-t,3);
+    el.textContent = Math.round(current+(target-current)*eased);
+    if (t<1) requestAnimationFrame(step); else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+// ── EMPTY STATE SVGS ──
+const EMPTY_SVGS = {
+  guitar:'<svg viewBox="0 0 80 80" fill="none"><path d="M40 65c-8 0-15-4-15-10s7-10 15-10 15 4 15 10-7 10-15 10z" stroke="var(--gold)" stroke-width="1.2"/><line x1="40" y1="55" x2="40" y2="25" stroke="var(--gold)" stroke-width="1"/><line x1="35" y1="30" x2="45" y2="30" stroke="var(--gold)" stroke-width=".8"/><line x1="35" y1="35" x2="45" y2="35" stroke="var(--gold)" stroke-width=".8"/><line x1="35" y1="40" x2="45" y2="40" stroke="var(--gold)" stroke-width=".8"/><line x1="25" y1="55" x2="18" y2="60" stroke="var(--gold)" stroke-width="1"/><line x1="55" y1="55" x2="62" y2="60" stroke="var(--gold)" stroke-width="1"/></svg>',
+  note:'<svg viewBox="0 0 80 80" fill="none"><circle cx="50" cy="58" r="8" stroke="var(--gold)" stroke-width="1.2"/><line x1="56" y1="50" x2="56" y2="18" stroke="var(--gold)" stroke-width="1.5"/><line x1="56" y1="18" x2="66" y2="22" stroke="var(--gold)" stroke-width="1.2"/><line x1="56" y1="26" x2="66" y2="30" stroke="var(--gold)" stroke-width="1"/></svg>',
+  chart:'<svg viewBox="0 0 80 80" fill="none"><line x1="12" y1="65" x2="68" y2="65" stroke="var(--gold)" stroke-width="1.2"/><line x1="15" y1="65" x2="15" y2="20" stroke="var(--gold)" stroke-width="1"/><rect x="22" y="40" width="8" height="25" fill="var(--gold)" opacity=".3" rx="1"/><rect x="36" y="30" width="8" height="35" fill="var(--gold)" opacity=".5" rx="1"/><rect x="50" y="45" width="8" height="20" fill="var(--gold)" opacity=".4" rx="1"/><circle cx="15" cy="20" r="2" fill="var(--gold)" opacity=".5"/></svg>',
+  star:'<svg viewBox="0 0 80 80" fill="none"><path d="M40 8l9.2 18.6 20.6 3-14.9 14.5 3.5 20.5L40 54.5 22.6 64.6l3.5-20.5L11.2 29.6l20.6-3z" stroke="var(--gold)" stroke-width="1.2"/><circle cx="40" cy="38" r="4" fill="var(--gold)" opacity=".3"/></svg>',
+  songbook:'<svg viewBox="0 0 80 80" fill="none"><path d="M16 12h48v56H16z" stroke="var(--gold)" stroke-width="1"/><line x1="16" y1="12" x2="16" y2="68" stroke="var(--gold)" stroke-width="1.5"/><circle cx="56" cy="54" r="8" stroke="var(--gold)" stroke-width="1"/><path d="M56 48v12l6-4z" fill="var(--gold)" opacity=".4"/><line x1="26" y1="24" x2="46" y2="24" stroke="var(--muted3)" stroke-width=".8"/><line x1="26" y1="32" x2="42" y2="32" stroke="var(--muted3)" stroke-width=".8"/></svg>',
+  metronome:'<svg viewBox="0 0 80 80" fill="none"><rect x="24" y="12" width="32" height="8" rx="2" stroke="var(--gold)" stroke-width="1"/><line x1="40" y1="20" x2="40" y2="62" stroke="var(--gold)" stroke-width="1.5"/><circle cx="40" cy="62" r="6" stroke="var(--gold)" stroke-width="1"/><line x1="40" y1="44" x2="52" y2="50" stroke="var(--muted3)" stroke-width=".8"/></svg>',
+  ear:'<svg viewBox="0 0 80 80" fill="none"><path d="M25 40c0-8.3 6.7-15 15-15s15 6.7 15 15c0 5-2.5 9.4-6.2 12" stroke="var(--gold)" stroke-width="1.5"/><path d="M32 40c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="var(--gold)" stroke-width="1.3"/><circle cx="40" cy="40" r="3" stroke="var(--gold)" stroke-width="1"/></svg>',
+  tuner:'<svg viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="20" stroke="var(--gold)" stroke-width="1.2"/><circle cx="40" cy="40" r="12" stroke="var(--gold)" stroke-width="1"/><circle cx="40" cy="40" r="4" fill="var(--gold)" opacity=".5"/></svg>'
+};
+
+function emptyStateSVG(type, msg) {
+  const svg = EMPTY_SVGS[type]||EMPTY_SVGS.note;
+  return `<div class="empty-state"><div class="empty-state-svg">${svg}</div><p>${msg}</p></div>`;
+}
+
+// ── HERO GREETING ──
+function updateHeroGreeting() {
+  const h = new Date().getHours();
+  const greeting = h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  const msgs = ['Ready for another great session?','Time to make some music!',"Let's practice and grow!",'Your journey continues today.','Music is the heartbeat of life.','Strive for progress, not perfection.'];
+  const el=document.getElementById('heroTimeOfDay');
+  if(el) el.textContent=greeting;
+  const sub=document.getElementById('heroMotivation');
+  if(sub) sub.textContent=msgs[Math.floor(Math.random()*msgs.length)];
+}
+
+// ── DASHBOARD STATS ──
+function updateDashboardStats() {
+  updateHeroGreeting();
+  const upcoming=_bookings.filter(b=>b.status==='confirmed'||b.status==='pending');
+  animateCountUp(document.getElementById('statUpcoming'),upcoming.length);
+  const completed=_bookings.filter(b=>b.status==='completed').length;
+  animateCountUp(document.getElementById('statCompleted'),completed);
+  const present=_attendanceRecords.filter(r=>r.status==='present').length;
+  const totalAtt=_attendanceRecords.length;
+  const rate=totalAtt?Math.round(present/totalAtt*100):0;
+  document.getElementById('statAttendance').textContent=rate+'%';
+}
+
+// ── INSTRUMENT PARTICLES ──
+function initInstrumentParticles() {
+  const c=document.getElementById('instrumentParticles');
+  if(!c)return;
+  const svgs=[
+    '<svg viewBox="0 0 40 80"><path d="M20 70c-6 0-11-3-11-7s5-7 11-7 11 3 11 7-5 7-11 7z" stroke="var(--gold)" stroke-width=".8" fill="none" opacity=".04"/><line x1="20" y1="63" x2="20" y2="30" stroke="var(--gold)" stroke-width=".6" opacity=".04"/></svg>',
+    '<svg viewBox="0 0 60 40"><rect x="8" y="8" width="44" height="24" rx="2" stroke="var(--gold)" stroke-width=".6" fill="none" opacity=".04"/><line x1="30" y1="32" x2="30" y2="38" stroke="var(--gold)" stroke-width=".5" opacity=".04"/><line x1="20" y1="38" x2="40" y2="38" stroke="var(--gold)" stroke-width=".5" opacity=".04"/></svg>'
+  ];
+  for(let i=0;i<4;i++){
+    const el=document.createElement('div');
+    el.className='instrument-particle';
+    el.innerHTML=svgs[i%svgs.length];
+    el.style.left=(5+Math.random()*90)+'%';
+    el.style.width=(30+Math.random()*40)+'px';
+    el.style.height=(40+Math.random()*40)+'px';
+    el.style.animationDuration=(25+Math.random()*20)+'s';
+    el.style.animationDelay=(Math.random()*20)+'s';
+    c.appendChild(el);
+  }
+}
+initInstrumentParticles();
+
+// Floating music note particles
+(function() {
+  const notes = ['♪','♫','♬','♩'];
+  for (let i = 0; i < 8; i++) {
+    const el = document.createElement('div');
+    el.className = 'note-particle';
+    el.textContent = notes[i % notes.length];
+    el.style.left = (5 + Math.random() * 90) + '%';
+    el.style.animationDuration = (15 + Math.random() * 20) + 's';
+    el.style.animationDelay = (Math.random() * 15) + 's';
+    document.body.appendChild(el);
+  }
+})();
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 
 // Focus email on load
 setTimeout(() => document.getElementById('siEmail')?.focus(), 100);
 </script>
+<canvas id="confettiCanvas"></canvas>
+<div id="instrumentParticles" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden"></div>
 </body>
 </html>

@@ -11,6 +11,7 @@
     ],
     "rewrites": [
       { "source": "/api/**", "function": "adminChat" },
+      { "source": "/api/charge/**", "function": "yocoCharge" },
       { "source": "**", "destination": "/index.html" }
     ]
   },

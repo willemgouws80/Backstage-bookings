@@ -827,58 +827,227 @@ window.enrollCourse = (id) => {
   document.getElementById('book').scrollIntoView({behavior:'smooth'});
 };
 
+// ── YOCO SDK LOADER ──
+let _yocoInstance = null;
+async function loadYocoSDK() {
+  if (window.Yoco) return;
+  const pk = window._S.siteConfig?.payments?.yoco?.publicKey;
+  if (!pk) return;
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://js.yoco.com/sdk/v1/yoco.js';
+    s.onload = () => {
+      try {
+        _yocoInstance = new Yoco({ publicKey: pk });
+        res();
+      } catch(e) { rej(e); }
+    };
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+// ── EMAILJS SENDER ──
+async function sendBookingEmail(booking) {
+  const alerts = window._S.siteConfig?.alerts;
+  if (!alerts?.enabled || !alerts?.serviceId || !alerts?.templateId || !alerts?.publicKey) return;
+  try {
+    if (!window.emailjs) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+        s.onload = () => { window.emailjs.init(alerts.publicKey); res(); };
+        s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    await window.emailjs.send(alerts.serviceId, alerts.templateId, {
+      student_name: booking.firstName + ' ' + (booking.lastName||''),
+      student_email: booking.email,
+      student_phone: booking.phone,
+      plan: booking.plan,
+      schedule: booking.prefDay ? booking.prefDay + ' ' + booking.prefTime : booking.chosenSlot,
+      payment_method: booking.payMethod,
+    });
+  } catch(e) { console.warn('EmailJS failed (non-blocking):', e); }
+}
+
+// ── WHATSAPP LINK ──
+function waBookingLink(booking) {
+  const waMsg = 'Hi ' + booking.firstName + '! Just confirming your ' + booking.plan + ' booking at Backstage Worship. We\\'ll be in touch soon with your lesson details.';
+  return 'https://wa.me/' + booking.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(waMsg);
+}
+
 window.submitBooking = async () => {
   const method = window._S.payMethod;
-  if (method==='yoco') {
-    if (!document.getElementById('cardNum').value || !document.getElementById('cardExp').value || !document.getElementById('cardCvv').value) { alert('Please enter your card details.'); return; }
+  const submitBtn = document.querySelector('.btn-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing…';
+
+  // Validate card fields for Yoco
+  if (method === 'yoco') {
+    if (!document.getElementById('cardNum').value || !document.getElementById('cardExp').value || !document.getElementById('cardCvv').value) {
+      alert('Please enter your card details.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirm & Pay';
+      return;
+    }
   }
-  // cash and cardmachine: no validation needed, payment happens in person
-  const dayEl=document.getElementById('fDay'), timeEl=document.getElementById('fTime');
+
+  const dayEl = document.getElementById('fDay'), timeEl = document.getElementById('fTime');
   const booking = {
-    firstName: document.getElementById('fName').value, lastName: document.getElementById('lName').value,
-    email: document.getElementById('fEmail').value, phone: document.getElementById('fPhone').value,
+    firstName: document.getElementById('fName').value,
+    lastName: document.getElementById('lName').value,
+    email: document.getElementById('fEmail').value,
+    phone: document.getElementById('fPhone').value,
     ageGroup: document.getElementById('fAge').value,
     instrument: window._S.isCourse ? 'Course' : document.getElementById('fInstrument').value,
-    level: window._S.isCourse ? '—' : document.getElementById('fLevel').value,
-    plan: window._S.planName, price: window._S.price, courseId: window._S.courseData?.id||null,
+    level: window._S.isCourse ? '\u2014' : document.getElementById('fLevel').value,
+    plan: window._S.planName,
+    price: window._S.price,
+    courseId: window._S.courseData?.id || null,
     chosenSlot: window._S.selectedSlot || window._S.courseData?.fixedSchedule || '',
-    prefDay: window._S.isCourse ? '' : (dayEl?.value||''),
-    prefTime: window._S.isCourse ? '' : (timeEl?.value||''),
+    prefDay: window._S.isCourse ? '' : (dayEl?.value || ''),
+    prefTime: window._S.isCourse ? '' : (timeEl?.value || ''),
     startDate: window._S.isCourse ? '' : document.getElementById('fDate').value,
     notes: document.getElementById('fNotes').value,
     venue: document.getElementById('fVenue')?.value?.trim() || '',
-    payMethod: window._S.payMethod, status:'pending', createdAt:new Date().toISOString()
+    payMethod: method,
+    status: 'pending',
+    payStatus: method === 'yoco' ? 'processing' : (method === 'eft' ? 'pending_eft' : 'pending'),
+    createdAt: new Date().toISOString()
   };
+
   try {
-    // Double-check capacity for courses before saving
+    // Double-check course capacity before saving
     if (window._S.courseData?.id) {
-      const courseSnap = await getDoc(doc(db,'courses',window._S.courseData.id));
+      const courseSnap = await getDoc(doc(db, 'courses', window._S.courseData.id));
       if (courseSnap.exists()) {
         const cd = courseSnap.data();
         const slotKey = window._S.selectedSlot || window._S.courseData?.fixedSchedule || '__total__';
-        const slotObj = (cd.slotOptions||[]).find(s => slotLabel(s) === slotKey);
+        const slotObj = (cd.slotOptions || []).find(s => slotLabel(s) === slotKey);
         const sMax = slotObj?.maxParticipants ? Number(slotObj.maxParticipants) : (cd.maxParticipants ? Number(cd.maxParticipants) : null);
         const taken = (cd.slotBookedCounts?.[slotKey] || 0);
         if (sMax && taken >= sMax) {
           alert('Sorry, this slot is no longer available. Please choose another.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Confirm & Pay';
           return;
         }
       }
     }
-    await addDoc(collection(db,'bookings'), booking);
-    // Increment course enrollment count if this is a course booking
+
+    // Save booking to Firestore first
+    const docRef = await addDoc(collection(db, 'bookings'), booking);
+    const bookingId = docRef.id;
+
+    // Handle Yoco payment
+    if (method === 'yoco') {
+      try {
+        if (!_yocoInstance) await loadYocoSDK();
+        if (!_yocoInstance) throw new Error('Yoco SDK not loaded - check your public key in admin');
+
+        // Parse expiry
+        const expParts = document.getElementById('cardExp').value.replace(/\s/g, '').split('/');
+        const expMonth = parseInt(expParts[0], 10);
+        const expYear = 2000 + parseInt(expParts[1], 10);
+
+        // Tokenize the card
+        const tokenResult = await _yocoInstance.createToken({
+          card: {
+            number: document.getElementById('cardNum').value.replace(/\s/g, ''),
+            expMonth,
+            expYear,
+            cvv: document.getElementById('cardCvv').value,
+          }
+        });
+
+        if (!tokenResult || !tokenResult.id) {
+          throw new Error('Card tokenization failed');
+        }
+
+        // Charge via Firebase Function
+        const chargeResp = await fetch('/api/charge/yoco', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: tokenResult.id,
+            amountInCents: Math.round(window._S.price * 100),
+            currency: 'ZAR',
+            bookingId,
+          }),
+        });
+
+        const chargeResult = await chargeResp.json();
+        if (!chargeResp.ok || !chargeResult.success) {
+          throw new Error(chargeResult.error || 'Payment failed');
+        }
+
+        // Payment succeeded - update booking
+        await updateDoc(doc(db, 'bookings', bookingId), {
+          payStatus: 'paid',
+          paid: true,
+          payRef: chargeResult.chargeId,
+          paidAt: new Date().toISOString(),
+        });
+        booking.payStatus = 'paid';
+
+      } catch (payErr) {
+        console.error('Payment error:', payErr);
+        // Booking is saved but payment failed - mark it
+        await updateDoc(doc(db, 'bookings', bookingId), {
+          payStatus: 'failed',
+          payError: payErr.message,
+        }).catch(() => {});
+        alert('Payment failed: ' + payErr.message + '. Your booking was saved but not confirmed. We will contact you.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Confirm & Pay';
+        return;
+      }
+    }
+
+    // Handle Stripe - save booking first, then redirect
+    if (method === 'online') {
+      const stripeUrl = window._S.siteConfig?.payments?.stripe?.checkoutUrl;
+      if (stripeUrl) {
+        setTimeout(() => window.open(stripeUrl, '_blank'), 500);
+      }
+    }
+
+    // Increment course enrollment
     if (window._S.courseData?.id) {
       const slotKey = window._S.selectedSlot || window._S.courseData?.fixedSchedule || '__total__';
-      updateDoc(doc(db,'courses',window._S.courseData.id), {
+      updateDoc(doc(db, 'courses', window._S.courseData.id), {
         bookedCount: increment(1),
         [`slotBookedCounts.${slotKey}`]: increment(1)
-      }).catch(e => console.warn('course count err:',e));
+      }).catch(e => console.warn('course count err:', e));
     }
-    document.getElementById('stepsBar').style.display='none';
-    document.querySelectorAll('.fs').forEach(s=>s.style.display='none');
+
+    // Show success
+    document.getElementById('stepsBar').style.display = 'none';
+    document.querySelectorAll('.fs').forEach(s => s.style.display = 'none');
     document.getElementById('successMsg').classList.add('show');
-    if (typeof fbq === 'function') fbq('track', 'CompleteRegistration', { content_name: booking.plan||'Booking', currency: 'ZAR', value: booking.price||0 });
-    // Server-side Meta Conversions API (backup if Pixel is blocked)
+
+    // Update success message with payment info
+    const payText = method === 'yoco' ? 'Paid via card' :
+      method === 'online' ? 'Redirected to Stripe' :
+      method === 'eft' ? 'EFT selected - email proof of payment' :
+      method === 'cash' ? 'Pay cash at first lesson' : 'Pay via card machine at studio';
+    document.querySelector('#successMsg p').innerHTML =
+      'Thank you — your booking is confirmed.<br><strong style="color:var(--gold)">' + payText + '</strong><br><br>' +
+      'Check your email for confirmation details.<br><br>' +
+      '<a href="' + waBookingLink(booking) + '" target="_blank" class="btn btn-gold btn-sm" style="display:inline-block;padding:.6rem 1.4rem;margin-top:.5rem;text-decoration:none">Send WhatsApp Confirmation</a>';
+
+    // Send EmailJS confirmation (non-blocking)
+    sendBookingEmail(booking);
+
+    // Facebook Pixel
+    if (typeof fbq === 'function') fbq('track', 'CompleteRegistration', {
+      content_name: booking.plan || 'Booking',
+      currency: 'ZAR',
+      value: booking.price || 0
+    });
+    // Meta Conversions API
     fetch('https://sendmetaconversion-oq4hyy6bda-uc.a.run.app', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -889,10 +1058,20 @@ window.submitBooking = async () => {
         plan: booking.plan, price: booking.price, currency: 'ZAR',
       }),
     }).catch(() => {});
-  } catch(err) { alert('Error saving booking. Please try again.'); console.error(err); }
+
+  } catch (err) {
+    alert('Error saving booking. Please try again.');
+    console.error(err);
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirm & Pay';
+  }
 };
 
-window.goStripe = () => { const url=window._S.siteConfig?.payments?.stripeCheckoutUrl; if(url) window.open(url,'_blank'); else alert('Stripe not configured yet.'); };
+window.goStripe = () => {
+  const url = window._S.siteConfig?.payments?.stripe?.checkoutUrl;
+  if (url) window.open(url, '_blank');
+  else alert('Stripe not configured yet.');
+};
 
 // Stagger loads slightly so Firebase SDK is fully ready
 loadSiteConfig();

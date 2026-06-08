@@ -7,6 +7,7 @@ const db = admin.firestore();
 
 const GEMINI_KEY = defineSecret('GEMINI_API_KEY');
 const META_TOKEN = defineSecret('META_ACCESS_TOKEN');
+const YOCO_SECRET = defineSecret('YOCO_SECRET_KEY');
 const PIXEL_ID = '878140531231402';
 
 exports.adminChat = onRequest(
@@ -107,6 +108,65 @@ If the data doesn't cover the question, suggest what they can find in the admin 
     } catch (err) {
       console.error('Gemini error:', err);
       res.status(500).json({ error: 'AI error: ' + (err?.message || err?.toString() || 'Unknown') });
+    }
+  }
+);
+
+// ── YOCO PAYMENT PROCESSING ──
+// Frontend sends a token from Yoco Inline.js; this function charges it server-side using the secret key.
+// The secret key is never exposed to the client — stored only in Firebase Secrets.
+exports.yocoCharge = onRequest(
+  { secrets: [YOCO_SECRET], cors: true, maxInstances: 10 },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { token, amountInCents, currency, bookingId } = req.body || {};
+    if (!token || !amountInCents) {
+      res.status(400).json({ error: 'token and amountInCents required' }); return;
+    }
+
+    try {
+      const secretKey = YOCO_SECRET.value();
+      const chargeResp = await fetch('https://pay.yoco.com/api/charges', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + secretKey,
+        },
+        body: JSON.stringify({
+          token,
+          amountInCents: Math.round(amountInCents),
+          currency: currency || 'ZAR',
+        }),
+      });
+
+      const result = await chargeResp.json();
+
+      if (chargeResp.ok && result.status === 'successful') {
+        // Optionally update the booking's payment status in Firestore
+        if (bookingId) {
+          try {
+            await db.collection('bookings').doc(bookingId).update({
+              paid: true,
+              payStatus: 'paid',
+              payRef: result.id,
+              paidAt: new Date().toISOString(),
+            });
+          } catch (e) { console.warn('Could not update booking:', e); }
+        }
+        res.json({ success: true, chargeId: result.id, result });
+      } else {
+        console.error('Yoco charge failed:', result);
+        res.status(402).json({ error: 'Payment failed', detail: result });
+      }
+    } catch (err) {
+      console.error('Yoco charge error:', err);
+      res.status(500).json({ error: err.message });
     }
   }
 );
