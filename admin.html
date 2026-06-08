@@ -2296,7 +2296,11 @@ window.togglePrivateAttendance = async function(email, date, existingId) {
 
   try {
     const baseData = { studentEmail: email, sessionDate: date, status: next, updatedAt: new Date().toISOString() };
-    if (ratingData) { baseData.rating = ratingData.rating; baseData.notes = ratingData.notes; }
+    // Always save rating when marking present — even if modal returned null
+    if (next === 'present') {
+      baseData.rating = (ratingData && ratingData.rating) || 3;
+      baseData.notes = (ratingData && ratingData.notes) || '';
+    }
     if (existingId && next !== 'unmarked') {
       await updateDoc(doc(db,'attendance',existingId), baseData);
       if (!window._privAttRecords) window._privAttRecords = {};
@@ -2328,7 +2332,10 @@ window.toggleAttendance = async function(email, date, courseId, existingId) {
 
   try {
     const baseData = { courseId, studentEmail: email, sessionDate: date, status: next, updatedAt: new Date().toISOString() };
-    if (ratingData) { baseData.rating = ratingData.rating; baseData.notes = ratingData.notes; }
+    if (next === 'present') {
+      baseData.rating = (ratingData && ratingData.rating) || 3;
+      baseData.notes = (ratingData && ratingData.notes) || '';
+    }
     if (existingId && next !== 'unmarked') {
       await updateDoc(doc(db,'attendance',existingId), baseData);
       window._attRecords[key] = { ...window._attRecords[key], ...baseData };
@@ -4464,8 +4471,9 @@ window.submitRating = function() {
   let stars = document.querySelectorAll('#ratingStars span.active').length;
   if (!stars) stars = 3;
   const notes = document.getElementById('ratingNotes').value.trim();
+  const payload = { rating: stars, notes };
   if (_ratingResolve) {
-    _ratingResolve({ rating: stars, notes });
+    _ratingResolve(payload);
     _ratingResolve = null;
   }
   closeRatingModal();
