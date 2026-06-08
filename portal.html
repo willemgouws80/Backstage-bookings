@@ -1057,6 +1057,8 @@ async function loadStudentData() {
     snap.forEach(d => _attendanceRecords.push({id:d.id,...d.data()}));
     _attendanceRecords.sort((a,b) => ((b.sessionDate||b.date||'') > (a.sessionDate||a.date||'') ? 1 : -1));
     renderAttendance();
+    renderDashboard();
+    renderProgress();
   }, e => console.error('attendance snapshot error:', e));
 
   const invQ = query(collection(db,'invoices'), where('email','==',email));
@@ -1113,7 +1115,7 @@ async function loadStudentData() {
 function renderDashboard() {
   updateHeroGreeting();
   const upcoming = _bookings.filter(b => b.status !== 'cancelled' && (!b.status || b.status === 'pending' || b.status === 'confirmed'));
-  const completed = _bookings.filter(b => b.status === 'completed');
+  const completed = _attendanceRecords.filter(r => r.status === 'present').length;
   const present = _attendanceRecords.filter(r => r.status === 'present').length;
   const totalAtt = _attendanceRecords.length;
   const rate = totalAtt ? Math.round(present/totalAtt*100) : 0;
@@ -1136,7 +1138,7 @@ function renderDashboard() {
 
   // Compact stats
   animateCountUp(document.getElementById('statUpcoming'), upcoming.length);
-  animateCountUp(document.getElementById('statCompleted'), completed.length);
+  animateCountUp(document.getElementById('statCompleted'), completed);
   document.getElementById('statAttendance').textContent = rate + '%';
   document.getElementById('statDue').textContent = dueTotal ? 'R '+dueTotal.toLocaleString() : 'R 0';
 
@@ -1387,7 +1389,7 @@ function renderProgress() {
   const present = _attendanceRecords.filter(r => r.status === 'present').length;
   const totalAtt = _attendanceRecords.length;
   const rate = totalAtt ? Math.round(present / totalAtt * 100) + '%' : '—';
-  const completed = _bookings.filter(b => b.status === 'completed').length;
+  const completed = _attendanceRecords.filter(r => r.status === 'present').length;
 
   document.getElementById('progPracticeTotal').textContent = totalSessions;
   document.getElementById('progPracticeMinutes').textContent = totalMinutes + ' min';
@@ -1451,7 +1453,7 @@ function renderProgress() {
   const avg = (rated.reduce((sum, r) => sum + Number(r.rating), 0) / rated.length).toFixed(1);
   ratingsContainer.innerHTML = '<div style="margin-bottom:1rem;font-size:.9rem;color:var(--muted)">Average rating: <strong style="color:var(--gold);font-size:1.4rem">' + avg + '</strong> / 5 (' + rated.length + ' ratings)</div>' +
     rated.slice(-10).reverse().map(r => {
-      const d = r.date ? new Date(r.date+'T12:00:00').toLocaleDateString('en-ZA', {day:'numeric',month:'short'}) : '—';
+      const d = (r.sessionDate||r.date) ? new Date((r.sessionDate||r.date)+'T12:00:00').toLocaleDateString('en-ZA', {day:'numeric',month:'short'}) : '—';
       const stars = '★'.repeat(Math.round(Number(r.rating))) + '☆'.repeat(5 - Math.round(Number(r.rating)));
       return '<div class="attendance-row"><span class="att-date">' + d + '</span><span style="color:var(--gold);letter-spacing:2px">' + stars + '</span><span class="att-note">' + (r.notes||'') + '</span></div>';
     }).join('');
@@ -2705,7 +2707,7 @@ function updateDashboardStats() {
   updateHeroGreeting();
   const upcoming=_bookings.filter(b=>b.status==='confirmed'||b.status==='pending');
   animateCountUp(document.getElementById('statUpcoming'),upcoming.length);
-  const completed=_bookings.filter(b=>b.status==='completed').length;
+  const completed=_attendanceRecords.filter(r=>r.status==='present').length;
   animateCountUp(document.getElementById('statCompleted'),completed);
   const present=_attendanceRecords.filter(r=>r.status==='present').length;
   const totalAtt=_attendanceRecords.length;
