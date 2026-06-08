@@ -1444,7 +1444,7 @@ function renderProgress() {
   });
 
   // Teacher ratings (from attendance records that have rating)
-  const rated = _attendanceRecords.filter(r => r.rating);
+  const rated = _attendanceRecords.filter(r => r.rating != null && Number(r.rating) > 0);
   const ratingsContainer = document.getElementById('ratingsList');
   if (!rated.length) {
     ratingsContainer.innerHTML = emptyStateSVG('star','No ratings yet. Ratings appear after attended lessons.');

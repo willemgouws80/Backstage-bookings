@@ -4454,11 +4454,12 @@ window.showRatingModal = function(studentName) {
 };
 
 window.submitRating = function() {
-  const stars = document.querySelectorAll('#ratingStars span.active').length;
+  let stars = document.querySelectorAll('#ratingStars span.active').length;
+  if (!stars) stars = 3; // default to 3 if admin didn't click a star
   const notes = document.getElementById('ratingNotes').value.trim();
   closeRatingModal();
   if (_ratingResolve) {
-    _ratingResolve(stars ? { rating: stars, notes } : null);
+    _ratingResolve({ rating: stars, notes });
     _ratingResolve = null;
   }
 };
