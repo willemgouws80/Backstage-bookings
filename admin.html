@@ -1041,7 +1041,7 @@ service firebase.storage {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
@@ -2998,10 +2998,16 @@ async function loadNotes(email, idx) {
   }
 }
 
-async function loadPracticeSessions(email, idx) {
+window.loadPracticeSessions = async function(email, idx) {
   const container = document.getElementById(`practiceLog-${idx}`);
   try {
-    const snap = await getDocs(query(collection(db,'practiceSessions'), where('email','==',email), orderBy('createdAt','desc')));
+    const snap = await getDocs(collection(db,'practiceSessions'));
+    const sessions = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if ((data.email||'').toLowerCase() === email.toLowerCase()) sessions.push({id:d.id, ...data});
+    });
+    sessions.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
     const sessions = [];
     snap.forEach(d => sessions.push({id:d.id,...d.data()}));
     if (!sessions.length) {
