@@ -2192,42 +2192,121 @@ async function renderStudentAttendance(email, students) {
   const student = students.find(s => s.email === email);
   if (!student) return;
 
-  // Load private lesson attendance for this student
-  let attRecords = [];
+  // Get all private lesson bookings for this student
+  const bookings = (window._allBookings||[]).filter(b =>
+    (b.email||'').toLowerCase() === email.toLowerCase() && !b.courseId
+  );
+
+  // Generate all session dates from all bookings
+  const dayMap = {monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
+  const rangeStart = new Date(); rangeStart.setMonth(rangeStart.getMonth()-3);
+  const rangeEnd   = new Date(); rangeEnd.setMonth(rangeEnd.getMonth()+6);
+  let allSessions = [];
+  bookings.forEach(b => {
+    // Use sessionDates if available (confirmed booking with school terms)
+    if (Array.isArray(b.sessionDates) && b.sessionDates.length) {
+      b.sessionDates.forEach(d => {
+        allSessions.push({ date:d, plan:b.plan||b.instrument||'Private lesson', time:b.prefTime||'', prefDay:b.prefDay });
+      });
+      return;
+    }
+    // Otherwise generate weekly recurrences from prefDay + startDate
+    if (b.prefDay) {
+      const targetDay = dayMap[b.prefDay.toLowerCase()];
+      if (targetDay === undefined) return;
+      let cur = b.startDate ? new Date(b.startDate+'T12:00:00') : new Date(rangeStart);
+      while (cur.getDay() !== targetDay) cur.setDate(cur.getDate()+1);
+      let count = 0;
+      while (cur >= rangeStart && cur <= rangeEnd && count < 200) {
+        allSessions.push({ date:cur.toISOString().split('T')[0], plan:b.plan||b.instrument||'Private lesson', time:b.prefTime||'', prefDay:b.prefDay });
+        cur.setDate(cur.getDate()+7);
+        count++;
+      }
+    }
+  });
+  allSessions.sort((a,b) => a.date.localeCompare(b.date));
+
+  // Fetch existing attendance records (no courseId = private lesson)
+  let attRecords = {};
   try {
     const snap = await getDocs(collection(db,'attendance'));
     snap.forEach(d => {
       const a = d.data();
       if ((a.studentEmail||'').toLowerCase() === email.toLowerCase() && !a.courseId) {
-        attRecords.push({id:d.id,...a});
+        attRecords[a.sessionDate] = { id:d.id, status:a.status, rating:a.rating, notes:a.notes, plan:a.plan };
       }
     });
   } catch(e) {}
-  attRecords.sort((a,b) => (b.sessionDate||'').localeCompare(a.sessionDate||''));
+  window._privAttRecords = attRecords;
 
-  const rows = attRecords.map(r => `
-    <div class="list-item">
-      <div class="li-content">
-        <div class="li-title">${r.sessionDate} — ${r.plan||'Private lesson'}</div>
-        <div class="li-meta">${r.status==='present'?'✓ Present':'✗ Absent'}</div>
-      </div>
-      <button class="btn btn-danger btn-sm" onclick="deleteAttRecord('${r.id}')">Delete</button>
-    </div>`).join('');
+  // Stats
+  const vals = Object.values(attRecords);
+  const present = vals.filter(r => r.status === 'present').length;
+  const absent  = vals.filter(r => r.status === 'absent').length;
+
+  // Render grid
+  const rows = allSessions.length
+    ? allSessions.map(s => {
+        const rec    = attRecords[s.date];
+        const status = rec?.status || 'unmarked';
+        const icon   = status === 'present' ? (rec?.rating ? '★' : '✓') : status === 'absent' ? '✗' : '·';
+        const cls    = status === 'present' ? 'att-present' : status === 'absent' ? 'att-absent' : 'att-unmarked';
+        return `<tr>
+          <td style="padding:.5rem .75rem;border:1px solid var(--border);text-align:left;white-space:nowrap">${s.date}</td>
+          <td style="padding:.5rem .75rem;border:1px solid var(--border);text-align:left">${s.plan}${s.time?' <span style="color:var(--muted);font-size:.75rem">'+s.time+'</span>':''}</td>
+          <td style="padding:.5rem .75rem;border:1px solid var(--border);text-align:center">
+            <button class="att-cell ${cls}" onclick="togglePrivateAttendance('${email}','${s.date}','${rec?.id||''}')" title="${s.date}${rec?.rating ? ' ★ '+rec.rating+'/5' : ''}">${icon}</button>
+          </td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="3" style="padding:2rem;text-align:center;color:var(--muted)">No scheduled sessions for this student</td></tr>';
 
   view.innerHTML = `
     <div class="card">
-      <div class="card-title">${student.name} — Individual Lesson Attendance</div>
-      <div class="two-col" style="margin-bottom:1rem">
-        <div class="fg"><label>Session Date</label><input type="date" id="indivDate"></div>
-        <div class="fg"><label>Plan / Lesson</label><input type="text" id="indivPlan" placeholder="e.g. 60-min Guitar"></div>
+      <div class="card-title">${student.name} — Private Lessons</div>
+      <div style="display:flex;gap:1.5rem;margin-bottom:1rem;font-size:.82rem;color:var(--muted);flex-wrap:wrap">
+        <span>Total: ${allSessions.length} sessions</span>
+        <span style="color:var(--success)">✓ Present: ${present}</span>
+        <span style="color:var(--danger)">✗ Absent: ${absent}</span>
+        <span style="color:var(--muted)">· Unmarked: ${allSessions.length-present-absent}</span>
       </div>
-      <div style="display:flex;gap:.75rem;margin-bottom:1.5rem">
-        <button class="btn btn-gold btn-sm" onclick="addIndivAttendance('${email}','present')">✓ Mark Present</button>
-        <button class="btn btn-outline btn-sm" onclick="addIndivAttendance('${email}','absent')">✗ Mark Absent</button>
+      <div class="att-legend">
+        <span><span class="att-cell att-present" style="width:20px;height:20px">✓</span> Present</span>
+        <span><span class="att-cell att-absent" style="width:20px;height:20px">✗</span> Absent</span>
+        <span><span class="att-cell att-unmarked" style="width:20px;height:20px">·</span> Unmarked</span>
       </div>
-      ${rows || '<div class="loading-text">No attendance records yet</div>'}
+      <div class="att-grid">
+        <table class="att-table">
+          <thead><tr><th style="text-align:left;min-width:120px">Date</th><th style="text-align:left">Lesson</th><th style="width:70px">Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>`;
 }
+
+window.togglePrivateAttendance = async function(email, date, existingId) {
+  const current = window._privAttRecords?.[date]?.status || 'unmarked';
+  const next    = current === 'unmarked' ? 'present' : current === 'present' ? 'absent' : 'unmarked';
+
+  let ratingData = null;
+  if (next === 'present') {
+    const studentName = ((window._allBookings||[]).find(b => (b.email||'').toLowerCase() === email.toLowerCase())?.firstName||'').trim() || email;
+    ratingData = await window.showRatingModal(studentName);
+  }
+
+  try {
+    const baseData = { studentEmail: email, sessionDate: date, status: next, updatedAt: new Date().toISOString() };
+    if (ratingData) { baseData.rating = ratingData.rating; baseData.notes = ratingData.notes; }
+    if (existingId && next !== 'unmarked') {
+      await updateDoc(doc(db,'attendance',existingId), baseData);
+    } else if (existingId && next === 'unmarked') {
+      await deleteDoc(doc(db,'attendance',existingId));
+    } else if (next !== 'unmarked') {
+      await addDoc(collection(db,'attendance'), baseData);
+    }
+    window.loadAttendanceView();
+  } catch(e) { toast('Could not save: '+e.message,'error'); }
+};
 
 window.toggleAttendance = async function(email, date, courseId, existingId) {
   const key    = `${email}__${date}`;
@@ -2503,14 +2582,29 @@ window.confirmReschedule = async function(bookingId) {
     return;
   }
   try {
-    await updateDoc(doc(db,'bookings',bookingId), {
+    const updates = {
       prefDay: newDay, prefTime: newTime,
       startDate: newDate || null,
       rescheduledAt: new Date().toISOString()
-    });
+    };
+    // Regenerate or clear session dates for private lessons
+    const b = (window._bookings||[]).find(x => x.id === bookingId);
+    if (b && !b.courseId) {
+      if (newDay && (newDate || b.startDate)) {
+        const sessionDates = await generateTermDates(newDay, newDate || b.startDate);
+        updates.sessionDates  = sessionDates;
+        updates.totalSessions = sessionDates.length;
+      } else {
+        // No valid start date — clear stale dates so calendar falls through to on-the-fly calculation
+        updates.sessionDates  = [];
+        updates.totalSessions = 0;
+      }
+    }
+    await updateDoc(doc(db,'bookings',bookingId), updates);
     document.querySelector('.resched-modal')?.remove();
     toast('Booking rescheduled!','success');
     loadDashboard();
+    loadCalendar();
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
