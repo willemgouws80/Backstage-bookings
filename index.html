@@ -874,7 +874,7 @@ async function sendBookingEmail(booking) {
 
 // ── WHATSAPP LINK ──
 function waBookingLink(booking) {
-  const waMsg = 'Hi ' + booking.firstName + '! Just confirming your ' + booking.plan + ' booking at Backstage Worship. We\\'ll be in touch soon with your lesson details.';
+  const waMsg = 'Hi ' + booking.firstName + '! Just confirming your ' + booking.plan + ' booking at Backstage Worship. We\'ll be in touch soon with your lesson details.';
   return 'https://wa.me/' + booking.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(waMsg);
 }
 
