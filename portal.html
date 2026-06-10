@@ -328,6 +328,13 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .dash-stat-item{background:rgba(17,16,9,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;text-align:center}
 .dash-stat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;color:var(--text);line-height:1.2}
 .dash-stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sv-wrap{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem 1rem;margin-bottom:1.5rem}
+.sv-wrap .sv-title{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.65rem}
+.sv-table{display:inline-flex;flex-direction:column;gap:2px}
+.sv-row{display:flex;gap:2px}
+.sv-cell{width:42px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.85rem;border-radius:2px;font-weight:500;background:var(--bg);border:1px solid var(--surface2)}
+.sv-cell.roman{font-size:.65rem;color:var(--muted);height:24px;border:none;background:transparent}
+.sv-cell.ct{background:rgba(201,145,26,.16);border-color:var(--gold);color:var(--gold);font-weight:700}
 </style>
 </head>
 <body>
@@ -588,6 +595,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         </div>
         <button class="btn btn-gold" onclick="ccGenerateFromPicker()">Generate</button>
       </div>
+
+      <div id="ccSvContainer" class="sv-wrap"></div>
 
       <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;background:var(--surface);border:1px solid var(--border);padding:1.25rem;border-radius:2px;margin-bottom:1.5rem">
         <div class="fg" style="margin:0;flex:1;min-width:200px">
@@ -1966,6 +1975,57 @@ async function ccLoadConfig() {
 }
 window.ccLoadConfig = ccLoadConfig;
 
+function ccRenderScaleView() {
+  const rootStr = document.getElementById('ccRootNote').value;
+  const type = document.getElementById('ccChordType').value;
+  const rootSemi = CC_NOTE_TO_SEMI[rootStr];
+  if (rootSemi === undefined || !CC_CHORD_TYPES[type]) return;
+  const NOTE_ARR = CC_useFlats ? CC_FLAT_NOTES : CC_NOTES;
+  const DEGS = [
+    { deg:1, roman:'I', majorSemi:0 },
+    { deg:2, roman:'II', majorSemi:2 },
+    { deg:3, roman:'III', majorSemi:4 },
+    { deg:4, roman:'IV', majorSemi:5 },
+    { deg:5, roman:'V', majorSemi:7 },
+    { deg:6, roman:'VI', majorSemi:9 },
+    { deg:7, roman:'VII', majorSemi:11 },
+  ];
+  const INT2DEG = { 0:{d:1,a:''}, 2:{d:2,a:''}, 3:{d:3,a:'b'}, 4:{d:3,a:''}, 5:{d:4,a:''}, 6:{d:5,a:'b'}, 7:{d:5,a:''}, 8:{d:5,a:'#'}, 9:{d:6,a:''}, 10:{d:7,a:'b'}, 11:{d:7,a:''} };
+  const intervals = CC_CHORD_TYPES[type].intervals;
+  const pos = DEGS.map(sd => ({
+    semi:(rootSemi+sd.majorSemi)%12,
+    note:NOTE_ARR[(rootSemi+sd.majorSemi)%12],
+    roman:sd.roman, ct:false, alt:'', dRoman:sd.roman
+  }));
+  for (const iv of intervals) {
+    const info = INT2DEG[iv];
+    if (!info) continue;
+    const p = pos[info.d-1];
+    p.ct = true;
+    const cs = (rootSemi+iv)%12;
+    if (cs !== p.semi) {
+      p.semi = cs;
+      p.alt = info.a;
+      p.note = NOTE_ARR[cs];
+      p.dRoman = (info.a==='b'?'b':info.a==='#'?'#':'')+p.roman;
+    }
+  }
+  let h = '<div class="sv-title">Scale & Chord Breakdown</div><div class="sv-table">';
+  h += '<div class="sv-row">';
+  for (const p of pos) h += `<div class="sv-cell roman${p.ct?' ct':''}">${p.dRoman}</div>`;
+  h += `<div class="sv-cell roman${pos[0].ct?' ct':''}">VIII</div></div>`;
+  h += '<div class="sv-row">';
+  for (const p of pos) h += `<div class="sv-cell${p.ct?' ct':''}">${p.note}</div>`;
+  h += `<div class="sv-cell${pos[0].ct?' ct':''}">${pos[0].note}</div>`;
+  h += '</div></div>';
+  const container = document.getElementById('ccSvContainer');
+  if (container) container.innerHTML = h;
+}
+window.ccRenderScaleView = ccRenderScaleView;
+
+document.getElementById('ccRootNote').addEventListener('change', ccRenderScaleView);
+document.getElementById('ccChordType').addEventListener('change', ccRenderScaleView);
+
 // ── METRONOME ──
 let _metroCtx = null, _metroTimer = null, _metroBeat = 0, _metroRunning = false;
 let _metroNextTime = 0, _metroScheduleAhead = 0.1, _metroStartTime = 0;
@@ -2600,6 +2660,7 @@ window.showPanel = function(name, el) {
   if (name === 'chord-creator') {
     ccLoadConfig();
     setTimeout(() => window.ccGenerateFromPicker?.(), 50);
+    setTimeout(() => ccRenderScaleView?.(), 60);
   }
   if (name === 'progress') {
     renderProgress();
