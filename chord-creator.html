@@ -128,6 +128,13 @@
     .voicing-grid { grid-template-columns: 1fr 1fr; }
     .two-col { grid-template-columns: 1fr; }
   }
+.sv-wrap{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem 1rem;margin-bottom:1.5rem}
+.sv-wrap .sv-title{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.65rem}
+.sv-table{display:inline-flex;flex-direction:column;gap:2px}
+.sv-row{display:flex;gap:2px}
+.sv-cell{width:42px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.85rem;border-radius:2px;font-weight:500;background:var(--bg);border:1px solid var(--surface2)}
+.sv-cell.roman{font-size:.65rem;color:var(--muted);height:24px;border:none;background:transparent}
+.sv-cell.ct{background:rgba(201,145,26,.16);border-color:var(--gold);color:var(--gold);font-weight:700}
 </style>
 </head>
 <body>
@@ -181,6 +188,7 @@
     </div>
     <button class="btn" onclick="generateFromPicker()">Generate</button>
   </div>
+  <div id="svContainer" class="sv-wrap"></div>
 </div>
 
 <!-- Tab 2: Raw notes -->
@@ -214,6 +222,20 @@ function semiOf(note) {
   const flatMap = {'DB':'C#','EB':'D#','GB':'F#','AB':'G#','BB':'A#'};
   return NOTE_TO_SEMI[flatMap[n] || n];
 }
+
+const CHORD_TYPES = {
+  major: { intervals: [0, 4, 7], suffix: '', name: 'Major' },
+  minor: { intervals: [0, 3, 7], suffix: 'm', name: 'Minor' },
+  dom7:  { intervals: [0, 4, 7, 10], suffix: '7', name: 'Dominant 7th' },
+  maj7:  { intervals: [0, 4, 7, 11], suffix: 'maj7', name: 'Major 7th' },
+  min7:  { intervals: [0, 3, 7, 10], suffix: 'm7', name: 'Minor 7th' },
+  sus2:  { intervals: [0, 2, 7], suffix: 'sus2', name: 'Sus 2' },
+  sus4:  { intervals: [0, 5, 7], suffix: 'sus4', name: 'Sus 4' },
+  add9:  { intervals: [0, 2, 4, 7], suffix: 'add9', name: 'Add 9' },
+};
+const INTERVAL_LABELS = {
+  0:'R',1:'b2',2:'2',3:'b3',4:'3',5:'4',6:'b5',7:'5',8:'#5',9:'6',10:'b7',11:'7'
+};
 
 const OPEN = [4, 9, 2, 7, 11, 4];
 
@@ -548,6 +570,49 @@ function renderChord(name, voicings) {
   return html;
 }
 
+function renderScaleView() {
+  const rootStr = document.getElementById('rootNote').value;
+  const type = document.getElementById('chordType').value;
+  const rootSemi = NOTE_TO_SEMI[rootStr];
+  const DEGS = [
+    { deg:1, roman:'I', majorSemi:0 },
+    { deg:2, roman:'II', majorSemi:2 },
+    { deg:3, roman:'III', majorSemi:4 },
+    { deg:4, roman:'IV', majorSemi:5 },
+    { deg:5, roman:'V', majorSemi:7 },
+    { deg:6, roman:'VI', majorSemi:9 },
+    { deg:7, roman:'VII', majorSemi:11 },
+  ];
+  const INT2DEG = { 0:{d:1,a:''}, 2:{d:2,a:''}, 3:{d:3,a:'b'}, 4:{d:3,a:''}, 5:{d:4,a:''}, 6:{d:5,a:'b'}, 7:{d:5,a:''}, 8:{d:5,a:'#'}, 9:{d:6,a:''}, 10:{d:7,a:'b'}, 11:{d:7,a:''} };
+  const intervals = CHORD_TYPES[type].intervals;
+  const pos = DEGS.map(sd => ({
+    semi:(rootSemi+sd.majorSemi)%12, note:NOTES[(rootSemi+sd.majorSemi)%12],
+    roman:sd.roman, ct:false, alt:'', dRoman:sd.roman
+  }));
+  for (const iv of intervals) {
+    const info = INT2DEG[iv];
+    if (!info) continue;
+    const p = pos[info.d-1];
+    p.ct = true;
+    const cs = (rootSemi+iv)%12;
+    if (cs !== p.semi) {
+      p.semi = cs;
+      p.alt = info.a;
+      p.note = info.a === 'b' ? FLAT_NOTES[cs] : NOTES[cs];
+      p.dRoman = (info.a==='b'?'b':info.a==='#'?'#':'')+p.roman;
+    }
+  }
+  let h = '<div class="sv-title">Scale & Chord Breakdown</div><div class="sv-table">';
+  h += '<div class="sv-row">';
+  for (const p of pos) h += `<div class="sv-cell roman${p.ct?' ct':''}">${p.dRoman}</div>`;
+  h += `<div class="sv-cell roman${pos[0].ct?' ct':''}">VIII</div></div>`;
+  h += '<div class="sv-row">';
+  for (const p of pos) h += `<div class="sv-cell${p.ct?' ct':''}">${p.note}</div>`;
+  h += `<div class="sv-cell${pos[0].ct?' ct':''}">${pos[0].note}</div>`;
+  h += '</div></div>';
+  document.getElementById('svContainer').innerHTML = h;
+}
+
 function generateFromPicker() {
   const sel = document.getElementById('rootNote');
   const rootStr = sel.value;
@@ -610,7 +675,12 @@ function switchTab(tabId, el) {
   document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-window.addEventListener('DOMContentLoaded', () => { generateFromPicker(); });
+window.addEventListener('DOMContentLoaded', () => {
+  generateFromPicker();
+  renderScaleView();
+  document.getElementById('rootNote').addEventListener('change', renderScaleView);
+  document.getElementById('chordType').addEventListener('change', renderScaleView);
+});
 </script>
 </body>
 </html>
