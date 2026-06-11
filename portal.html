@@ -1990,9 +1990,11 @@ function ccDegreeNote(rootNoteStr, degreeIdx, targetSemi) {
 }
 
 function ccRenderScaleView() {
-  const rootStr = document.getElementById('ccRootNote').value;
+  const rootStrRaw = document.getElementById('ccRootNote').value;
+  const ENH = { 'D#':'Eb', 'G#':'Ab', 'A#':'Bb' };
+  const rootStr = ENH[rootStrRaw] || rootStrRaw;
   const type = document.getElementById('ccChordType').value;
-  const rootSemi = CC_NOTE_TO_SEMI[rootStr];
+  const rootSemi = ccSemiOf(rootStr);
   if (rootSemi === undefined || !CC_CHORD_TYPES[type]) return;
   const DEGS = [
     { deg:1, roman:'I', majorSemi:0 },

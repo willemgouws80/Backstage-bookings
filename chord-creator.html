@@ -571,9 +571,11 @@ function renderChord(name, voicings) {
 }
 
 function renderScaleView() {
-  const rootStr = document.getElementById('rootNote').value;
+  const rootStrRaw = document.getElementById('rootNote').value;
+  const ENH = { 'D#':'Eb', 'G#':'Ab', 'A#':'Bb' };
+  const rootStr = ENH[rootStrRaw] || rootStrRaw;
   const type = document.getElementById('chordType').value;
-  const rootSemi = NOTE_TO_SEMI[rootStr];
+  const rootSemi = semiOf(rootStr);
   const DEGS = [
     { deg:1, roman:'I', majorSemi:0 },
     { deg:2, roman:'II', majorSemi:2 },
