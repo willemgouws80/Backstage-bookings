@@ -1975,12 +1975,25 @@ async function ccLoadConfig() {
 }
 window.ccLoadConfig = ccLoadConfig;
 
+function ccDegreeNote(rootNoteStr, degreeIdx, targetSemi) {
+  const LETTERS = ['C','D','E','F','G','A','B'];
+  const NATURAL = [0,2,4,5,7,9,11];
+  const scaleLetterIdx = (LETTERS.indexOf(rootNoteStr[0]) + degreeIdx) % 7;
+  const letter = LETTERS[scaleLetterIdx];
+  const diff = ((targetSemi - NATURAL[scaleLetterIdx]) % 12 + 12) % 12;
+  if (diff === 0) return letter;
+  if (diff === 1) return letter + '#';
+  if (diff === 2) return letter + '##';
+  if (diff === 11) return letter + 'b';
+  if (diff === 10) return letter + 'bb';
+  return letter;
+}
+
 function ccRenderScaleView() {
   const rootStr = document.getElementById('ccRootNote').value;
   const type = document.getElementById('ccChordType').value;
   const rootSemi = CC_NOTE_TO_SEMI[rootStr];
   if (rootSemi === undefined || !CC_CHORD_TYPES[type]) return;
-  const NOTE_ARR = CC_useFlats ? CC_FLAT_NOTES : CC_NOTES;
   const DEGS = [
     { deg:1, roman:'I', majorSemi:0 },
     { deg:2, roman:'II', majorSemi:2 },
@@ -1992,9 +2005,9 @@ function ccRenderScaleView() {
   ];
   const INT2DEG = { 0:{d:1,a:''}, 2:{d:2,a:''}, 3:{d:3,a:'b'}, 4:{d:3,a:''}, 5:{d:4,a:''}, 6:{d:5,a:'b'}, 7:{d:5,a:''}, 8:{d:5,a:'#'}, 9:{d:6,a:''}, 10:{d:7,a:'b'}, 11:{d:7,a:''} };
   const intervals = CC_CHORD_TYPES[type].intervals;
-  const pos = DEGS.map(sd => ({
+  const pos = DEGS.map((sd, i) => ({
     semi:(rootSemi+sd.majorSemi)%12,
-    note:NOTE_ARR[(rootSemi+sd.majorSemi)%12],
+    note:ccDegreeNote(rootStr, i, (rootSemi+sd.majorSemi)%12),
     roman:sd.roman, ct:false, alt:'', dRoman:sd.roman
   }));
   for (const iv of intervals) {
@@ -2006,7 +2019,7 @@ function ccRenderScaleView() {
     if (cs !== p.semi) {
       p.semi = cs;
       p.alt = info.a;
-      p.note = NOTE_ARR[cs];
+      p.note = ccDegreeNote(rootStr, info.d-1, cs);
       p.dRoman = (info.a==='b'?'b':info.a==='#'?'#':'')+p.roman;
     }
   }

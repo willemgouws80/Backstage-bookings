@@ -583,10 +583,23 @@ function renderScaleView() {
     { deg:6, roman:'VI', majorSemi:9 },
     { deg:7, roman:'VII', majorSemi:11 },
   ];
+  function degreeNote(rootNoteStr, degreeIdx, targetSemi) {
+    const LETTERS = ['C','D','E','F','G','A','B'];
+    const NATURAL = [0,2,4,5,7,9,11];
+    const scaleLetterIdx = (LETTERS.indexOf(rootNoteStr[0]) + degreeIdx) % 7;
+    const letter = LETTERS[scaleLetterIdx];
+    const diff = ((targetSemi - NATURAL[scaleLetterIdx]) % 12 + 12) % 12;
+    if (diff === 0) return letter;
+    if (diff === 1) return letter + '#';
+    if (diff === 2) return letter + '##';
+    if (diff === 11) return letter + 'b';
+    if (diff === 10) return letter + 'bb';
+    return letter;
+  }
   const INT2DEG = { 0:{d:1,a:''}, 2:{d:2,a:''}, 3:{d:3,a:'b'}, 4:{d:3,a:''}, 5:{d:4,a:''}, 6:{d:5,a:'b'}, 7:{d:5,a:''}, 8:{d:5,a:'#'}, 9:{d:6,a:''}, 10:{d:7,a:'b'}, 11:{d:7,a:''} };
   const intervals = CHORD_TYPES[type].intervals;
-  const pos = DEGS.map(sd => ({
-    semi:(rootSemi+sd.majorSemi)%12, note:NOTES[(rootSemi+sd.majorSemi)%12],
+  const pos = DEGS.map((sd, i) => ({
+    semi:(rootSemi+sd.majorSemi)%12, note:degreeNote(rootStr, i, (rootSemi+sd.majorSemi)%12),
     roman:sd.roman, ct:false, alt:'', dRoman:sd.roman
   }));
   for (const iv of intervals) {
@@ -598,7 +611,7 @@ function renderScaleView() {
     if (cs !== p.semi) {
       p.semi = cs;
       p.alt = info.a;
-      p.note = info.a === 'b' ? FLAT_NOTES[cs] : NOTES[cs];
+      p.note = degreeNote(rootStr, info.d-1, cs);
       p.dRoman = (info.a==='b'?'b':info.a==='#'?'#':'')+p.roman;
     }
   }
