@@ -1111,14 +1111,30 @@ service firebase.storage {
           <div style="font-size:.72rem;color:var(--muted)">Results: <span id="mkCount">—</span></div>
         </div>
       </div>
-      <!-- Ask card -->
-      <div class="card" id="askCard" style="display:none;margin-top:1rem">
-        <div class="card-title" id="askTitle">Ask —</div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <input type="text" id="askInput" placeholder="What do you want to know?" style="flex:1;min-width:200px;padding:.6rem .75rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:2px;font-size:.88rem">
-          <button class="btn btn-primary" onclick="doAsk()" style="padding:.6rem 1.2rem">Generate Command</button>
+      <!-- Agent Chat -->
+      <div class="card" id="chatCard" style="margin-top:1.5rem">
+        <div class="card-title">💬 Ask the Agents</div>
+        <div style="margin-bottom:.75rem;display:flex;gap:.5rem;flex-wrap:wrap" id="chatAgentSelector">
+          <span style="font-size:.82rem;color:var(--muted);align-self:center">Agent:</span>
+          <button class="btn btn-sm" style="background:var(--gold);color:#000" onclick="selectChatAgent('auto',this)" id="chatAgentAuto" data-agent="">Auto</button>
+          <button class="btn btn-sm btn-outline" onclick="selectChatAgent('lead-scout',this)" id="chatAgentLS" data-agent="lead-scout">🔍 Lead Scout</button>
+          <button class="btn btn-sm btn-outline" onclick="selectChatAgent('booker',this)" id="chatAgentBk" data-agent="booker">📅 Booker</button>
+          <button class="btn btn-sm btn-outline" onclick="selectChatAgent('coach',this)" id="chatAgentCh" data-agent="coach">🎤 Coach</button>
+          <button class="btn btn-sm btn-outline" onclick="selectChatAgent('health-analyzer',this)" id="chatAgentHA" data-agent="health-analyzer">📊 Health</button>
+          <button class="btn btn-sm btn-outline" onclick="selectChatAgent('financial',this)" id="chatAgentFi" data-agent="financial">💰 Financial</button>
+          <button class="btn btn-sm btn-outline" onclick="selectChatAgent('marketing',this)" id="chatAgentMk" data-agent="marketing">📡 Marketing</button>
         </div>
-        <div id="askResult" style="margin-top:.75rem"></div>
+        <div id="chatMessages" style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1rem;height:300px;overflow-y:auto;margin-bottom:.75rem;font-size:.88rem;line-height:1.6">
+          <div style="color:var(--muted);text-align:center;padding:2rem 0">Ask the agents anything about your business — bookings, leads, finances, marketing, students, or worship team health.</div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <input type="text" id="chatInput" placeholder="e.g. Find me new leads for guitar lessons..." style="flex:1;padding:.6rem .75rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:2px;font-size:.88rem" onkeydown="if(event.key==='Enter') sendChat()">
+          <button class="btn btn-primary" onclick="sendChat()" style="padding:.6rem 1.2rem;white-space:nowrap">Send</button>
+        </div>
+        <div style="margin-top:.5rem;display:flex;gap:.5rem;align-items:center">
+          <span id="chatStatus" style="font-size:.75rem;color:var(--muted)"></span>
+          <button class="btn btn-sm btn-outline" onclick="refreshChat()" style="font-size:.75rem">🔄 Refresh</button>
+        </div>
       </div>
     </div>
 
@@ -4654,6 +4670,119 @@ function loadAgents() {
   }).catch(() => {});
 }
 
+let _chatAgent = '';
+let _chatConvId = null;
+let _chatPollInterval = null;
+
+function selectChatAgent(agent, btn) {
+  _chatAgent = agent;
+  document.querySelectorAll('#chatAgentSelector .btn').forEach(b => {
+    if (b.id && b.id.startsWith('chatAgent')) {
+      b.className = 'btn btn-sm btn-outline';
+    }
+  });
+  btn.className = 'btn btn-sm';
+  btn.style.background = 'var(--gold)';
+  btn.style.color = '#000';
+  if (document.getElementById('chatInput')) document.getElementById('chatInput').focus();
+}
+
+function addChatMessage(role, text) {
+  const box = document.getElementById('chatMessages');
+  if (!box) return;
+  const d = document.createElement('div');
+  d.style.marginBottom = '.75rem';
+  d.style.padding = '.5rem .75rem';
+  d.style.borderRadius = '2px';
+  d.style.maxWidth = '85%';
+  if (role === 'user') {
+    d.style.background = 'rgba(201,145,26,.12)';
+    d.style.border = '1px solid rgba(201,145,26,.2)';
+    d.style.marginLeft = 'auto';
+    d.innerHTML = '<strong style="color:var(--gold);font-size:.75rem">YOU</strong><br>' + text;
+  } else if (role === 'agent') {
+    d.style.background = 'var(--surface2)';
+    d.style.border = '1px solid var(--border)';
+    d.style.marginRight = 'auto';
+    const icon = {'lead-scout':'🔍','booker':'📅','coach':'🎤','health-analyzer':'📊','financial':'💰','marketing':'📡'}['lead-scout'];
+    d.innerHTML = '<strong style="color:var(--muted);font-size:.75rem">AGENT</strong><br>' + text;
+  } else if (role === 'system') {
+    d.style.textAlign = 'center';
+    d.style.color = 'var(--muted)';
+    d.style.fontSize = '.82rem';
+    d.style.maxWidth = '100%';
+    d.textContent = text;
+  }
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addChatMessage('user', q);
+  addChatMessage('system', '⏳ Thinking...');
+  document.getElementById('chatStatus').textContent = 'Sending to agent...';
+  const agent = _chatAgent || 'auto';
+  const payload = { question: q, agent: agent, status: 'pending', createdAt: new Date().toISOString(), answered: false };
+  addDoc(collection(db, 'analytics', 'agentChat', 'messages'), payload).then(docRef => {
+    _chatConvId = docRef.id;
+    document.getElementById('chatStatus').textContent = 'Sent — waiting for reply...';
+    // Poll for answer
+    if (_chatPollInterval) clearInterval(_chatPollInterval);
+    _chatPollInterval = setInterval(() => pollChatAnswer(docRef.id), 3000);
+  }).catch(err => {
+    document.getElementById('chatStatus').textContent = 'Error: ' + err.message;
+    removeLastSystemMsg();
+    addChatMessage('system', '❌ Failed to send. Try again.');
+  });
+}
+
+function removeLastSystemMsg() {
+  const box = document.getElementById('chatMessages');
+  if (!box) return;
+  const msgs = box.querySelectorAll('div');
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].textContent === '⏳ Thinking...' || msgs[i].textContent.startsWith('⏳')) {
+      msgs[i].remove();
+      break;
+    }
+  }
+}
+
+function pollChatAnswer(docId) {
+  getDoc(doc(db, 'analytics', 'agentChat', 'messages', docId)).then(snap => {
+    if (!snap.exists()) { stopPoll(); return; }
+    const data = snap.data();
+    if (data.status === 'completed' || data.answered) {
+      stopPoll();
+      removeLastSystemMsg();
+      if (data.answer) {
+        addChatMessage('agent', data.answer);
+      } else {
+        addChatMessage('agent', '✅ Done. Check the logs for details.');
+      }
+      document.getElementById('chatStatus').textContent = 'Done ✓';
+    } else if (data.status === 'error') {
+      stopPoll();
+      removeLastSystemMsg();
+      addChatMessage('system', '❌ Error: ' + (data.error || 'Unknown error'));
+      document.getElementById('chatStatus').textContent = 'Error';
+    }
+  }).catch(() => {}); // keep polling on error
+}
+
+function stopPoll() {
+  if (_chatPollInterval) { clearInterval(_chatPollInterval); _chatPollInterval = null; }
+}
+
+function refreshChat() {
+  if (_chatConvId) pollChatAnswer(_chatConvId);
+  else document.getElementById('chatStatus').textContent = 'No active conversation';
+}
+
 function copyCmd(agentCmd, btn) {
   if (!btn) btn = event && event.target;
   const cmd = '/' + agentCmd;
@@ -4665,36 +4794,10 @@ function copyCmd(agentCmd, btn) {
 }
 
 function askAgent(agent) {
-  const a = AGENTS[agent];
-  if (!a) return;
-  document.getElementById('askCard').style.display = 'block';
-  document.getElementById('askTitle').textContent = 'Ask ' + a.name + ' —';
-  document.getElementById('askInput').placeholder = 'e.g. ' + a.desc;
-  document.getElementById('askResult').innerHTML = '';
-  document.getElementById('askInput').focus();
-  window._askAgent = agent;
-}
-
-function doAsk() {
-  const q = document.getElementById('askInput').value.trim();
-  const agent = window._askAgent || 'booker';
-  if (!q) return;
-  const a = AGENTS[agent];
-  if (!a) return;
-  const btnId = 'copyAskBtn';
-  document.getElementById('askResult').innerHTML =
-    '<div style="margin-bottom:.5rem">Command ready:</div>' +
-    '<code style="background:var(--surface);padding:.5rem .75rem;display:block;border-radius:2px;font-size:.82rem;word-break:break-word;margin-bottom:.5rem">opencode run "' + q + '" --agent ' + agent + '</code>' +
-    '<button id="' + btnId + '" class="btn btn-outline btn-sm">📋 Copy Command</button>';
-  document.getElementById(btnId).onclick = function() {
-    const askQ = document.getElementById('askInput').value.trim();
-    const cmd = 'opencode run "' + askQ + '" --agent ' + agent;
-    navigator.clipboard.writeText(cmd).then(function() {
-      this.textContent = '✓ Copied!';
-      var self = this;
-      setTimeout(function() { self.textContent = '📋 Copy Command'; }, 1500);
-    }.bind(this));
-  };
+  document.getElementById('chatInput').focus();
+  document.getElementById('chatInput').placeholder = 'Ask ' + (AGENTS[agent]?.name||agent) + ' something...';
+  const btn = document.querySelector('#chatAgent' + ({'lead-scout':'LS','booker':'Bk','coach':'Ch','health-analyzer':'HA','financial':'Fi','marketing':'Mk'}[agent] || 'Auto'));
+  if (btn) selectChatAgent(agent, btn);
 }
 
 const TASK_ROUTES = {
