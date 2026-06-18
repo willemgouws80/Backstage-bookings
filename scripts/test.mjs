@@ -13,7 +13,6 @@ function check(condition, msg) {
   else console.log('  OK: ' + msg);
 }
 
-// ── Extract JS from HTML module scripts ──
 function extractModuleScript(filePath) {
   const html = fs.readFileSync(filePath, 'utf8');
   const match = html.match(/<script type="module">([\s\S]*?)<\/script>/);
@@ -22,53 +21,47 @@ function extractModuleScript(filePath) {
 
 function extractInlineScripts(filePath) {
   const html = fs.readFileSync(filePath, 'utf8');
-  // Only match <script> tags whose closing tag is NOT backslash-escaped
-  // (prevents matching template literal content)
-  const matches = [...html.matchAll(/^[ \t]*<script>([\s\S]*?)<\/script>/gm)];
-  return matches.filter(m => !m[1].includes('<\\/script>')).map(m => m[1]);
+  const stripped = html.replace(/<script type="module">[\s\S]*?<\/script>/g, '');
+  const matches = [...stripped.matchAll(/^[ \t]*<script>([\s\S]*?)<\/script>/gm)];
+  return matches.map(m => m[1]);
 }
 
-// ── Check JS syntax ──
 function checkJSSyntax(code, label) {
   try {
     new Function(code);
+    check(true, label + ' \u2014 valid JS syntax');
     return true;
   } catch(e) {
-    // For module scripts with imports, new Function won't work
-    // Check if the error is because of import statements
-    if (code.includes('import ') && e.message.includes('Cannot use import')) {
-      return true; // Expected for module scripts
+    if (/import\s|export\s/.test(code) && e.message.includes('Cannot use')) {
+      check(true, label + ' \u2014 module-level syntax (' + e.message.trim() + ')');
+      return true;
     }
-    errs.push(`JS syntax error in ${label}: ${e.message}`);
-    failed = true;
+    check(false, label + ' \u2014 JS syntax error: ' + e.message);
     return false;
   }
 }
 
-// ── Check HTML has critical elements ──
 function checkHTMLElements(filePath, requirements) {
   const html = fs.readFileSync(filePath, 'utf8');
-  requirements.forEach(req => {
+  requirements.forEach(function(req) {
     if (typeof req === 'string') {
-      check(html.includes(req), `${path.basename(filePath)} contains "${req}"`);
+      check(html.includes(req), path.basename(filePath) + ' contains "' + req + '"');
     } else {
-      check(html.match(req.regex), `${path.basename(filePath)} matches ${req.label}`);
+      check(html.match(req.regex), path.basename(filePath) + ' matches ' + req.label);
     }
   });
 }
 
 console.log('\n=== Testing Backstage Bookings ===\n');
 
-// 1. HTML files exist
 const files = ['index.html', 'admin.html', 'portal.html'];
-files.forEach(f => {
+files.forEach(function(f) {
   const fp = path.join(root, f);
-  check(fs.existsSync(fp), `${f} exists`);
+  check(fs.existsSync(fp), f + ' exists');
 });
 
-// 2. JS syntax checks on inline scripts
 console.log('\n--- JS Syntax ---');
-files.forEach(f => {
+files.forEach(function(f) {
   const fp = path.join(root, f);
   if (!fs.existsSync(fp)) return;
 
@@ -76,91 +69,55 @@ files.forEach(f => {
   if (moduleJS) {
     const stripped = moduleJS.replace(/import .* from .*/g, '// import');
     checkJSSyntax(stripped, f + ' (module script)');
+  } else {
+    check(false, f + ' \u2014 no module script found');
   }
 
   const inlineScripts = extractInlineScripts(fp);
-  inlineScripts.forEach((js, i) => {
-    checkJSSyntax(js, `${f} (inline script ${i+1})`);
-  });
+  if (inlineScripts.length > 0) {
+    inlineScripts.forEach(function(js, i) {
+      checkJSSyntax(js, f + ' (inline script ' + (i+1) + ')');
+    });
+  } else {
+    check(true, f + ' \u2014 no inline scripts to check');
+  }
 });
 
-// 3. Index.html critical elements
-console.log('\n--- Public Site (index.html) ---');
-checkHTMLElements(path.join(root, 'index.html'), [
-  'id="courses"',
-  'id="book"',
-  'id="pricing"',
-  'id="instructor"',
-  'id="testimonials"',
-  'id="gallery"',
-  'collection(db,\'bookings\')',
-  'collection(db,\'courses\')',
-  'siteConfig',
-  'loadSiteConfig',
-  'loadPricing',
-  'loadCourses',
-  'submitBooking',
-  'fbq',
+function checkGroup(label, file, checks) {
+  console.log('\n--- ' + label + ' ---');
+  checkHTMLElements(path.join(root, file), checks);
+}
+
+checkGroup('Public Site (index.html)', 'index.html', [
+  'id="courses"', 'id="book"', 'id="pricing"', 'id="instructor"',
+  'id="testimonials"', 'id="gallery"',
+  "collection(db,'bookings')", "collection(db,'courses')",
+  'siteConfig', 'loadSiteConfig', 'loadPricing', 'loadCourses',
+  'submitBooking', 'fbq',
   { regex: /increment/, label: 'increment imported' },
 ]);
 
-// 4. Admin.html critical elements
-console.log('\n--- Admin Panel (admin.html) ---');
-checkHTMLElements(path.join(root, 'admin.html'), [
-  'loadDashboard',
-  'loadPricing',
-  'loadContent',
-  'loadAlerts',
-  'loadAnnouncements',
-  'addDoc(collection(db,\'announcements\')',
-  'uploadBytesResumable',
-  'getDownloadURL',
-  'onAuthStateChanged',
-  'signInWithEmailAndPassword',
-  'panel-dashboard',
-  'panel-bookings',
-  'panel-courses',
-  'panel-alerts',
+checkGroup('Admin Panel (admin.html)', 'admin.html', [
+  'loadDashboard', 'loadPricing', 'loadContent', 'loadAlerts', 'loadAnnouncements',
+  "addDoc(collection(db,'announcements')", 'uploadBytesResumable', 'getDownloadURL',
+  'onAuthStateChanged', 'signInWithEmailAndPassword',
+  'panel-dashboard', 'panel-bookings', 'panel-courses', 'panel-alerts',
 ]);
 
-// 5. Portal.html critical elements
-console.log('\n--- Student Portal (portal.html) ---');
-checkHTMLElements(path.join(root, 'portal.html'), [
-  'onAuthStateChanged',
-  'createUserWithEmailAndPassword',
-  'signInWithEmailAndPassword',
-  'onSnapshot',
-  'loadStudentData',
-  'renderDashboard',
-  'renderInvoices',
-  'downloadInvoicePDF',
-  'countdownTo',
-  'announcementsBlock',
-  'authSignin',
-  'authSignup',
-  'switchAuthTab',
-  'doSignIn',
-  'doSignUp',
-  'showEditProfile',
-  'saveProfile',
-  'hideEditProfile',
-  'resetPassword',
-  'filterLessons',
-  'showPanel',
-  'uploadBytesResumable',
-  'photoURL',
-  'profilePhotos/',
+checkGroup('Student Portal (portal.html)', 'portal.html', [
+  'onAuthStateChanged', 'createUserWithEmailAndPassword', 'signInWithEmailAndPassword',
+  'onSnapshot', 'loadStudentData', 'renderDashboard', 'renderInvoices',
+  'downloadInvoicePDF', 'countdownTo', 'announcementsBlock',
+  'authSignin', 'authSignup', 'switchAuthTab', 'doSignIn', 'doSignUp',
+  'showEditProfile', 'saveProfile', 'hideEditProfile', 'resetPassword',
+  'filterLessons', 'showPanel', 'uploadBytesResumable', 'photoURL', 'profilePhotos/',
 ]);
 
-// 6. Firebase rules syntax
 console.log('\n--- Firebase Rules ---');
-const rulesFiles = ['firestore.rules', 'storage.rules'];
-rulesFiles.forEach(f => {
-  const fp = path.join(root, f);
-  check(fs.existsSync(fp), `${f} exists`);
+['firestore.rules', 'storage.rules'].forEach(function(f) {
+  check(fs.existsSync(path.join(root, f)), f + ' exists');
 });
 
-// 7. firebase.json structure
 console.log('\n--- firebase.json ---');
 try {
   const fbJSON = JSON.parse(fs.readFileSync(path.join(root, 'firebase.json'), 'utf8'));
@@ -171,13 +128,12 @@ try {
   check(false, 'firebase.json is valid JSON: ' + e.message);
 }
 
-// ── Summary ──
 console.log('\n' + '='.repeat(40));
 if (failed) {
-  console.log('\n❌ TESTS FAILED');
-  errs.forEach(e => console.log('  ' + e));
+  console.log('\nT E S T S   F A I L E D');
+  errs.forEach(function(e) { console.log('  ' + e); });
   process.exit(1);
 } else {
-  console.log('\n✅ All tests passed');
+  console.log('\nAll tests passed');
   process.exit(0);
 }

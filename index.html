@@ -342,12 +342,12 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 
         <!-- Step 1: Personal details -->
         <div class="fs active" id="fs1">
+          <div class="fg"><label>WhatsApp Number</label><input type="tel" id="fPhone" placeholder="+27 82 XXX XXXX" autofocus></div>
           <div class="two-col">
             <div class="fg"><label>First Name</label><input type="text" id="fName" placeholder="Name"></div>
             <div class="fg"><label>Surname</label><input type="text" id="lName" placeholder="Surname"></div>
           </div>
           <div class="fg"><label>Email Address</label><input type="email" id="fEmail" placeholder="you@email.com"></div>
-          <div class="fg"><label>WhatsApp Number</label><input type="tel" id="fPhone" placeholder="+27 82 XXX XXXX"></div>
           <div class="fg"><label>Age Group</label>
             <select id="fAge">
               <option value="">Select age group</option>
@@ -475,8 +475,8 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js';
-import { getFirestore, collection, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js';
+import { getFirestore, collection, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment, query, where } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyA8eaSBdVAjI80TywTx9lwIrczDBO8A2Y0",authDomain:"backstage-music.firebaseapp.com",
@@ -485,22 +485,27 @@ const firebaseConfig = {
   appId:"1:864389877971:web:c7d15ae843d54172c90426",measurementId:"G-DY40YLD9FM"
 };
 const app = initializeApp(firebaseConfig);
-getAnalytics(app);
+window._ga = getAnalytics(app);
 const db  = getFirestore(app);
-// Track page view
+// Track page view + source
 (async()=>{ try {
   const ref = doc(db,'analytics','pageviews');
   const snap = await getDoc(ref);
   const d = snap.exists() ? snap.data() : {};
   const today = new Date().toISOString().slice(0,10);
-  await setDoc(ref, {
-    total: (d.total||0) + 1,
-    today: d.date === today ? (d.today||0) + 1 : 1,
-    date: today,
-    lastPage: location.href,
-    lastVisit: new Date().toISOString()
-  }, { merge: true });
-} catch(e) {} })();
+  const p = new URLSearchParams(location.search);
+  const utmS=p.get('utm_source')||'', utmM=p.get('utm_medium')||'', utmC=p.get('utm_campaign')||'';
+  const refH = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./,'') : '';
+  let src='direct';
+  if (utmS) src=utmS;
+  else if (refH.includes('google')) src='google';
+  else if (refH.includes('facebook')||refH.includes('fb.')) src='facebook';
+  else if (refH.includes('instagram')) src='instagram';
+  else if (refH.includes('backstage')) src='internal';
+  else if (refH) src='referral';
+  const bs={...(d.bySource||{})}; bs[src]=(bs[src]||0)+1;
+  await setDoc(ref,{total:(d.total||0)+1,today:d.date===today?(d.today||0)+1:1,date:today,lastPage:location.href,lastVisit:new Date().toISOString(),bySource:bs,lastReferrer:document.referrer||'',lastUtmS:utmS,lastUtmM:utmM,lastUtmC:utmC},{merge:true});
+}catch(e){}})();
 
 window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{} };
 
@@ -878,6 +883,7 @@ function waBookingLink(booking) {
   return 'https://wa.me/' + booking.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(waMsg);
 }
 
+function trackStep(ns,ps){try{const nm=document.getElementById("fName")?.value||"",em=document.getElementById("fEmail")?.value||"",ph=document.getElementById("fPhone")?.value||"";addDoc(collection(db,"analytics","stepEvents"),{step:ns,prevStep:ps,timestamp:new Date().toISOString(),hasName:!!nm,hasEmail:!!em,hasPhone:!!ph,hasData:!!(nm||em||ph),emailHash:em?btoa(em.trim().toLowerCase()).slice(0,12):""}).catch(()=>{});if(ph&&ph.replace(/[^0-9]/g,"").length>=8){addDoc(collection(db,"analytics","leads"),{name:nm+" "+(document.getElementById("lName")?.value||""),phone:ph,email:em,step:ns,timestamp:new Date().toISOString()}).catch(()=>{});}}catch(e){}}
 window.submitBooking = async () => {
   const method = window._S.payMethod;
   const submitBtn = document.querySelector('.btn-submit');
@@ -1014,6 +1020,8 @@ window.submitBooking = async () => {
       }
     }
 
+    // Mark this lead as completed
+    try { const q = query(collection(db,'analytics','leads'), where('phone','==',booking.phone), where('email','==',booking.email)); getDocs(q).then(s=>s.forEach(d=>updateDoc(d.ref,{completed:true,completedAt:new Date().toISOString(),bookingId:docRef.id}).catch(()=>{}))); } catch(e) {}
     // Increment course enrollment
     if (window._S.courseData?.id) {
       const slotKey = window._S.selectedSlot || window._S.courseData?.fixedSchedule || '__total__';
@@ -1036,7 +1044,7 @@ window.submitBooking = async () => {
     document.querySelector('#successMsg p').innerHTML =
       'Thank you — your booking is confirmed.<br><strong style="color:var(--gold)">' + payText + '</strong><br><br>' +
       'Check your email for confirmation details.<br><br>' +
-      '<a href="' + waBookingLink(booking) + '" target="_blank" class="btn btn-gold btn-sm" style="display:inline-block;padding:.6rem 1.4rem;margin-top:.5rem;text-decoration:none">Send WhatsApp Confirmation</a>';
+      'We will confirm your booking via WhatsApp within 24 hours.';
 
     // Send EmailJS confirmation (non-blocking)
     sendBookingEmail(booking);
@@ -1134,6 +1142,7 @@ function setStep(n) {
   if (n===3) buildSchedule();
   if (n===4) buildSummary();
   document.getElementById('book').scrollIntoView({behavior:'smooth',block:'start'});
+  trackStep(n, c);
 }
 function pickSlot(slot, idx) {
   window._S.selectedSlot = slot;
@@ -1480,5 +1489,86 @@ async function loadContent() {
     }
 }
 </script>
+
+<!-- GA4 custom events + exit intent -->
+<script>
+// GA4 helper
+function gaEv(name, params) { try { if(window._ga) logEvent(window._ga, name, params||{}); } catch(e) {} }
+
+// Track plan selection
+document.addEventListener('click', function(e) {
+  const card = e.target.closest('.lesson-opt');
+  if (card) {
+    const nameEl = card.querySelector('.lo-name');
+    const priceEl = card.querySelector('.lo-price');
+    gaEv('view_item', {
+      item_name: nameEl?.textContent?.trim() || 'plan',
+      price: parseFloat(priceEl?.textContent?.replace(/[^0-9.]/g,'') || 0),
+      currency: 'ZAR'
+    });
+    gaEv('add_to_cart', {
+      item_name: nameEl?.textContent?.trim() || 'plan',
+      price: parseFloat(priceEl?.textContent?.replace(/[^0-9.]/g,'') || 0),
+      currency: 'ZAR'
+    });
+  }
+});
+
+// Track course card clicks
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.enrol-btn, .enroll-btn');
+  if (btn) {
+    const card = btn.closest('.course-card');
+    const title = card?.querySelector('.course-title')?.textContent?.trim() || 'course';
+    gaEv('begin_checkout', { item_name: title, currency: 'ZAR' });
+  }
+});
+
+// ----- Exit Intent Popup -----
+(function() {
+  if (sessionStorage.getItem('bw_exit_shown')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'exitPopup';
+  overlay.innerHTML = `
+    <div style="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s" id="exitOverlay">
+      <div style="background:var(--surface2,#1a1810);border:1px solid var(--border,rgba(201,145,26,0.16));padding:2.5rem;max-width:420px;width:90%;text-align:center;border-radius:2px;position:relative;animation:popIn .35s" onclick="event.stopPropagation()">
+        <button onclick="closeExitPopup()" style="position:absolute;top:.75rem;right:1rem;background:none;border:none;color:var(--muted,#7a7060);font-size:1.4rem;cursor:pointer;padding:.25rem">&times;</button>
+        <div style="font-size:2.5rem;margin-bottom:.5rem">🎸</div>
+        <h3 style="color:var(--gold,#C9911A);font-size:1.3rem;margin-bottom:.5rem">Don't leave yet!</h3>
+        <p style="color:var(--text,#f0ead8);font-size:.95rem;margin-bottom:1.25rem;line-height:1.6">Book today and get <strong style="color:var(--gold,#C9911A)">R50 off</strong> your first lesson!<br><span style="color:var(--muted,#7a7060);font-size:.82rem">Valid for new students — use code <strong style="color:var(--gold)">BACKSTAGE50</strong></span></p>
+        <a href="#book" onclick="closeExitPopup()" style="display:inline-block;background:var(--gold,#C9911A);color:#000;padding:.8rem 2rem;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:1px;margin-bottom:.75rem">Book Now &amp; Save R50 →</a>
+        <br>
+        <button onclick="closeExitPopup()" style="background:none;border:none;color:var(--muted,#7a7060);font-size:.78rem;cursor:pointer;text-decoration:underline">No thanks, maybe later</button>
+      </div>
+    </div>
+  `;
+  // Exit intent detection
+  let fired = false;
+  document.addEventListener('mouseleave', function(ev) {
+    if (fired || ev.clientY > 0) return;
+    fired = true;
+    gaEv('exit_intent_shown', {});
+    sessionStorage.setItem('bw_exit_shown','1');
+    document.body.appendChild(overlay);
+    document.getElementById('exitOverlay').addEventListener('click', closeExitPopup);
+  });
+  window.closeExitPopup = function() {
+    const el = document.getElementById('exitPopup');
+    if (el) el.remove();
+  };
+  // Track form submit as purchase
+  const origSubmit = window.submitBooking;
+  if (origSubmit) {
+    window.submitBooking = async function() {
+      const result = await origSubmit.apply(this, arguments);
+      const plan = window._S?.planName || 'Booking';
+      const price = window._S?.price || 0;
+      gaEv('purchase', { transaction_id: Date.now().toString(), value: price, currency: 'ZAR', item_name: plan });
+      return result;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>

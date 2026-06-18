@@ -225,6 +225,8 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
     <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon">📅</span> Bookings</div>
     <div class="nav-item" onclick="showPanel('calendar',this)"><span class="icon">🗓</span> Calendar</div>
     <div class="nav-item" onclick="showPanel('students',this)"><span class="icon">🎓</span> Students</div>
+    <span class="sidebar-label">Automation</span>
+    <div class="nav-item" onclick="showPanel('agents',this)"><span class="icon">🤖</span> AI Agents</div>
     <span class="sidebar-label">Content</span>
     <div class="nav-item" onclick="showPanel('courses',this)"><span class="icon">🎓</span> Courses</div>
     <div class="nav-item" onclick="showPanel('pricing',this)"><span class="icon">💰</span> Pricing</div>
@@ -257,6 +259,34 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <div class="stat"><div class="stat-val" id="statStudents">—</div><div class="stat-lbl">Students</div></div>
         <div class="stat"><div class="stat-val" id="statViews">—</div><div class="stat-lbl">Page Views</div></div>
         <div class="stat"><div class="stat-val" id="statViewsToday">—</div><div class="stat-lbl">Views Today</div></div>
+        <div class="stat"><div class="stat-val" id="statConversion" style="font-size:1.1rem">—</div><div class="stat-lbl">Conversion Rate</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Traffic Sources</div>
+        <div id="sourceBreakdown" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-bottom:1.5rem;font-size:.85rem">
+          <div>direct: <strong id="srcDirect">—</strong></div>
+          <div>google: <strong id="srcGoogle">—</strong></div>
+          <div>facebook: <strong id="srcFacebook">—</strong></div>
+          <div>instagram: <strong id="srcInstagram">—</strong></div>
+          <div>referral: <strong id="srcReferral">—</strong></div>
+          <div>internal: <strong id="srcInternal">—</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Form Step Drop-offs</div>
+        <div id="stepStats" style="font-size:.85rem">
+          <div>Step 1 (Details): <strong id="st1count">—</strong></div>
+          <div>Step 2 (Lesson): <strong id="st2count">—</strong></div>
+          <div>Step 3 (Schedule): <strong id="st3count">—</strong></div>
+          <div>Step 4 (Payment): <strong id="st4count">—</strong></div>
+          <div style="margin-top:.5rem;color:var(--gold)">Abandoned: <strong id="stAbandoned">—</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Abandoned Leads</div>
+        <div id="abandonedLeads" style="font-size:.85rem">
+          <div class="loading-text">Loading…</div>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">Recent Bookings</div>
@@ -1138,8 +1168,67 @@ async function loadPageViews() {
     if (!vSnap.exists()) {
       await setDoc(doc(db,'analytics','pageviews'), { total:0, today:0, date:today, created:new Date().toISOString() });
     }
-    console.log('Page views loaded:', v.total||0, 'total,', (v.date===today?v.today||0:0), 'today');
+    // Traffic sources
+    const bs = v.bySource||{};
+    for (const [k,elId] of [['direct','srcDirect'],['google','srcGoogle'],['facebook','srcFacebook'],['instagram','srcInstagram'],['referral','srcReferral'],['internal','srcInternal']]) {
+      const el = document.getElementById(elId);
+      if (el) el.textContent = bs[k]||0;
+    }
+    // Step events
+    const stSnap = await getDocs(collection(db,'analytics','stepEvents'));
+    const steps = {1:0,2:0,3:0,4:0,abandoned:0};
+    stSnap.forEach(d => {
+      const sd = d.data();
+      if (sd.step>=1&&sd.step<=4) steps[sd.step]++;
+      if (sd.hasData&&sd.step<4&&sd.prevStep===sd.step) steps.abandoned++;
+    });
+    for (let i=1;i<=4;i++) { const el=document.getElementById('st'+i+'count'); if(el) el.textContent=steps[i]; }
+    const aEl=document.getElementById('stAbandoned'); if(aEl) aEl.textContent=steps.abandoned;
+    // Conversion rate
+    const convEl=document.getElementById('statConversion');
+    if(convEl&&v.total>0) {
+      const tb=parseInt(document.getElementById('statBookings')?.textContent||0);
+      convEl.textContent=Math.round(tb/v.total*100)+'%';
+    }
+    console.log('Analytics loaded:',v.total||0,'views');
+    loadAbandonedLeads();
   } catch(e) { console.warn('pageviews error:',e); }
+}
+
+// Load abandoned leads (people who entered phone but didn't complete booking)
+async function loadAbandonedLeads() {
+  try {
+    const snap = await getDocs(collection(db,'analytics','leads'));
+    const leads = [];
+    snap.forEach(d => { const ld = d.data(); if (!ld.completed) leads.push({id:d.id,...ld}); });
+    // Group by phone, keep latest
+    const grouped = {};
+    leads.forEach(l => {
+      const phone = l.phone?.replace(/[^0-9]/g,'') || '';
+      if (!phone) return;
+      if (!grouped[phone] || l.timestamp > grouped[phone].timestamp) grouped[phone] = l;
+    });
+    const el = document.getElementById('abandonedLeads');
+    const entries = Object.values(grouped).sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
+    if (!entries.length) {
+      el.innerHTML = '<div style="color:var(--muted)">No abandoned leads</div>';
+      return;
+    }
+    el.innerHTML = entries.slice(0,20).map(l => {
+      const phone = l.phone?.replace(/[^0-9]/g,'') || '';
+      const waClean  = phone.startsWith('0') ? '27'+phone.slice(1) : phone;
+      const waMsg = 'Hi ' + (l.name||'').trim() + '! We noticed you started booking at Backstage but didn’t finish. Can we help? Reply here and we’ll get you sorted!';
+      const waLink = waClean ? 'https://wa.me/' + waClean + '?text=' + encodeURIComponent(waMsg) : '';
+      const ago = l.timestamp ? Math.floor((Date.now()-new Date(l.timestamp).getTime())/86400000) + 'd ago' : '';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border,rgba(201,145,26,0.1))">' +
+        '<div><strong>' + (l.name||'Unknown').replace(/</g,'&lt;') + '</strong><br><span style="color:var(--muted);font-size:.75rem">Step ' + (l.step||1) + ' · ' + ago + ' · ' + (l.phone||'') + '</span></div>' +
+        (waLink ? '<a href="' + waLink + '" target="_blank" class="wa-btn" style="white-space:nowrap">WhatsApp</a>' : '') +
+        '</div>';
+    }).join('');
+  } catch(e) { 
+    const el = document.getElementById('abandonedLeads');
+    if (el) el.innerHTML = '<div style="color:var(--muted)">No abandoned leads</div>';
+  }
 }
 
 function bookingRow(b) {
@@ -2039,7 +2128,7 @@ window.deleteAnnouncement = async function(id) {
 // Data loading is triggered by onAuthStateChanged above
 
 // Expose for panel switching
-window._loaders = { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
+window._loaders = { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms, agents:loadAgents };
 
 // ── ATTENDANCE ──
 async function loadAttendancePanel() {
@@ -4483,6 +4572,116 @@ window.closeRatingModal = function() {
   document.getElementById('ratingOverlay')?.classList.remove('show');
   if (_ratingResolve) { _ratingResolve(null); _ratingResolve = null; }
 };
+
+// —— AI AGENTS DASHBOARD ——
+const AGENTS = {
+  'lead-scout': { name:'Lead Scout', cmd:'/lead-scout:run', icon:'\ud83d\udd0d', desc:'Find new leads from incomplete bookings, assessments, and outreach data.' },
+  'booker': { name:'Booker', cmd:'/booker:run', icon:'\ud83d\udcc5', desc:'Check booking pipeline: pending, reminders, unpaid invoices, follow-ups.' },
+  'coach': { name:'Coach', cmd:'/coach:run', icon:'\ud83c\udfa4', desc:'Analyze student progress, generate practice plans, flag at-risk students.' },
+  'health-analyzer': { name:'Health Analyzer', cmd:'/health-analyzer:run', icon:'\ud83d\udcca', desc:'Analyze worship team assessments and generate org health reports.' },
+  'financial': { name:'Financial', cmd:'/financial:run', icon:'\ud83d\udcb0', desc:'Track revenue, payments, invoices, and generate financial reports.' },
+  'marketing': { name:'Marketing', cmd:'/marketing:run', icon:'\ud83d\udce1', desc:'Research competitors, social media trends, marketing strategy, campaign tracking.' }
+};
+
+function loadAgents() {
+  // Load last run data from Firestore
+  getDocs(collection(db,'analytics','agentRuns')).then(snap => {
+    const runs = {};
+    snap.forEach(d => { const r = d.data(); runs[r.agent] = r; });
+    for (const [key, ids] of [['lead-scout',['lsLastRun','lsCount']],['booker',['bkLastRun','bkCount']],['coach',['chLastRun','chCount']],['health-analyzer',['haLastRun','haCount']],['financial',['fiLastRun','fiCount']],['marketing',['mkLastRun','mkCount']]]) {
+      const r = runs[key];
+      if (r) {
+        const el1 = document.getElementById(ids[0]); if (el1) el1.textContent = r.timestamp ? new Date(r.timestamp).toLocaleString('en-ZA') : '—';
+        const el2 = document.getElementById(ids[1]); if (el2) el2.textContent = r.count ?? '—';
+      }
+    }
+  }).catch(() => {});
+}
+
+function copyCmd(agentCmd, btn) {
+  if (!btn) btn = event && event.target;
+  const cmd = '/' + agentCmd;
+  navigator.clipboard.writeText(cmd).then(function() {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 1500);
+  }).catch(function() { alert('Type in opencode: ' + cmd); });
+}
+
+function askAgent(agent) {
+  const a = AGENTS[agent];
+  if (!a) return;
+  document.getElementById('askCard').style.display = 'block';
+  document.getElementById('askTitle').textContent = 'Ask ' + a.name + ' —';
+  document.getElementById('askInput').placeholder = 'e.g. ' + a.desc;
+  document.getElementById('askResult').innerHTML = '';
+  document.getElementById('askInput').focus();
+  window._askAgent = agent;
+}
+
+function doAsk() {
+  const q = document.getElementById('askInput').value.trim();
+  const agent = window._askAgent || 'booker';
+  if (!q) return;
+  const a = AGENTS[agent];
+  if (!a) return;
+  const btnId = 'copyAskBtn';
+  document.getElementById('askResult').innerHTML =
+    '<div style="margin-bottom:.5rem">Command ready:</div>' +
+    '<code style="background:var(--surface);padding:.5rem .75rem;display:block;border-radius:2px;font-size:.82rem;word-break:break-word;margin-bottom:.5rem">opencode run "' + q + '" --agent ' + agent + '</code>' +
+    '<button id="' + btnId + '" class="btn btn-outline btn-sm">📋 Copy Command</button>';
+  document.getElementById(btnId).onclick = function() {
+    const askQ = document.getElementById('askInput').value.trim();
+    const cmd = 'opencode run "' + askQ + '" --agent ' + agent;
+    navigator.clipboard.writeText(cmd).then(function() {
+      this.textContent = '✓ Copied!';
+      var self = this;
+      setTimeout(function() { self.textContent = '📋 Copy Command'; }, 1500);
+    }.bind(this));
+  };
+}
+
+const TASK_ROUTES = {
+  'lead': 'lead-scout', 'scout': 'lead-scout', 'lead scout': 'lead-scout', 'find': 'lead-scout', 'new student': 'lead-scout', 'prospect': 'lead-scout', 'outreach': 'lead-scout',
+  'booking': 'booker', 'book': 'booker', 'schedule': 'booker', 'lesson': 'booker', 'remind': 'booker', 'invoice': 'booker', 'pay': 'booker', 'payment': 'booker', 'unpaid': 'booker', 'confirm': 'booker', 'whatsapp': 'booker', 'wa': 'booker',
+  'practice': 'coach', 'progress': 'coach', 'student': 'coach', 'learn': 'coach', 'plan': 'coach', 'at-risk': 'coach', 'coach': 'coach', 'assessment': 'health-analyzer', 'health': 'health-analyzer', 'worship team': 'health-analyzer', 'report': 'health-analyzer',
+  'revenue': 'financial', 'income': 'financial', 'financial': 'financial', 'money': 'financial', 'finance': 'financial', 'cash': 'financial', 'expense': 'financial', 'overdue': 'financial', 'reconciliation': 'financial', 'profit': 'financial', 'earnings': 'financial',
+  'market': 'marketing', 'marketing': 'marketing', 'ad': 'marketing', 'social': 'marketing', 'instagram': 'marketing', 'facebook': 'marketing', 'trend': 'marketing', 'competitor': 'marketing', 'campaign': 'marketing', 'content': 'marketing', 'promote': 'marketing', 'seo': 'marketing', 'brand': 'marketing'
+};
+
+function analyzeTask() {
+  const input = document.getElementById('taskInput').value.toLowerCase().trim();
+  if (!input) return;
+  // Find best matching agent
+  let bestAgent = null, bestScore = 0;
+  for (const [keyword, agent] of Object.entries(TASK_ROUTES)) {
+    if (input.includes(keyword)) {
+      const score = keyword.length;
+      if (score > bestScore) { bestScore = score; bestAgent = agent; }
+    }
+  }
+  const agent = bestAgent || 'booker';
+  const a = AGENTS[agent];
+  const el = document.getElementById('taskResult');
+  el.style.display = 'block';
+  document.getElementById('taskSuggestion').innerHTML =
+    '<div style="margin-bottom:.75rem"><strong style="color:var(--gold)">' + a.icon + ' Recommended: ' + a.name + '</strong></div>' +
+    '<div style="color:var(--muted);margin-bottom:.75rem">' + a.desc + '</div>' +
+    '<div style="font-size:.78rem;color:var(--muted)">Run this command in opencode:</div>' +
+    '<code style="background:var(--surface);padding:.5rem .75rem;display:block;border-radius:2px;font-size:.82rem;margin-top:.25rem;word-break:break-word">/' + agent + ':run</code>';
+  window._taskAgent = agent;
+}
+
+function copyTaskCmd() {
+  const agent = window._taskAgent || 'booker';
+  const cmd = '/' + agent + ':run';
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy Command', 1500);
+  });
+}
+
 </script>
 </body>
 </html>
