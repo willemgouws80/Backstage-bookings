@@ -1064,6 +1064,64 @@ service firebase.storage {
       <div id="studentsList"><div class="loading-text">Loading students…</div></div>
     </div>
 
+    <!-- ── AI AGENTS ── -->
+    <div class="panel" id="panel-agents">
+      <div class="page-header"><h1><em>AI Agents</em></h1></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem" id="agentGrid">
+        <div class="card" onclick="askAgent('lead-scout')" style="cursor:pointer">
+          <div style="font-size:1.8rem;margin-bottom:.25rem">🔍</div>
+          <div class="card-title" style="font-size:1rem">Lead Scout</div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:.5rem">Find new leads from incomplete bookings, assessments, and outreach data.</div>
+          <div style="font-size:.72rem;color:var(--muted)">Last run: <span id="lsLastRun">—</span></div>
+          <div style="font-size:.72rem;color:var(--muted)">Results: <span id="lsCount">—</span></div>
+        </div>
+        <div class="card" onclick="askAgent('booker')" style="cursor:pointer">
+          <div style="font-size:1.8rem;margin-bottom:.25rem">📅</div>
+          <div class="card-title" style="font-size:1rem">Booker</div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:.5rem">Check booking pipeline: pending, reminders, unpaid invoices, follow-ups.</div>
+          <div style="font-size:.72rem;color:var(--muted)">Last run: <span id="bkLastRun">—</span></div>
+          <div style="font-size:.72rem;color:var(--muted)">Results: <span id="bkCount">—</span></div>
+        </div>
+        <div class="card" onclick="askAgent('coach')" style="cursor:pointer">
+          <div style="font-size:1.8rem;margin-bottom:.25rem">🎤</div>
+          <div class="card-title" style="font-size:1rem">Coach</div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:.5rem">Analyze student progress, generate practice plans, flag at-risk students.</div>
+          <div style="font-size:.72rem;color:var(--muted)">Last run: <span id="chLastRun">—</span></div>
+          <div style="font-size:.72rem;color:var(--muted)">Results: <span id="chCount">—</span></div>
+        </div>
+        <div class="card" onclick="askAgent('health-analyzer')" style="cursor:pointer">
+          <div style="font-size:1.8rem;margin-bottom:.25rem">📊</div>
+          <div class="card-title" style="font-size:1rem">Health Analyzer</div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:.5rem">Analyze worship team assessments and generate org health reports.</div>
+          <div style="font-size:.72rem;color:var(--muted)">Last run: <span id="haLastRun">—</span></div>
+          <div style="font-size:.72rem;color:var(--muted)">Results: <span id="haCount">—</span></div>
+        </div>
+        <div class="card" onclick="askAgent('financial')" style="cursor:pointer">
+          <div style="font-size:1.8rem;margin-bottom:.25rem">💰</div>
+          <div class="card-title" style="font-size:1rem">Financial</div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:.5rem">Track revenue, payments, invoices, and generate financial reports.</div>
+          <div style="font-size:.72rem;color:var(--muted)">Last run: <span id="fiLastRun">—</span></div>
+          <div style="font-size:.72rem;color:var(--muted)">Results: <span id="fiCount">—</span></div>
+        </div>
+        <div class="card" onclick="askAgent('marketing')" style="cursor:pointer">
+          <div style="font-size:1.8rem;margin-bottom:.25rem">📡</div>
+          <div class="card-title" style="font-size:1rem">Marketing</div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:.5rem">Research competitors, social media trends, marketing strategy, campaign tracking.</div>
+          <div style="font-size:.72rem;color:var(--muted)">Last run: <span id="mkLastRun">—</span></div>
+          <div style="font-size:.72rem;color:var(--muted)">Results: <span id="mkCount">—</span></div>
+        </div>
+      </div>
+      <!-- Ask card -->
+      <div class="card" id="askCard" style="display:none;margin-top:1rem">
+        <div class="card-title" id="askTitle">Ask —</div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <input type="text" id="askInput" placeholder="What do you want to know?" style="flex:1;min-width:200px;padding:.6rem .75rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:2px;font-size:.88rem">
+          <button class="btn btn-primary" onclick="doAsk()" style="padding:.6rem 1.2rem">Generate Command</button>
+        </div>
+        <div id="askResult" style="margin-top:.75rem"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -4590,10 +4648,8 @@ function loadAgents() {
     snap.forEach(d => { const r = d.data(); runs[r.agent] = r; });
     for (const [key, ids] of [['lead-scout',['lsLastRun','lsCount']],['booker',['bkLastRun','bkCount']],['coach',['chLastRun','chCount']],['health-analyzer',['haLastRun','haCount']],['financial',['fiLastRun','fiCount']],['marketing',['mkLastRun','mkCount']]]) {
       const r = runs[key];
-      if (r) {
-        const el1 = document.getElementById(ids[0]); if (el1) el1.textContent = r.timestamp ? new Date(r.timestamp).toLocaleString('en-ZA') : '—';
-        const el2 = document.getElementById(ids[1]); if (el2) el2.textContent = r.count ?? '—';
-      }
+      const el1 = document.getElementById(ids[0]); if (el1) el1.textContent = r && r.timestamp ? new Date(r.timestamp).toLocaleString('en-ZA') : 'Not run yet';
+      const el2 = document.getElementById(ids[1]); if (el2) el2.textContent = r && r.count != null ? r.count : '—';
     }
   }).catch(() => {});
 }
