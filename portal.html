@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div id="tunerFrets" style="font-size:.65rem;color:var(--muted3);display:flex;justify-content:space-around;padding:0 0 0 36px;margin-top:-.35rem;margin-bottom:.5rem"></div>
         <div style="position:relative;height:48px;margin:.25rem 0 0;background:var(--surface3);border-radius:8px;overflow:hidden" id="tunerGauge">
           <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--muted)"></div>
-          <div id="tunerNeedle" style="position:absolute;left:50%;top:0;bottom:0;width:4px;background:var(--gold);border-radius:2px;transition:left .06s ease"></div>
+          <div id="tunerNeedle" style="position:absolute;left:50%;top:0;bottom:0;width:4px;background:var(--gold);border-radius:2px;transition:left .18s cubic-bezier(0.4, 0, 0.2, 1)"></div>
           <div style="position:absolute;left:calc(50% - 30px);top:2px;width:60px;height:calc(100% - 4px);border:2px solid rgba(212,175,55,.2);border-radius:4px"></div>
           <div style="position:absolute;left:4px;bottom:3px;font-size:.7rem;color:var(--muted)">♭ 50¢</div>
           <div style="position:absolute;right:4px;bottom:3px;font-size:.7rem;color:var(--muted)">50¢ ♯</div>
@@ -2358,7 +2358,9 @@ const GUITAR_STRINGS = [
 ];
 const TUNER_FRETS = [3, 5, 7, 9, 12];
 let _tunerStream = null, _tunerCtx = null, _tunerAnalyser = null, _tunerData = null;
-let _tunerRaf = null, _tunerActive = false, _tunerSmoothFreq = 0, _tunerActiveString = -1;
+let _tunerStableNote = null, _tunerStableCount = 0, _tunerStableString = -1, _tunerStringStableCount = 0;
+const TUNER_HOLD_FRAMES = 6;   // frames before note change accepted
+const TUNER_STRING_HOLD = 8;   // frames before auto-string switch accepted
 
 function _tunerBuildNeck() {
   const neck = document.getElementById('tunerNeck');
@@ -2439,18 +2441,23 @@ function _tunerFreqToNote(freq) {
 function _tunerFindPeak() {
   if (!_tunerAnalyser) return 0;
   _tunerAnalyser.getByteFrequencyData(_tunerData);
-  let maxIdx = 0, maxVal = 0;
+  let maxIdx = 0, maxVal = 0, sum = 0, count = 0;
   for (let i = 0; i < _tunerData.length; i++) {
-    if (_tunerData[i] > maxVal) { maxVal = _tunerData[i]; maxIdx = i; }
+    const v = _tunerData[i];
+    if (v > 0) { sum += v; count++; }
+    if (v > maxVal) { maxVal = v; maxIdx = i; }
   }
-  if (maxVal < 30) return 0;
+  const avg = count > 0 ? sum / count : 0;
+  // Require peak to be at least 3x the average background (signal confidence)
+  if (maxVal < 40 || maxVal < avg * 3) return 0;
   const len = _tunerData.length;
   const left = maxIdx > 0 ? _tunerData[maxIdx - 1] : 0;
   const right = maxIdx < len - 1 ? _tunerData[maxIdx + 1] : 0;
   const a = (left + right) / 2 - _tunerData[maxIdx];
   const b = (right - left) / 2;
   const correction = a !== 0 ? -b / (2 * a) : 0;
-  const bin = maxIdx + Math.max(-1, Math.min(1, correction));
+  const clamped = Math.max(-0.8, Math.min(0.8, correction));
+  const bin = maxIdx + clamped;
   return (bin * _tunerCtx.sampleRate) / _tunerAnalyser.fftSize;
 }
 
@@ -2458,7 +2465,7 @@ function _tunerProcess() {
   if (!_tunerActive) return;
   const rawFreq = _tunerFindPeak();
   if (rawFreq > 0) {
-    _tunerSmoothFreq = _tunerSmoothFreq > 0 ? _tunerSmoothFreq * 0.6 + rawFreq * 0.4 : rawFreq;
+    _tunerSmoothFreq = _tunerSmoothFreq > 0 ? Math.min(_tunerSmoothFreq * 0.92 + rawFreq * 0.08, _tunerSmoothFreq * 1.5) : rawFreq;
     const note = _tunerFreqToNote(_tunerSmoothFreq);
     if (note) {
       const select = document.getElementById('tunerStringSelect');
