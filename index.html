@@ -1437,8 +1437,9 @@ function updateTimeSlots() {
     allSlots.map(s => {
       const isTaken = taken.has(s);
       return `<option value="${s}" ${isTaken?'disabled':''}>${s}${isTaken?' (taken)':''}</option>`;
-    }).join('');
+  }).join('');
 }
+window.renderLessonOpts = renderLessonOpts;
 function buildSummary() {
   const S=window._S, c=S.courseData;
   const inst = S.isCourse ? 'Course' : (document.getElementById('fInstrument')?.value||'—');
