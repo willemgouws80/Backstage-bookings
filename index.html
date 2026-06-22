@@ -57,6 +57,15 @@ nav.scrolled{background:rgba(9,8,5,0.92);backdrop-filter:blur(12px);border-botto
 .offering-icon{font-size:1.8rem;margin-bottom:1.5rem}
 .offering h3{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:400;margin-bottom:.75rem}
 .offering p{font-size:.875rem;color:var(--muted);line-height:1.75}
+
+.booking-type-toggle{display:flex;gap:.5rem;flex-wrap:wrap}
+.type-btn{padding:.5rem 1rem;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:2px;cursor:pointer;font-family:inherit;font-size:.82rem;transition:all .2s}
+.type-btn:hover{border-color:var(--gold);color:var(--gold)}
+.type-btn.active{background:var(--gold);color:#000;border-color:var(--gold)}
+#bookingCourseArea .course-card{margin-bottom:.75rem;border:1px solid var(--border);border-radius:2px;overflow:hidden}
+#bookingCourseArea .course-card .course-head{padding:1rem 1.25rem .75rem;background:var(--surface2)}
+#bookingCourseArea .course-card .course-body{padding:0 1.25rem .75rem;font-size:.82rem;color:var(--muted)}
+#bookingCourseArea .course-card .course-foot{padding:.75rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 #coursesGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
 .course-card{background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden;display:flex;flex-direction:column;transition:transform .3s,box-shadow .3s}
 .course-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.5)}
@@ -381,6 +390,14 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
               <div class="skeleton" style="height:90px;border-radius:1px"></div>
               <div class="skeleton" style="height:90px;border-radius:1px"></div>
             </div>
+          </div>
+          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+            <label style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;display:block">Or enrol in a course instead</label>
+            <div class="booking-type-toggle" id="bookingTypeToggle">
+              <button class="type-btn active" data-type="lesson" onclick="setBookingType('lesson')">Individual Lesson</button>
+              <button class="type-btn" data-type="course" onclick="setBookingType('course')">Course</button>
+            </div>
+            <div id="bookingCourseArea" style="display:none;margin-top:.75rem"></div>
           </div>
           <div class="form-nav">
             <button class="btn-back" onclick="prevStep(1)">← Back</button>
@@ -830,6 +847,9 @@ window.enrollCourse = (id) => {
       <div class="lo-period">Course enrolment</div>
     </label>`;
   document.getElementById('book').scrollIntoView({behavior:'smooth'});
+  // Sync the booking type toggle if it exists
+  const toggle = document.getElementById('bookingTypeToggle');
+  if (toggle) window.setBookingType('course');
 };
 
 // ── YOCO SDK LOADER ──
@@ -1149,6 +1169,65 @@ function pickSlot(slot, idx) {
   document.querySelectorAll('[id^="slot-opt-"]').forEach(el=>el.classList.remove('selected'));
   document.getElementById('slot-opt-'+idx)?.classList.add('selected');
 }
+window.setBookingType = function(type) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  const area = document.getElementById('bookingCourseArea');
+  const instrBlock = document.getElementById('instrumentBlock');
+  const lessonOpts = document.getElementById('lessonOpts');
+  const planLabel = document.getElementById('planLabel');
+
+  if (type === 'course') {
+    instrBlock.style.display = 'none';
+    lessonOpts.style.display = 'none';
+    planLabel.textContent = 'Available Courses';
+    area.style.display = 'block';
+    // Render courses if loaded
+    const courses = window._courses || [];
+    if (courses.length) {
+      area.innerHTML = courses.map(c => {
+        const max = c.maxParticipants ? Number(c.maxParticipants) : null;
+        const booked = c.bookedCount || 0;
+        const isFull = max && booked >= max;
+        return `<div class="course-card" style="cursor:pointer;${window._S.courseData?.id === c.id ? 'border-color:var(--gold)' : ''}" onclick="window.enrollCourseForm('${c.id}')">
+          <div class="course-head" style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${c.title}</strong>
+            <span style="color:var(--gold);font-weight:600">R${Number(c.price).toLocaleString()}</span>
+          </div>
+          <div class="course-body">${c.description||''}${c.venue ? ' · 📍 '+c.venue : ''}</div>
+          <div class="course-foot">
+            <span style="font-size:.78rem;color:var(--muted)">${max ? booked+'/'+max+' enrolled' : booked+' enrolled'}${isFull ? ' · Full' : ''}</span>
+            ${window._S.courseData?.id === c.id ? '<span style="color:var(--success);font-size:.82rem">✓ Selected</span>' : '<span style="color:var(--gold);font-size:.82rem">Select →</span>'}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      area.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:.88rem">Loading courses…</div>';
+    }
+  } else {
+    instrBlock.style.display = '';
+    lessonOpts.style.display = '';
+    planLabel.textContent = 'Select Lesson Plan';
+    area.style.display = 'none';
+    // Reset course selection
+    window._S.isCourse = false;
+    window._S.courseData = null;
+    window._S.selectedSlot = null;
+    // Restore lesson plan options
+    if (window._plans) renderLessonOpts(window._plans);
+  }
+};
+
+window.enrollCourseForm = function(id) {
+  const c = (window._courses||[]).find(x => x.id === id);
+  if (!c) return;
+  window.enrollCourse(id);
+  // Refresh course cards to show selected state
+  const area = document.getElementById('bookingCourseArea');
+  area.innerHTML = area.innerHTML; // triggers re-render via innerHTML trick
+  // Re-run setBookingType to refresh highlight
+  window.setBookingType('course');
+};
+
 function validate(n) {
   if (n===1) { if (!document.getElementById('fName').value||!document.getElementById('fEmail').value||!document.getElementById('fPhone').value) { alert('Please fill in your name, email, and WhatsApp number.'); return false; } }
   if (n===2) {
