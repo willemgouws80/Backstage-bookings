@@ -368,6 +368,14 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
 
         <!-- Step 2: Lesson/course selection -->
         <div class="fs" id="fs2">
+          <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+            <label style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;display:block">I want to book a…</label>
+            <div class="booking-type-toggle" id="bookingTypeToggle">
+              <button class="type-btn active" data-type="lesson" onclick="setBookingType('lesson')">Individual Lesson</button>
+              <button class="type-btn" data-type="course" onclick="setBookingType('course')">Course</button>
+            </div>
+            <div id="bookingCourseArea" style="display:none;margin-top:.75rem"></div>
+          </div>
           <div id="instrumentBlock">
             <div class="fg"><label>Instrument / Focus</label>
               <select id="fInstrument">
@@ -390,14 +398,6 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
               <div class="skeleton" style="height:90px;border-radius:1px"></div>
               <div class="skeleton" style="height:90px;border-radius:1px"></div>
             </div>
-          </div>
-          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
-            <label style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;display:block">Or enrol in a course instead</label>
-            <div class="booking-type-toggle" id="bookingTypeToggle">
-              <button class="type-btn active" data-type="lesson" onclick="setBookingType('lesson')">Individual Lesson</button>
-              <button class="type-btn" data-type="course" onclick="setBookingType('course')">Course</button>
-            </div>
-            <div id="bookingCourseArea" style="display:none;margin-top:.75rem"></div>
           </div>
           <div class="form-nav">
             <button class="btn-back" onclick="prevStep(1)">← Back</button>
