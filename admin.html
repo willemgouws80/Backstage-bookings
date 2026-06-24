@@ -1205,7 +1205,7 @@ async function loadPageViews() {
       if (el) el.textContent = bs[k]||0;
     }
     // Step events
-    const stSnap = await getDocs(collection(db,'analytics','stepEvents'));
+    const stSnap = await getDocs(collection(doc(db,'analytics','data'),'stepEvents'));
     const steps = {1:0,2:0,3:0,4:0,abandoned:0};
     stSnap.forEach(d => {
       const sd = d.data();
@@ -1228,7 +1228,7 @@ async function loadPageViews() {
 // Load abandoned leads (people who entered phone but didn't complete booking)
 async function loadAbandonedLeads() {
   try {
-    const snap = await getDocs(collection(db,'analytics','leads'));
+    const snap = await getDocs(collection(doc(db,'analytics','data'),'leads'));
     const leads = [];
     snap.forEach(d => { const ld = d.data(); if (!ld.completed) leads.push({id:d.id,...ld}); });
     // Group by phone, keep latest
@@ -4222,6 +4222,99 @@ window.deleteResource = async function(id, filePath, title) {
 // Load resources when panel is shown
 window._loaders = window._loaders || {};
 window._loaders.resources = window.loadResources;
+
+// ── AVAILABILITY / BLOCKED TIMES ──
+let _availData = { defaultHours: { start: '09:00', end: '18:00' }, blockedSlots: [] };
+
+window.loadAvailability = async function() {
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'config'));
+    if (snap.exists()) {
+      const d = snap.data();
+      _availData = d.availability || _availData;
+    }
+  } catch(e) { console.warn('Failed to load availability:', e); }
+  renderAvailability();
+};
+
+function renderAvailability() {
+  const el = document.getElementById('availBlockedList');
+  if (!el) return;
+  document.getElementById('availDefaultHours').textContent =
+    (_availData.defaultHours?.start||'09:00') + ' – ' + (_availData.defaultHours?.end||'18:00');
+
+  const slots = _availData.blockedSlots || [];
+  if (!slots.length) {
+    el.innerHTML = '<div style="padding:.5rem 0;font-size:.82rem;color:var(--muted)">No blocked slots. All default hours are available.</div>';
+    return;
+  }
+  el.innerHTML = slots.map((s, i) => {
+    const label = s.recurring
+      ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][s.dayOfWeek] + 's ' + s.start + '–' + s.end
+      : s.date + ' ' + s.start + '–' + s.end;
+    const reason = s.reason ? ' · ' + s.reason : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;background:var(--surface2);border-radius:2px;margin-bottom:.3rem;font-size:.82rem">
+      <span>🔒 ${label}<span style="color:var(--muted)">${reason}</span></span>
+      <button class="btn btn-danger btn-sm" onclick="deleteBlockedSlot(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+window.editDefaultHours = function() {
+  const cur = _availData.defaultHours || { start: '09:00', end: '18:00' };
+  const start = prompt('Default opening time (HH:MM):', cur.start);
+  if (!start) return;
+  const end = prompt('Default closing time (HH:MM):', cur.end);
+  if (!end) return;
+  _availData.defaultHours = { start, end };
+  saveAvailability();
+};
+
+window.addBlockedSlot = function() {
+  const date = document.getElementById('availDate').value;
+  const dayOfWeek = parseInt(document.getElementById('availDayOfWeek').value);
+  const start = document.getElementById('availStart').value;
+  const end = document.getElementById('availEnd').value;
+  const reason = document.getElementById('availReason').value.trim();
+  const recurring = document.getElementById('availRecurring').checked;
+
+  if (!start || !end) { alert('Please set start and end time.'); return; }
+  if (recurring && !dayOfWeek && dayOfWeek !== 0) { alert('Please select a day of the week.'); return; }
+  if (!recurring && !date) { alert('Please select a date.'); return; }
+
+  const slot = { start, end, reason, recurring };
+  if (recurring) slot.dayOfWeek = dayOfWeek;
+  else slot.date = date;
+
+  if (!_availData.blockedSlots) _availData.blockedSlots = [];
+  _availData.blockedSlots.push(slot);
+  saveAvailability();
+
+  document.getElementById('availDate').value = '';
+  document.getElementById('availStart').value = '09:00';
+  document.getElementById('availEnd').value = '10:00';
+  document.getElementById('availReason').value = '';
+  document.getElementById('availRecurring').checked = false;
+  document.getElementById('availRecurringWrap').style.display = 'none';
+  document.getElementById('availDate').style.display = '';
+};
+
+window.deleteBlockedSlot = function(idx) {
+  if (!confirm('Remove this blocked slot?')) return;
+  _availData.blockedSlots.splice(idx, 1);
+  saveAvailability();
+};
+
+async function saveAvailability() {
+  try {
+    await setDoc(doc(db, 'siteConfig', 'config'), { availability: _availData }, { merge: true });
+    renderAvailability();
+    window.toast('Availability saved!');
+  } catch(e) {
+    window.toast('Save failed: ' + e.message, 'error');
+  }
+}
+
 </script>
 
 <script>
@@ -4395,101 +4488,9 @@ window.closeRatingModal = function() {
   if (_ratingResolve) { _ratingResolve(null); _ratingResolve = null; }
 };
 
-// ── AVAILABILITY / BLOCKED TIMES ──
-let _availData = { defaultHours: { start: '09:00', end: '18:00' }, blockedSlots: [] };
+// Load availability on page load
+setTimeout(window.loadAvailability, 2000);
 
-window.loadAvailability = async function() {
-  try {
-    const snap = await getDoc(doc(db, 'siteConfig', 'config'));
-    if (snap.exists()) {
-      const d = snap.data();
-      _availData = d.availability || _availData;
-    }
-  } catch(e) { console.warn('Failed to load availability:', e); }
-  renderAvailability();
-};
-
-function renderAvailability() {
-  const el = document.getElementById('availBlockedList');
-  if (!el) return;
-  document.getElementById('availDefaultHours').textContent =
-    (_availData.defaultHours?.start||'09:00') + ' – ' + (_availData.defaultHours?.end||'18:00');
-
-  const slots = _availData.blockedSlots || [];
-  if (!slots.length) {
-    el.innerHTML = '<div style="padding:.5rem 0;font-size:.82rem;color:var(--muted)">No blocked slots. All default hours are available.</div>';
-    return;
-  }
-  el.innerHTML = slots.map((s, i) => {
-    const label = s.recurring
-      ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][s.dayOfWeek] + 's ' + s.start + '–' + s.end
-      : s.date + ' ' + s.start + '–' + s.end;
-    const reason = s.reason ? ' · ' + s.reason : '';
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;background:var(--surface2);border-radius:2px;margin-bottom:.3rem;font-size:.82rem">
-      <span>🔒 ${label}<span style="color:var(--muted)">${reason}</span></span>
-      <button class="btn btn-danger btn-sm" onclick="deleteBlockedSlot(${i})">✕</button>
-    </div>`;
-  }).join('');
-}
-
-window.editDefaultHours = function() {
-  const cur = _availData.defaultHours || { start: '09:00', end: '18:00' };
-  const start = prompt('Default opening time (HH:MM):', cur.start);
-  if (!start) return;
-  const end = prompt('Default closing time (HH:MM):', cur.end);
-  if (!end) return;
-  _availData.defaultHours = { start, end };
-  saveAvailability();
-};
-
-window.addBlockedSlot = function() {
-  const date = document.getElementById('availDate').value;
-  const dayOfWeek = parseInt(document.getElementById('availDayOfWeek').value);
-  const start = document.getElementById('availStart').value;
-  const end = document.getElementById('availEnd').value;
-  const reason = document.getElementById('availReason').value.trim();
-  const recurring = document.getElementById('availRecurring').checked;
-
-  if (!start || !end) { alert('Please set start and end time.'); return; }
-  if (recurring && !dayOfWeek && dayOfWeek !== 0) { alert('Please select a day of the week.'); return; }
-  if (!recurring && !date) { alert('Please select a date.'); return; }
-
-  const slot = { start, end, reason, recurring };
-  if (recurring) slot.dayOfWeek = dayOfWeek;
-  else slot.date = date;
-
-  if (!_availData.blockedSlots) _availData.blockedSlots = [];
-  _availData.blockedSlots.push(slot);
-  saveAvailability();
-
-  // Reset form
-  document.getElementById('availDate').value = '';
-  document.getElementById('availStart').value = '09:00';
-  document.getElementById('availEnd').value = '10:00';
-  document.getElementById('availReason').value = '';
-  document.getElementById('availRecurring').checked = false;
-  document.getElementById('availRecurringWrap').style.display = 'none';
-  document.getElementById('availDate').style.display = '';
-};
-
-window.deleteBlockedSlot = function(idx) {
-  if (!confirm('Remove this blocked slot?')) return;
-  _availData.blockedSlots.splice(idx, 1);
-  saveAvailability();
-};
-
-async function saveAvailability() {
-  try {
-    await setDoc(doc(db, 'siteConfig', 'config'), { availability: _availData }, { merge: true });
-    renderAvailability();
-    toast('Availability saved!');
-  } catch(e) {
-    toast('Save failed: ' + e.message, 'error');
-  }
-}
-
-// Load availability when page loads
-setTimeout(loadAvailability, 2000);
 
 </script>
 </body>

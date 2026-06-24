@@ -903,7 +903,7 @@ function waBookingLink(booking) {
   return 'https://wa.me/' + booking.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(waMsg);
 }
 
-function trackStep(ns,ps){try{const nm=document.getElementById("fName")?.value||"",em=document.getElementById("fEmail")?.value||"",ph=document.getElementById("fPhone")?.value||"";addDoc(collection(db,"analytics","stepEvents"),{step:ns,prevStep:ps,timestamp:new Date().toISOString(),hasName:!!nm,hasEmail:!!em,hasPhone:!!ph,hasData:!!(nm||em||ph),emailHash:em?btoa(em.trim().toLowerCase()).slice(0,12):""}).catch(()=>{});if(ph&&ph.replace(/[^0-9]/g,"").length>=8){addDoc(collection(db,"analytics","leads"),{name:nm+" "+(document.getElementById("lName")?.value||""),phone:ph,email:em,step:ns,timestamp:new Date().toISOString()}).catch(()=>{});}}catch(e){}}
+function trackStep(ns,ps){try{const nm=document.getElementById("fName")?.value||"",em=document.getElementById("fEmail")?.value||"",ph=document.getElementById("fPhone")?.value||"";addDoc(collection(doc(db,"analytics","data"),"stepEvents"),{step:ns,prevStep:ps,timestamp:new Date().toISOString(),hasName:!!nm,hasEmail:!!em,hasPhone:!!ph,hasData:!!(nm||em||ph),emailHash:em?btoa(em.trim().toLowerCase()).slice(0,12):""}).catch(()=>{});if(ph&&ph.replace(/[^0-9]/g,"").length>=8){addDoc(collection(doc(db,"analytics","data"),"leads"),{name:nm+" "+(document.getElementById("lName")?.value||""),phone:ph,email:em,step:ns,timestamp:new Date().toISOString()}).catch(()=>{});}}catch(e){}}
 window.submitBooking = async () => {
   const method = window._S.payMethod;
   const submitBtn = document.querySelector('.btn-submit');
@@ -1041,7 +1041,7 @@ window.submitBooking = async () => {
     }
 
     // Mark this lead as completed
-    try { const q = query(collection(db,'analytics','leads'), where('phone','==',booking.phone), where('email','==',booking.email)); getDocs(q).then(s=>s.forEach(d=>updateDoc(d.ref,{completed:true,completedAt:new Date().toISOString(),bookingId:docRef.id}).catch(()=>{}))); } catch(e) {}
+    try { const q = query(collection(doc(db,'analytics','data'),'leads'), where('phone','==',booking.phone), where('email','==',booking.email)); getDocs(q).then(s=>s.forEach(d=>updateDoc(d.ref,{completed:true,completedAt:new Date().toISOString(),bookingId:docRef.id}).catch(()=>{}))); } catch(e) {}
     // Increment course enrollment
     if (window._S.courseData?.id) {
       const slotKey = window._S.selectedSlot || window._S.courseData?.fixedSchedule || '__total__';
