@@ -1110,12 +1110,23 @@ setTimeout(() => loadCourses(), 200);
 // Pre-load bookings for slot blocking on private lessons
 (async () => {
   try {
-    const snap = await getDocs(collection(db,'bookings'));
+    const snap = await getDocs(collection(db, 'bookings'));
     window._existingBookings = [];
     snap.forEach(d => window._existingBookings.push({id:d.id,...d.data()}));
   } catch(e) {
     window._existingBookings = [];
   }
+})();
+
+// Pre-load availability / blocked times
+(async () => {
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'config'));
+    if (snap.exists()) {
+      window._availData = snap.data().availability || { defaultHours: { start:'09:00', end:'18:00' }, blockedSlots: [] };
+    }
+  } catch(e) {}
+  if (!window._availData) window._availData = { defaultHours: { start:'09:00', end:'18:00' }, blockedSlots: [] };
 })();
 
 // Pre-load course sessions for slot blocking (courses are publicly readable)
@@ -1332,17 +1343,20 @@ function buildSchedule() {
 
 function freePickHtml() {
   const duration = window._S.lessonDuration || 60;
+  const avail = window._availData || { defaultHours: { start:'09:00', end:'18:00' }, blockedSlots: [] };
+  const defStart = parseInt(avail.defaultHours.start) || 9;
+  const defEnd = parseInt(avail.defaultHours.end) || 18;
 
-  // Generate slots from 09:00 to 18:00 in the right interval
+  // Generate slots from default hours in the right interval
   function makeSlots(mins) {
     const slots = [];
-    let h = 9, m = 0;
-    const endH = 18;
+    let h = defStart, m = 0;
+    const endH = defEnd;
     while (h < endH || (h === endH && m === 0)) {
       const startStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
       let eh = h, em = m + mins;
       if (em >= 60) { eh += Math.floor(em/60); em = em % 60; }
-      if (eh > 18 || (eh === 18 && em > 0)) break;
+      if (eh > endH || (eh === endH && em > 0)) break;
       const endStr = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
       slots.push(`${startStr} – ${endStr}`);
       m += mins;
@@ -1353,6 +1367,24 @@ function freePickHtml() {
 
   const allSlots = makeSlots(duration);
 
+  // Check if a time slot is blocked (overlaps any blocked slot)
+  function isSlotBlocked(slotStr, day, weekday) {
+    const [sStart, sEnd] = slotStr.split(' – ');
+    const blocked = avail.blockedSlots || [];
+    for (const b of blocked) {
+      // Recurring: check day of week
+      if (b.recurring) {
+        if (b.dayOfWeek !== weekday) continue;
+      } else {
+        // Specific date: must match selected day string
+        if (b.date !== day) continue;
+      }
+      // Time overlap: slot starts before block ends AND slot ends after block starts
+      if (sStart < b.end && sEnd > b.start) return true;
+    }
+    return false;
+  }
+
   // Get taken slots for the chosen day from existing bookings
   function getTakenSlots(day) {
     const taken = new Set();
@@ -1362,11 +1394,14 @@ function freePickHtml() {
     return taken;
   }
 
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
   const slotOptionsHtml = (day) => {
     const taken = getTakenSlots(day);
+    const weekday = DAY_NAMES.indexOf(day);
     return allSlots.map(s => {
-      const isTaken = taken.has(s);
-      return `<option value="${s}" ${isTaken ? 'disabled' : ''}>${s}${isTaken ? ' (taken)' : ''}</option>`;
+      const isTaken = taken.has(s) || isSlotBlocked(s, day, weekday);
+      return `<option value="${s}" ${isTaken ? 'disabled' : ''}>${s}${isTaken ? ' (unavailable)' : ''}</option>`;
     }).join('');
   };
 
@@ -1400,15 +1435,18 @@ function updateTimeSlots() {
   if (!dayEl || !timeEl) return;
   const day      = dayEl.value;
   const duration = window._S.lessonDuration || 60;
+  const avail = window._availData || { defaultHours: { start:'09:00', end:'18:00' }, blockedSlots: [] };
+  const defStart = parseInt(avail.defaultHours.start) || 9;
+  const defEnd = parseInt(avail.defaultHours.end) || 18;
 
   function makeSlots(mins) {
     const slots = [];
-    let h = 9, m = 0;
-    while (h < 18 || (h === 18 && m === 0)) {
+    let h = defStart, m = 0;
+    while (h < defEnd || (h === defEnd && m === 0)) {
       const s = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
       let eh = h, em = m + mins;
       if (em >= 60) { eh += Math.floor(em/60); em = em % 60; }
-      if (eh > 18 || (eh === 18 && em > 0)) break;
+      if (eh > defEnd || (eh === defEnd && em > 0)) break;
       const e = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
       slots.push(`${s} – ${e}`);
       m += mins; if (m >= 60) { h += Math.floor(m/60); m = m % 60; }
@@ -1416,8 +1454,23 @@ function updateTimeSlots() {
     return slots;
   }
 
+  function isSlotBlocked(slotStr, dayStr, weekday) {
+    const [sStart, sEnd] = slotStr.split(' – ');
+    const blocked = avail.blockedSlots || [];
+    for (const b of blocked) {
+      if (b.recurring) { if (b.dayOfWeek !== weekday) continue; }
+      else { if (b.date !== dayStr) continue; }
+      if (sStart < b.end && sEnd > b.start) return true;
+    }
+    return false;
+  }
+
   const allSlots = makeSlots(duration);
   const taken = new Set();
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const weekday = DAY_NAMES.indexOf(day);
+  // Block slots from admin availability
+  allSlots.forEach(s => { if (isSlotBlocked(s, day, weekday)) taken.add(s); });
   // Block slots taken by existing private lesson bookings
   (window._existingBookings || []).forEach(b => {
     if (!b.courseId && b.prefDay === day && b.prefTime) taken.add(b.prefTime);
@@ -1425,7 +1478,6 @@ function updateTimeSlots() {
   // Block slots taken by course sessions on this day
   (window._courseSessions || []).forEach(cs => {
     if (cs.day && cs.day.toLowerCase() === day.toLowerCase() && cs.startTime) {
-      // Find all slots that overlap with this course session
       allSlots.forEach(slot => {
         const slotStart = slot.split(' – ')[0];
         if (slotStart === cs.startTime) taken.add(slot);
@@ -1436,7 +1488,7 @@ function updateTimeSlots() {
   timeEl.innerHTML = `<option value="">Select slot</option>` +
     allSlots.map(s => {
       const isTaken = taken.has(s);
-      return `<option value="${s}" ${isTaken?'disabled':''}>${s}${isTaken?' (taken)':''}</option>`;
+      return `<option value="${s}" ${isTaken?'disabled':''}>${s}${isTaken?' (unavailable)':''}</option>`;
   }).join('');
 }
 window.renderLessonOpts = renderLessonOpts;

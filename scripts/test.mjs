@@ -91,7 +91,8 @@ function checkGroup(label, file, checks) {
 checkGroup('Public Site (index.html)', 'index.html', [
   'id="courses"', 'id="book"', 'id="pricing"', 'id="instructor"',
   'id="testimonials"', 'id="gallery"',
-  "collection(db,'bookings')", "collection(db,'courses')",
+  { regex: /collection\(db\s*,\s*'bookings'\)/, label: "collection(db,'bookings')" },
+  { regex: /collection\(db\s*,\s*'courses'\)/, label: "collection(db,'courses')" },
   'siteConfig', 'loadSiteConfig', 'loadPricing', 'loadCourses',
   'submitBooking', 'fbq',
   { regex: /increment/, label: 'increment imported' },
