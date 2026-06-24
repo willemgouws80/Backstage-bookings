@@ -759,7 +759,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div id="tunerFrets" style="font-size:.65rem;color:var(--muted3);display:flex;justify-content:space-around;padding:0 0 0 36px;margin-top:-.35rem;margin-bottom:.5rem"></div>
         <div style="position:relative;height:48px;margin:.25rem 0 0;background:var(--surface3);border-radius:8px;overflow:hidden" id="tunerGauge">
           <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--muted)"></div>
-          <div id="tunerNeedle" style="position:absolute;left:50%;top:0;bottom:0;width:4px;background:var(--gold);border-radius:2px;transition:left .18s cubic-bezier(0.4, 0, 0.2, 1)"></div>
+          <div id="tunerNeedle" style="position:absolute;left:50%;top:0;bottom:0;width:4px;background:var(--gold);border-radius:2px;transition:left .3s cubic-bezier(0.4, 0, 0.2, 1)"></div>
           <div style="position:absolute;left:calc(50% - 30px);top:2px;width:60px;height:calc(100% - 4px);border:2px solid rgba(212,175,55,.2);border-radius:4px"></div>
           <div style="position:absolute;left:4px;bottom:3px;font-size:.7rem;color:var(--muted)">♭ 50¢</div>
           <div style="position:absolute;right:4px;bottom:3px;font-size:.7rem;color:var(--muted)">50¢ ♯</div>
@@ -2448,8 +2448,8 @@ function _tunerFindPeak() {
     if (v > maxVal) { maxVal = v; maxIdx = i; }
   }
   const avg = count > 0 ? sum / count : 0;
-  // Require peak to be at least 3x the average background (signal confidence)
-  if (maxVal < 40 || maxVal < avg * 3) return 0;
+  // Require peak to be at least 5x the average background (signal confidence, less sensitive)
+  if (maxVal < 50 || maxVal < avg * 5) return 0;
   const len = _tunerData.length;
   const left = maxIdx > 0 ? _tunerData[maxIdx - 1] : 0;
   const right = maxIdx < len - 1 ? _tunerData[maxIdx + 1] : 0;
@@ -2465,9 +2465,25 @@ function _tunerProcess() {
   if (!_tunerActive) return;
   const rawFreq = _tunerFindPeak();
   if (rawFreq > 0) {
-    _tunerSmoothFreq = _tunerSmoothFreq > 0 ? Math.min(_tunerSmoothFreq * 0.92 + rawFreq * 0.08, _tunerSmoothFreq * 1.5) : rawFreq;
+    _tunerSmoothFreq = _tunerSmoothFreq > 0 ? Math.min(_tunerSmoothFreq * 0.97 + rawFreq * 0.03, _tunerSmoothFreq * 1.5) : rawFreq;
     const note = _tunerFreqToNote(_tunerSmoothFreq);
     if (note) {
+      // Require the same note for 10 consecutive frames before displaying
+      if (note.name === _tunerStableNote) {
+        _tunerStableCount++;
+      } else {
+        _tunerStableNote = note.name;
+        _tunerStableCount = 0;
+      }
+      if (_tunerStableCount < 10) {
+        document.getElementById('tunerNote').textContent = '…';
+        document.getElementById('tunerCents').textContent = 'Hold…';
+        document.getElementById('tunerFreq').textContent = '';
+        _tunerHighlightString(-1);
+        _tunerActiveString = -1;
+        _tunerRaf = requestAnimationFrame(_tunerProcess);
+        return;
+      }
       const select = document.getElementById('tunerStringSelect');
       const isAuto = select.value === 'auto';
       let targetString = -1;
@@ -2500,15 +2516,17 @@ function _tunerProcess() {
       document.getElementById('tunerFreq').textContent = displayNote.freq + ' Hz' + (displayNote.name !== note.name ? ' (' + note.name + note.octave + ' detected)' : '');
       const pct = 50 + (Math.max(-50, Math.min(50, displayNote.cents)) / 50) * 50;
       document.getElementById('tunerNeedle').style.left = pct + '%';
-      const color = Math.abs(displayNote.cents) <= 3 ? 'var(--success)' : Math.abs(displayNote.cents) <= 10 ? 'var(--gold)' : 'var(--danger)';
+      const color = Math.abs(displayNote.cents) <= 5 ? 'var(--success)' : Math.abs(displayNote.cents) <= 12 ? 'var(--gold)' : 'var(--danger)';
       document.getElementById('tunerNeedle').style.background = color;
-      document.getElementById('tunerCents').innerHTML = Math.abs(displayNote.cents) <= 3
+      document.getElementById('tunerCents').innerHTML = Math.abs(displayNote.cents) <= 5
         ? '<span style="color:var(--success);font-weight:600">✓ In Tune</span>'
         : (displayNote.cents > 0
           ? '<span style="color:var(--gold)">♯ ' + displayNote.cents + '¢ sharp</span>'
           : '<span style="color:var(--gold)">♭ ' + Math.abs(displayNote.cents) + '¢ flat</span>');
     }
   } else {
+    _tunerStableNote = null;
+    _tunerStableCount = 0;
     _tunerHighlightString(-1);
     _tunerActiveString = -1;
   }
