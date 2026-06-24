@@ -2358,6 +2358,7 @@ const GUITAR_STRINGS = [
 ];
 const TUNER_FRETS = [3, 5, 7, 9, 12];
 let _tunerStream = null, _tunerCtx = null, _tunerAnalyser = null, _tunerData = null;
+let _tunerActive = false, _tunerSmoothFreq = 0, _tunerActiveString = -1, _tunerRaf = null;
 let _tunerStableNote = null, _tunerStableCount = 0, _tunerStableString = -1, _tunerStringStableCount = 0;
 const TUNER_HOLD_FRAMES = 6;   // frames before note change accepted
 const TUNER_STRING_HOLD = 8;   // frames before auto-string switch accepted
