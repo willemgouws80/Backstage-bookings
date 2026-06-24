@@ -2449,8 +2449,8 @@ function _tunerFindPeak() {
     if (v > maxVal) { maxVal = v; maxIdx = i; }
   }
   const avg = count > 0 ? sum / count : 0;
-  // Require peak to be at least 5x the average background (signal confidence, less sensitive)
-  if (maxVal < 50 || maxVal < avg * 5) return 0;
+  // Require peak to be at least 4x the average background (signal confidence)
+  if (maxVal < 40 || maxVal < avg * 4) return 0;
   const len = _tunerData.length;
   const left = maxIdx > 0 ? _tunerData[maxIdx - 1] : 0;
   const right = maxIdx < len - 1 ? _tunerData[maxIdx + 1] : 0;
@@ -2469,14 +2469,14 @@ function _tunerProcess() {
     _tunerSmoothFreq = _tunerSmoothFreq > 0 ? Math.min(_tunerSmoothFreq * 0.97 + rawFreq * 0.03, _tunerSmoothFreq * 1.5) : rawFreq;
     const note = _tunerFreqToNote(_tunerSmoothFreq);
     if (note) {
-      // Require the same note for 10 consecutive frames before displaying
       if (note.name === _tunerStableNote) {
         _tunerStableCount++;
       } else {
         _tunerStableNote = note.name;
         _tunerStableCount = 0;
       }
-      if (_tunerStableCount < 10) {
+      // Show note instantly after just 3 frames of stability
+      if (_tunerStableCount < 3) {
         document.getElementById('tunerNote').textContent = '…';
         document.getElementById('tunerCents').textContent = 'Hold…';
         document.getElementById('tunerFreq').textContent = '';
@@ -2526,6 +2526,7 @@ function _tunerProcess() {
           : '<span style="color:var(--gold)">♭ ' + Math.abs(displayNote.cents) + '¢ flat</span>');
     }
   } else {
+    _tunerSmoothFreq = 0;
     _tunerStableNote = null;
     _tunerStableCount = 0;
     _tunerHighlightString(-1);
