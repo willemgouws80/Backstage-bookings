@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
       - run: node scripts/test.mjs
 
   deploy:
@@ -17,5 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
       - run: npm install -g firebase-tools
-      - run: firebase deploy --only hosting,firestore,storage --token "${{ secrets.FIREBASE_TOKEN }}" --project backstage-music
+      - run: firebase deploy --only hosting,firestore,storage --project backstage-music
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
