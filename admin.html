@@ -1101,7 +1101,7 @@ service firebase.storage {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, setDoc, deleteDoc, doc, getDoc, updateDoc, increment, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
@@ -1279,6 +1279,8 @@ function bookingRow(b) {
       <button class="btn btn-outline btn-sm" onclick="window.rescheduleBooking('${b.id}')">↔ Reschedule</button>
       <button class="btn btn-gold btn-sm" onclick="window.togglePaid('${b.id}')">${b.paid?'○ Unpaid':'✓ Paid'}</button>
       <button class="btn btn-danger btn-sm" onclick="window.deleteBooking('${b.id}')">Delete</button>
+      <button class="btn btn-outline btn-sm" onclick="window.editBookingName('${b.id}')">✎ Name</button>
+      <button class="btn btn-outline btn-sm" onclick="window.duplicateBooking('${b.id}')">⧉ Duplicate</button>
     </div>
   </div>`;
 } window.bookingRow=bookingRow;
@@ -1351,6 +1353,46 @@ window.togglePaid = async function(id) {
     else { updates.paidAt = null; }
     await updateDoc(doc(db,'bookings',id), updates);
     toast(nowPaid ? '✓ Marked as paid' : '○ Marked as unpaid','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.editBookingName = async function(id) {
+  const b = (window._bookings||[]).find(x=>x.id===id);
+  if (!b) return;
+  const first = prompt('Edit first name:', b.firstName || '');
+  if (first === null) return;
+  const last = prompt('Edit surname:', b.lastName || '');
+  if (last === null) return;
+  try {
+    await updateDoc(doc(db,'bookings',id), { firstName: first, lastName: last, updatedAt: new Date().toISOString() });
+    toast('Name updated!','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.duplicateBooking = async function(id) {
+  const b = (window._bookings||[]).find(x=>x.id===id);
+  if (!b) return;
+  const first = prompt('Enter first name for the duplicate:', b.firstName || '');
+  if (!first) return;
+  const last = prompt('Enter surname for the duplicate:', b.lastName || '');
+  if (!last) return;
+  try {
+    const { id: _id, ...rest } = b;
+    const copy = {
+      ...rest,
+      firstName: first,
+      lastName: last,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    const docRef = await addDoc(collection(db,'bookings'), copy);
+    if (b.courseId) {
+      await updateDoc(doc(db,'courses',b.courseId), { bookedCount: increment(1) });
+    }
+    toast('Booking duplicated!','success');
     loadDashboard();
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
