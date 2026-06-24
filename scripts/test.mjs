@@ -93,7 +93,7 @@ checkGroup('Public Site (index.html)', 'index.html', [
   'id="testimonials"', 'id="gallery"',
   { regex: /collection\(db\s*,\s*'bookings'\)/, label: "collection(db,'bookings')" },
   { regex: /collection\(db\s*,\s*'courses'\)/, label: "collection(db,'courses')" },
-  'siteConfig', 'loadSiteConfig', 'loadPricing', 'loadCourses',
+  'siteConfig', 'loadSiteConfig', 'loadPricing', 'loadCourses', 'loadSchoolTerms', 'checkDateAgainstTerms',
   'submitBooking', 'fbq',
   { regex: /increment/, label: 'increment imported' },
 ]);

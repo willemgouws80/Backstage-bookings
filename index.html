@@ -408,7 +408,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
         <!-- Step 3: Schedule (dynamic) -->
         <div class="fs" id="fs3">
           <div id="scheduleBlock"></div>
-          <div class="fg" id="startDateBlock"><label>Start Date</label><input type="date" id="fDate"></div>
+          <div class="fg" id="startDateBlock"><label>Start Date</label><input type="date" id="fDate" onchange="checkDateAgainstTerms()"><div id="termWarning" style="color:var(--gold);font-size:.8rem;margin-top:.3rem;display:none"></div></div>
           <div class="fg"><label>Notes (optional)</label><textarea id="fNotes" placeholder="Goals, questions, anything we should know…"></textarea></div>
           <div class="form-nav">
             <button class="btn-back" onclick="prevStep(2)">← Back</button>
@@ -602,6 +602,68 @@ function buildPaymentTabs(payments) {
     window._S.payMethod = firstKey;
   }
 }
+
+// ── SCHOOL TERMS ──
+const DEFAULT_TERMS_2026 = [
+  { name:'Term 1', start:'2026-01-14', end:'2026-03-20' },
+  { name:'Term 2', start:'2026-04-07', end:'2026-06-19' },
+  { name:'Term 3', start:'2026-07-07', end:'2026-09-18' },
+  { name:'Term 4', start:'2026-10-05', end:'2026-12-04' }
+];
+
+let _schoolTerms = [];
+
+async function loadSchoolTerms() {
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'schoolTerms'));
+    if (snap.exists() && snap.data().terms?.length) {
+      _schoolTerms = snap.data().terms;
+    } else {
+      _schoolTerms = DEFAULT_TERMS_2026;
+    }
+  } catch(e) {
+    _schoolTerms = DEFAULT_TERMS_2026;
+  }
+}
+
+window.checkDateAgainstTerms = function() {
+  const el = document.getElementById('termWarning');
+  const val = document.getElementById('fDate').value;
+  if (!val || !_schoolTerms.length) { el.style.display = 'none'; return; }
+
+  const chosen = new Date(val + 'T00:00:00');
+  let inTerm = null;
+  let nextTerm = null;
+
+  for (const t of _schoolTerms) {
+    const s = new Date(t.start + 'T00:00:00');
+    const e = new Date(t.end + 'T00:00:00');
+    if (chosen >= s && chosen <= e) { inTerm = t; break; }
+    if (chosen < s && (!nextTerm || s < new Date(nextTerm.start + 'T00:00:00'))) {
+      nextTerm = t;
+    }
+  }
+
+  if (inTerm) {
+    const termEnd = new Date(inTerm.end + 'T00:00:00');
+    const start = chosen > new Date(inTerm.start + 'T00:00:00') ? chosen : new Date(inTerm.start + 'T00:00:00');
+    const left = Math.ceil((termEnd - start) / (7 * 86400000));
+    el.innerHTML = '✅ Within ' + inTerm.name + ' &mdash; approx. <strong>' + left + '</strong> lesson' + (left !== 1 ? 's' : '') + ' remaining in this term';
+    el.style.display = 'block';
+    el.style.color = 'var(--green, #4ade80)';
+  } else if (nextTerm) {
+    const termEnd = new Date(nextTerm.end + 'T00:00:00');
+    const termStart = new Date(nextTerm.start + 'T00:00:00');
+    const left = Math.ceil((termEnd - termStart) / (7 * 86400000));
+    el.innerHTML = '📅 First available: ' + nextTerm.name + ' starts <strong>' + nextTerm.start + '</strong> &mdash; approx. <strong>' + left + '</strong> lesson' + (left !== 1 ? 's' : '') + ' in the term';
+    el.style.display = 'block';
+    el.style.color = 'var(--gold)';
+  } else {
+    el.innerHTML = '⚠️ This date is not within any school term. Please check the calendar for available dates.';
+    el.style.display = 'block';
+    el.style.color = 'var(--gold)';
+  }
+};
 
 // ── PRICING ──
 async function loadPricing(retries=3) {
@@ -1106,6 +1168,7 @@ loadSiteConfig();
 setTimeout(() => loadPricing(), 100);
 setTimeout(() => loadContent(), 200);
 setTimeout(() => loadCourses(), 200);
+setTimeout(() => loadSchoolTerms(), 300);
 
 // Pre-load bookings for slot blocking on private lessons
 (async () => {
