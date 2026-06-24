@@ -423,7 +423,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
             <div class="order-row"><span id="sumPlan">—</span><span id="sumPrice">—</span></div>
             <div class="order-row"><span id="sumType">—</span><span id="sumSchedule">—</span></div>
           <div class="order-row" id="sumDateRow"><span style="color:var(--muted)">Start Date</span><span id="sumStartDate">—</span></div>
-          <div class="order-row" id="sumVenueRow"><span style="color:var(--muted)">Venue</span><span id="sumVenue">—</span></div>
+          <div class="order-row" id="sumVenueRow"><span style="color:var(--muted)">Venue</span><span id="sumVenue">Backstage Worship Studio, Pretoria East</span></div>
             <div class="order-row order-total"><span>Total Due</span><span class="tot-amt" id="sumTotal" style="color:var(--muted);font-size:1.2rem">Select a plan above</span></div>
           </div>
           <div class="fg">
@@ -999,7 +999,7 @@ window.submitBooking = async () => {
     prefTime: window._S.isCourse ? '' : (timeEl?.value || ''),
     startDate: window._S.isCourse ? '' : document.getElementById('fDate').value,
     notes: document.getElementById('fNotes').value,
-    venue: document.getElementById('fVenue')?.value?.trim() || '',
+    venue: 'Backstage Worship Studio, Pretoria East',
     payMethod: method,
     status: 'pending',
     payStatus: method === 'yoco' ? 'processing' : (method === 'eft' ? 'pending_eft' : 'pending'),
@@ -1486,9 +1486,7 @@ function freePickHtml() {
       </select>
     </div>
   </div>
-  <div class="fg"><label>Venue / Location</label>
-    <input type="text" id="fVenue" placeholder="e.g. Backstage Studio, Pretoria East">
-  </div>`;
+  <div style="font-size:.85rem;color:var(--muted);margin-top:.3rem;padding:.4rem 0">📍 Venue: Backstage Worship Studio, Pretoria East. You&rsquo;ll receive the full address after registration.</div>`;
 }
 
 // Called when day changes — refreshes time slot availability
@@ -1569,10 +1567,6 @@ function buildSummary() {
   const sumDateEl = document.getElementById('sumStartDate');
   const fDateEl   = document.getElementById('fDate');
   if (sumDateEl && fDateEl && !S.isCourse) sumDateEl.textContent = fDateEl.value || '—';
-  // Show venue in summary
-  const sumVenueEl = document.getElementById('sumVenue');
-  const fVenueEl   = document.getElementById('fVenue');
-  if (sumVenueEl) sumVenueEl.textContent = (S.isCourse ? (S.courseData?.venue||'') : (fVenueEl?.value||'')) || '—';
   document.getElementById('sumTotal').textContent    = S.price ? `R ${Number(S.price).toLocaleString()}` : 'R 0';
   const _amt = S.price ? 'R '+Number(S.price).toLocaleString() : 'R 0';
   const _c = document.getElementById('cashAmountDue'); if(_c) _c.textContent = _amt;
