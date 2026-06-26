@@ -995,6 +995,14 @@ service firebase.storage {
             </select>
           </div>
         </div>
+        <div id="attSlotFilter" style="display:none;margin-top:.75rem">
+          <div class="fg">
+            <label>Filter by Slot</label>
+            <select id="attSlotSelect" onchange="loadAttendanceView()">
+              <option value="">All slots</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div id="attendanceView"><div class="loading-text">Select a course or student above</div></div>
     </div>
@@ -2233,8 +2241,20 @@ window.loadAttendanceView = async function() {
     if (!window._attCourses?.length) { await loadAttendancePanel(); }
     sel.innerHTML = '<option value="">— Select —</option>' +
       (window._attCourses||[]).map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
-    if (!selVal) { view.innerHTML = '<div class="loading-text">Select a course above</div>'; return; }
-    renderCourseAttendance(selVal);
+    if (!selVal) { view.innerHTML = '<div class="loading-text">Select a course above</div>'; document.getElementById('attSlotFilter').style.display='none'; return; }
+    // Populate slot filter dropdown
+    const course = (window._attCourses||[]).find(c=>c.id===selVal);
+    const slotFilterEl = document.getElementById('attSlotSelect');
+    if (course?.slotOptions?.length > 1) {
+      slotFilterEl.innerHTML = '<option value="">All slots</option>' + course.slotOptions.map(s => {
+        const name = typeof s === 'object' ? (s.name||s.label||s.day+' '+s.start) : s;
+        return `<option value="${name}">${name}</option>`;
+      }).join('');
+      document.getElementById('attSlotFilter').style.display = 'block';
+    } else {
+      document.getElementById('attSlotFilter').style.display = 'none';
+    }
+    renderCourseAttendance(selVal, document.getElementById('attSlotSelect').value);
   } else {
     label.textContent = 'Select Student';
     // Build unique student list from bookings
@@ -2252,30 +2272,50 @@ window.loadAttendanceView = async function() {
   }
 };
 
-async function renderCourseAttendance(courseId) {
+async function renderCourseAttendance(courseId, slotFilter) {
   const view    = document.getElementById('attendanceView');
   const course  = (window._attCourses||[]).find(c=>c.id===courseId);
   if (!course) return;
 
-  // Get sessions — use sessionDates if available, else generate from schedule fields
-  let sessions = course.sessionDates || [];
-  
-  // Try fixed schedule
-  if (!sessions.length && course.schedDay && course.schedStartDate && course.schedSessions) {
-    sessions = generateSessionDates('fixed', course.schedDay, course.schedStartTime, course.schedEndTime, course.schedStartDate, course.schedRepeat||'weekly', course.schedSessions);
+  // Filter enrolled students by slot if filter is set
+  let enrolled = (window._allBookings||[]).filter(b => b.courseId === courseId);
+  if (slotFilter) {
+    enrolled = enrolled.filter(b => b.chosenSlot === slotFilter);
   }
-  
-  // Try options schedule (each slot generates its own sessions)
-  if (!sessions.length && course.scheduleType === 'options' && course.slotOptions?.length && course.schedStartDate && course.schedSessions) {
-    course.slotOptions.forEach(slot => {
+
+  // Get sessions for this course/slot
+  let sessions = [];
+
+  // If slot filter is set, only generate sessions for that slot
+  if (slotFilter && course.slotOptions?.length && course.schedStartDate && course.schedSessions) {
+    const slot = course.slotOptions.find(s => (s.name||s.label||s.day+' '+s.start) === slotFilter);
+    if (slot) {
       const day   = typeof slot === 'object' ? slot.day   : (slot.split(' ')[0]||'');
       const start = typeof slot === 'object' ? slot.start : (slot.split(' ')[1]||'');
       const end   = typeof slot === 'object' ? slot.end   : '';
       if (day) {
-        const slotSessions = generateSessionDates('fixed', day, start||'', end||'', course.schedStartDate, course.schedRepeat||'weekly', Number(course.schedSessions));
-        sessions.push(...slotSessions);
+        sessions = generateSessionDates('fixed', day, start||'', end||'', course.schedStartDate, course.schedRepeat||'weekly', Number(course.schedSessions));
       }
-    });
+    }
+  }
+
+  // No slot filter or no options — try sessionDates, fixed schedule, or all options
+  if (!sessions.length) {
+    sessions = course.sessionDates || [];
+    if (!sessions.length && course.schedDay && course.schedStartDate && course.schedSessions) {
+      sessions = generateSessionDates('fixed', course.schedDay, course.schedStartTime, course.schedEndTime, course.schedStartDate, course.schedRepeat||'weekly', course.schedSessions);
+    }
+    if (!sessions.length && course.scheduleType === 'options' && course.slotOptions?.length && course.schedStartDate && course.schedSessions) {
+      course.slotOptions.forEach(slot => {
+        const day   = typeof slot === 'object' ? slot.day   : (slot.split(' ')[0]||'');
+        const start = typeof slot === 'object' ? slot.start : (slot.split(' ')[1]||'');
+        const end   = typeof slot === 'object' ? slot.end   : '';
+        if (day) {
+          const slotSessions = generateSessionDates('fixed', day, start||'', end||'', course.schedStartDate, course.schedRepeat||'weekly', Number(course.schedSessions));
+          sessions.push(...slotSessions);
+        }
+      });
+    }
   }
 
   if (!sessions.length) {
@@ -2283,10 +2323,8 @@ async function renderCourseAttendance(courseId) {
     return;
   }
 
-  // Get enrolled students (bookings for this course)
-  const enrolled = (window._allBookings||[]).filter(b => b.courseId === courseId);
   if (!enrolled.length) {
-    view.innerHTML = `<div class="card"><p style="color:var(--muted);font-size:.875rem">No students enrolled in this course yet.</p></div>`;
+    view.innerHTML = `<div class="card"><p style="color:var(--muted);font-size:.875rem">No students enrolled${slotFilter?' in this slot':''} yet.</p></div>`;
     return;
   }
 
@@ -2333,7 +2371,9 @@ async function renderCourseAttendance(courseId) {
     </tr>`;
   }).join('');
 
+  const titleSuffix = slotFilter ? ` — ${slotFilter}` : '';
   view.innerHTML = `
+    <div class="card-title">${course.title}${titleSuffix}</div>
     <div class="att-legend">
       <span><span class="att-cell att-present" style="width:20px;height:20px">✓</span> Present</span>
       <span><span class="att-cell att-absent" style="width:20px;height:20px">✗</span> Absent</span>
@@ -3060,16 +3100,29 @@ window.openCalDetail = function(uid) {
     const course   = (window._calCourses||[]).find(c=>c.id===courseId);
     if (!course) return;
     const enrolled = (window._calBookings||[]).filter(b=>b.courseId===courseId);
+    // Group by chosenSlot
+    const slotGroups = {};
+    enrolled.forEach(b => {
+      const slot = b.chosenSlot || 'Unassigned';
+      if (!slotGroups[slot]) slotGroups[slot] = [];
+      slotGroups[slot].push(b);
+    });
+    const slotNames = Object.keys(slotGroups);
     showCalModal(`
       <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--gold);margin-bottom:.5rem">${course.title}</h3>
       <div style="font-size:.82rem;color:var(--muted);margin-bottom:.4rem">${course.schedDay||''} ${course.schedStartTime||''}${course.schedEndTime?' – '+course.schedEndTime:''} · ${course.schedSessions||'?'} sessions · ${course.schedRepeat||'weekly'}</div>
       ${course.venue ? `<div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">📍 ${course.venue}</div>` : '<div style="margin-bottom:1.25rem"></div>'}
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">${enrolled.length} Enrolled Student${enrolled.length===1?'':'s'}</div>
-      ${enrolled.length ? enrolled.map(b=>`
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:.85rem 1rem;margin-bottom:.5rem">
-          <div style="font-weight:500;margin-bottom:.2rem">${b.firstName||''} ${b.lastName||''}</div>
-          <div style="font-size:.8rem;color:var(--muted)">${b.email||''} · ${b.phone||''} · ${b.chosenSlot||'—'}</div>
-        </div>`).join('') : '<div style="color:var(--muted);font-size:.85rem">No students enrolled yet</div>'}
+      ${slotNames.length ? slotNames.map(slotName => {
+        const students = slotGroups[slotName];
+        return `
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;margin-top:.75rem">${slotName} (${students.length})</div>
+          ${students.map(b=>`
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:.75rem 1rem;margin-bottom:.4rem">
+              <div style="font-weight:500;margin-bottom:.2rem">${b.firstName||''} ${b.lastName||''}</div>
+              <div style="font-size:.8rem;color:var(--muted)">${b.email||''} · ${b.phone||''}</div>
+            </div>`).join('')}
+        `;
+      }).join('') : '<div style="color:var(--muted);font-size:.85rem;margin-top:1rem">No students enrolled yet</div>'}
     `);
     return;
   }
