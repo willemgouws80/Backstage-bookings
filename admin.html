@@ -998,7 +998,7 @@ service firebase.storage {
         <div id="attSlotFilter" style="display:none;margin-top:.75rem">
           <div class="fg">
             <label>Filter by Slot</label>
-            <select id="attSlotSelect" onchange="loadAttendanceView()">
+            <select id="attSlotSelect" onchange="onSlotFilterChange()">
               <option value="">All slots</option>
             </select>
           </div>
@@ -2229,6 +2229,14 @@ async function loadAttendancePanel() {
   } catch(e) { console.warn('Attendance load error:',e); }
 }
 
+window.onSlotFilterChange = function() {
+  const slotVal = document.getElementById('attSlotSelect').value;
+  const courseId = document.getElementById('attSelect').value;
+  if (courseId && window._attCourses?.length) {
+    renderCourseAttendance(courseId, slotVal);
+  }
+};
+
 window.loadAttendanceView = async function() {
   const mode   = document.getElementById('attMode').value;
   const selVal = document.getElementById('attSelect').value;
@@ -2239,8 +2247,12 @@ window.loadAttendanceView = async function() {
   if (mode === 'course') {
     label.textContent = 'Select Course';
     if (!window._attCourses?.length) { await loadAttendancePanel(); }
-    sel.innerHTML = '<option value="">— Select —</option>' +
-      (window._attCourses||[]).map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+    // Repopulate course dropdown only when data changes (avoids resetting the user's selection)
+    if (sel.dataset.lastLoad !== String(window._attCourses?.length)) {
+      sel.innerHTML = '<option value="">— Select —</option>' +
+        (window._attCourses||[]).map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+      sel.dataset.lastLoad = String(window._attCourses?.length);
+    }
     if (!selVal) { view.innerHTML = '<div class="loading-text">Select a course above</div>'; document.getElementById('attSlotFilter').style.display='none'; return; }
     // Populate slot filter dropdown
     const course = (window._attCourses||[]).find(c=>c.id===selVal);
@@ -2250,11 +2262,13 @@ window.loadAttendanceView = async function() {
         const name = typeof s === 'object' ? (s.name||s.label||s.day+' '+s.start) : s;
         return `<option value="${name}">${name}</option>`;
       }).join('');
+      slotFilterEl.dataset.courseId = selVal;
       document.getElementById('attSlotFilter').style.display = 'block';
     } else {
       document.getElementById('attSlotFilter').style.display = 'none';
+      slotFilterEl.dataset.courseId = '';
     }
-    renderCourseAttendance(selVal, document.getElementById('attSlotSelect').value);
+    renderCourseAttendance(selVal, slotFilterEl.value);
   } else {
     label.textContent = 'Select Student';
     // Build unique student list from bookings
