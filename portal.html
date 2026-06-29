@@ -2817,9 +2817,14 @@ async function renderFirstLesson() {
   const firstPrep = slot?.firstLessonPrep || '';
   const whatLearn = slot?.whatYouWillLearn || '';
 
-  // Find next session date from the course's sessionDates matching this slot
+  // Find next session date matching this student's slot
   const now = new Date();
-  const upcomingSessions = (course.sessionDates||[]).filter(s => s.date >= now.toISOString().split('T')[0]);
+  const todayStr = now.toISOString().split('T')[0];
+  const slotStart = slot?.start || '';
+  const upcomingSessions = (course.sessionDates||[]).filter(s =>
+    s.date >= todayStr &&
+    (!slotStart || s.startTime === slotStart)
+  );
   const nextSession = upcomingSessions.length ? upcomingSessions[0] : null;
 
   // Find resources for this course + slot
