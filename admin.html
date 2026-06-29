@@ -2320,7 +2320,17 @@ window._loaders = { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:l
 // ── WHATSAPP BROADCAST ──
 window._waRecipients = [];
 
-function waInit() {
+async function waInit() {
+  // Ensure data is loaded
+  if (!window._bookings || !window._courses) {
+    try {
+      const [bSnap, cSnap] = await Promise.all([getDocs(collection(db,'bookings')), getDocs(collection(db,'courses'))]);
+      window._bookings = [];
+      window._courses = [];
+      bSnap.forEach(d => window._bookings.push({id:d.id, ...d.data()}));
+      cSnap.forEach(d => window._courses.push({id:d.id, ...d.data()}));
+    } catch(e) { console.warn('WA data load error:', e); }
+  }
   const courses = window._courses || [];
   const courseSel = document.getElementById('waCourseSelect');
   courseSel.innerHTML = '<option value="">— Select course —</option>' +
