@@ -233,6 +233,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
     <div class="nav-item" onclick="showPanel('content',this)"><span class="icon">🎨</span> Website Content</div>
     <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
     <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon">📂</span> Resources</div>
+    <div class="nav-item" onclick="showPanel('whatsapp',this)"><span class="icon">💬</span> WhatsApp</div>
     <span class="sidebar-label">Finance</span>
     <div class="nav-item" onclick="showPanel('quotes',this)"><span class="icon">📄</span> Quotes</div>
     <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
@@ -1092,6 +1093,59 @@ service firebase.storage {
         </div>
       </div>
       <div id="resourcesList"><div class="loading-text">Loading resources…</div></div>
+    </div>
+
+    <!-- WHATSAPP BROADCAST -->
+    <div class="panel" id="panel-whatsapp">
+      <div class="page-header"><h1><em>WhatsApp Broadcast</em></h1></div>
+      <div class="card">
+        <div class="card-title">1. Who are you messaging?</div>
+        <div class="fg"><label>Filter by</label>
+          <select id="waFilterType" onchange="waUpdateRecipients()">
+            <option value="all">All bookings</option>
+            <option value="course">Specific course</option>
+            <option value="slot">Specific slot</option>
+          </select>
+        </div>
+        <div class="fg" id="waCourseGroup" style="display:none"><label>Course</label>
+          <select id="waCourseSelect" onchange="waUpdateRecipients()"></select>
+        </div>
+        <div class="fg" id="waSlotGroup" style="display:none"><label>Slot</label>
+          <select id="waSlotSelect" onchange="waUpdateRecipients()"></select>
+        </div>
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem" id="waCount">0 recipients</div>
+        <details style="font-size:.82rem">
+          <summary style="cursor:pointer;color:var(--gold)">Preview recipients</summary>
+          <div id="waPreview" style="max-height:200px;overflow-y:auto;margin-top:.5rem;padding:.5rem;background:var(--surface2);border-radius:4px"></div>
+        </details>
+      </div>
+      <div class="card">
+        <div class="card-title">2. Write your message</div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem">
+          <button class="btn btn-sm btn-outline" onclick="waInsert('{firstName}')">{firstName}</button>
+          <button class="btn btn-sm btn-outline" onclick="waInsert('{surname}')">{surname}</button>
+          <button class="btn btn-sm btn-outline" onclick="waInsert('{slot}')">{slot}</button>
+          <button class="btn btn-sm btn-outline" onclick="waInsert('{course}')">{course}</button>
+          <button class="btn btn-sm btn-outline" onclick="waInsert('{date}')">{date}</button>
+        </div>
+        <textarea id="waMessage" rows="6" style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;border-radius:4px">Hi {firstName}! Welcome to Backstage Worship Music School 🎸
+
+Your {course} starts {date}. Here's the portal where you can practice, view resources, and track your progress:
+
+https://backstage-music.web.app/portal.html
+
+See you soon! 🙌</textarea>
+        <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+          <button class="btn btn-sm btn-outline" onclick="waLoadTemplate('portal')">📋 Portal Registration</button>
+          <button class="btn btn-sm btn-outline" onclick="waLoadTemplate('payment')">💳 Payment Reminder</button>
+          <button class="btn btn-sm btn-outline" onclick="waLoadTemplate('prep')">🎒 Workshop Prep</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">3. Send</div>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">Clicking Send will open a new tab for each recipient with the message pre-filled. Just press Enter to send each one.</p>
+        <button class="btn btn-gold" onclick="waSend()">💬 Open All in WhatsApp</button>
+      </div>
     </div>
 
     <!-- CALENDAR -->
@@ -2261,7 +2315,156 @@ window.deleteAnnouncement = async function(id) {
 // Data loading is triggered by onAuthStateChanged above
 
 // Expose for panel switching
-window._loaders = { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms };
+window._loaders = { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:loadCalendar, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms, whatsapp:waInit };
+
+// ── WHATSAPP BROADCAST ──
+window._waRecipients = [];
+
+function waInit() {
+  const courses = window._courses || [];
+  const courseSel = document.getElementById('waCourseSelect');
+  courseSel.innerHTML = '<option value="">— Select course —</option>' +
+    courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+  waUpdateRecipients();
+}
+
+function waUpdateRecipients() {
+  const type = document.getElementById('waFilterType').value;
+  document.getElementById('waCourseGroup').style.display = type === 'course' ? 'block' : 'none';
+  document.getElementById('waSlotGroup').style.display = type === 'slot' ? 'block' : 'none';
+
+  const bookings = window._bookings || [];
+  const courses = window._courses || [];
+  let recipients = [];
+
+  if (type === 'all') {
+    recipients = bookings;
+  } else if (type === 'course') {
+    const courseId = document.getElementById('waCourseSelect').value;
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      recipients = bookings.filter(b => b.courseId === courseId);
+      // Populate slots for this course
+      const slots = course.slotOptions || [];
+      const slotSel = document.getElementById('waSlotSelect');
+      if (slots.length) {
+        slotSel.innerHTML = '<option value="">— All slots —</option>' +
+          slots.map(s => `<option value="${s.name||s.label||s}">${s.name||s.label||s}</option>`).join('');
+        document.getElementById('waSlotGroup').style.display = 'block';
+        const slotVal = slotSel.value;
+        if (slotVal) recipients = recipients.filter(b => (b.chosenSlot||'').includes(slotVal));
+      } else {
+        document.getElementById('waSlotGroup').style.display = 'none';
+      }
+    }
+  } else if (type === 'slot') {
+    // Build list of unique slots across all courses
+    const allSlots = [];
+    courses.forEach(c => (c.slotOptions||[]).forEach(s => {
+      const name = s.name || s.label || s;
+      if (!allSlots.includes(name)) allSlots.push(name);
+    }));
+    const slotSel = document.getElementById('waSlotSelect');
+    slotSel.innerHTML = '<option value="">— Select slot —</option>' +
+      allSlots.map(s => `<option value="${s}">${s}</option>`).join('');
+    const slotVal = slotSel.value;
+    if (slotVal) recipients = bookings.filter(b => (b.chosenSlot||'').includes(slotVal));
+  }
+
+  // Deduplicate by phone
+  const seen = new Set();
+  window._waRecipients = [];
+  recipients.forEach(b => {
+    const phone = (b.phone || '').replace(/[^0-9+]/g, '');
+    if (!phone || seen.has(phone)) return;
+    seen.add(phone);
+    const course = courses.find(c => c.id === b.courseId);
+    window._waRecipients.push({
+      firstName: b.firstName || 'Student',
+      surname: b.lastName || '',
+      phone,
+      slot: b.chosenSlot || '',
+      course: course?.title || b.plan || '',
+      date: b.startDate || b.createdAt?.substring(0,10) || ''
+    });
+  });
+
+  document.getElementById('waCount').textContent = window._waRecipients.length + ' recipients';
+  const preview = document.getElementById('waPreview');
+  preview.innerHTML = window._waRecipients.map(r =>
+    `<div style="padding:.3rem 0;border-bottom:1px solid var(--border)">${r.firstName} ${r.surname} — ${r.phone}</div>`
+  ).join('') || '<div style="color:var(--muted)">No recipients match this filter</div>';
+}
+
+function waInsert(placeholder) {
+  const ta = document.getElementById('waMessage');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  ta.value = ta.value.substring(0, start) + placeholder + ta.value.substring(end);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + placeholder.length;
+}
+
+function waLoadTemplate(name) {
+  const ta = document.getElementById('waMessage');
+  const templates = {
+    portal: `Hi {firstName}! Welcome to Backstage Worship Music School 🎸
+
+We've set up your student portal where you can practice, view resources, and track your progress:
+
+👉 https://backstage-music.web.app/portal.html
+
+Just sign up with the email you used when booking and you're in!
+
+See you soon! 🙌`,
+    payment: `Hi {firstName}! Just a friendly reminder that your payment of R{amount} for {course} is still pending.
+
+Please use the following banking details:
+Backstage Worship Music School
+FNB Cheque Account: 630 514 396 18
+Branch: 255005
+Ref: {firstName}-{surname}
+
+Let us know once paid! 🙏`,
+    prep: `Hi {firstName}! Your {course} starts soon at Backstage Worship Music School 🎸
+
+📍 Venue: Laerskool Garsfontein, Pretoria East
+🕐 Slot: {slot}
+📅 Date: {date}
+
+What to bring:
+🎸 Your guitar
+📓 Notebook & pen
+💧 Water bottle
+
+Can't wait to see you there! 🙌`
+  };
+  ta.value = templates[name] || ta.value;
+}
+
+function waSend() {
+  const recipients = window._waRecipients;
+  if (!recipients.length) { toast('No recipients to message','error'); return; }
+  const template = document.getElementById('waMessage').value;
+  if (!template.trim()) { toast('Write a message first','error'); return; }
+
+  let opened = 0;
+  recipients.forEach(r => {
+    const msg = template
+      .replace(/\{firstName\}/g, r.firstName)
+      .replace(/\{surname\}/g, r.surname)
+      .replace(/\{slot\}/g, r.slot)
+      .replace(/\{course\}/g, r.course)
+      .replace(/\{date\}/g, r.date)
+      .replace(/\{amount\}/g, 'R500');
+
+    const phone = r.phone.replace(/[^0-9]/g, '');
+    const url = `https://wa.me/27${phone.startsWith('27') ? phone.slice(2) : phone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+    opened++;
+  });
+
+  toast(`Opened ${opened} WhatsApp tabs. Press Enter to send each one.`, 'success');
+}
 
 // ── ATTENDANCE ──
 async function loadAttendancePanel() {
