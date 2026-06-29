@@ -1101,17 +1101,17 @@ service firebase.storage {
       <div class="card">
         <div class="card-title">1. Who are you messaging?</div>
         <div class="fg"><label>Filter by</label>
-          <select id="waFilterType" onchange="waUpdateRecipients()">
+          <select id="waFilterType">
             <option value="all">All bookings</option>
             <option value="course">Specific course</option>
             <option value="slot">Specific slot</option>
           </select>
         </div>
         <div class="fg" id="waCourseGroup" style="display:none"><label>Course</label>
-          <select id="waCourseSelect" onchange="waUpdateRecipients()"></select>
+          <select id="waCourseSelect"></select>
         </div>
         <div class="fg" id="waSlotGroup" style="display:none"><label>Slot</label>
-          <select id="waSlotSelect" onchange="waUpdateRecipients()"></select>
+          <select id="waSlotSelect"></select>
         </div>
         <div style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem" id="waCount">0 recipients</div>
         <details style="font-size:.82rem">
@@ -1122,11 +1122,11 @@ service firebase.storage {
       <div class="card">
         <div class="card-title">2. Write your message</div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem">
-          <button class="btn btn-sm btn-outline" onclick="waInsert('{firstName}')">{firstName}</button>
-          <button class="btn btn-sm btn-outline" onclick="waInsert('{surname}')">{surname}</button>
-          <button class="btn btn-sm btn-outline" onclick="waInsert('{slot}')">{slot}</button>
-          <button class="btn btn-sm btn-outline" onclick="waInsert('{course}')">{course}</button>
-          <button class="btn btn-sm btn-outline" onclick="waInsert('{date}')">{date}</button>
+          <button class="btn btn-sm btn-outline" data-wa-insert="{firstName}">{firstName}</button>
+          <button class="btn btn-sm btn-outline" data-wa-insert="{surname}">{surname}</button>
+          <button class="btn btn-sm btn-outline" data-wa-insert="{slot}">{slot}</button>
+          <button class="btn btn-sm btn-outline" data-wa-insert="{course}">{course}</button>
+          <button class="btn btn-sm btn-outline" data-wa-insert="{date}">{date}</button>
         </div>
         <textarea id="waMessage" rows="6" style="width:100%;padding:.75rem;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;border-radius:4px">Hi {firstName}! Welcome to Backstage Worship Music School 🎸
 
@@ -1136,15 +1136,15 @@ https://backstage-music.web.app/portal.html
 
 See you soon! 🙌</textarea>
         <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
-          <button class="btn btn-sm btn-outline" onclick="waLoadTemplate('portal')">📋 Portal Registration</button>
-          <button class="btn btn-sm btn-outline" onclick="waLoadTemplate('payment')">💳 Payment Reminder</button>
-          <button class="btn btn-sm btn-outline" onclick="waLoadTemplate('prep')">🎒 Workshop Prep</button>
+          <button class="btn btn-sm btn-outline" data-wa-template="portal">📋 Portal Registration</button>
+          <button class="btn btn-sm btn-outline" data-wa-template="payment">💳 Payment Reminder</button>
+          <button class="btn btn-sm btn-outline" data-wa-template="prep">🎒 Workshop Prep</button>
         </div>
       </div>
       <div class="card">
         <div class="card-title">3. Send</div>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">Clicking Send will open a new tab for each recipient with the message pre-filled. Just press Enter to send each one.</p>
-        <button class="btn btn-gold" onclick="waSend()">💬 Open All in WhatsApp</button>
+        <button class="btn btn-gold" id="waSendBtn">💬 Open All in WhatsApp</button>
       </div>
     </div>
 
@@ -2335,6 +2335,19 @@ async function waInit() {
   const courseSel = document.getElementById('waCourseSelect');
   courseSel.innerHTML = '<option value="">— Select course —</option>' +
     courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+
+  // Bind events (avoid inline on* handlers — module scope issue)
+  document.getElementById('waFilterType').onchange = waUpdateRecipients;
+  document.getElementById('waCourseSelect').onchange = waUpdateRecipients;
+  document.getElementById('waSlotSelect').onchange = waUpdateRecipients;
+  document.querySelectorAll('[data-wa-insert]').forEach(btn => {
+    btn.onclick = () => waInsert(btn.dataset.waInsert);
+  });
+  document.querySelectorAll('[data-wa-template]').forEach(btn => {
+    btn.onclick = () => waLoadTemplate(btn.dataset.waTemplate);
+  });
+  document.getElementById('waSendBtn').onclick = waSend;
+
   waUpdateRecipients();
 }
 
