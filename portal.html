@@ -2433,22 +2433,98 @@ const GUITAR_STRINGS = [
   { num: 1, note: 'E', octave: 4, freq: 329.63, label: 'e' },
 ];
 const TUNER_FRETS = [3, 5, 7, 9, 12];
+// ── TUNER – YIN PITCH DETECTION ──
+// Based on de Cheveigné & Kawahara (2002) YIN algorithm
+// Reference: manynames3/string-sensei (MIT-licensed open-source guitar tuner)
+
 let _tunerStream = null, _tunerCtx = null, _tunerAnalyser = null, _tunerData = null;
 let _tunerActive = false, _tunerSmoothFreq = 0, _tunerActiveString = -1, _tunerRaf = null;
-let _tunerStableNote = null, _tunerStableCount = 0, _tunerStableString = -1, _tunerStringStableCount = 0;
-const TUNER_HOLD_FRAMES = 6;   // frames before note change accepted
-const TUNER_STRING_HOLD = 8;   // frames before auto-string switch accepted
+let _tunerStableNote = null, _tunerStableCount = 0;
+let _tunerSmoother = { samples: [], maxSamples: 6, maxJumpCents: 80 };
+let _tunerSilenceFrames = 0;
+
+function _tunerResetSmoother() { _tunerSmoother.samples = []; }
+
+function _tunerSmoothAdd(freq) {
+  if (!Number.isFinite(freq)) return null;
+  const s = _tunerSmoother;
+  const last = s.samples[s.samples.length - 1];
+  if (last) {
+    const jump = Math.abs(1200 * Math.log2(freq / last));
+    if (jump > s.maxJumpCents) { s.samples = [freq]; return freq; }
+  }
+  s.samples.push(freq);
+  if (s.samples.length > s.maxSamples) s.samples.shift();
+  const weights = s.samples.map((_, i) => i + 1);
+  const weightedSum = s.samples.reduce((sum, sample, i) => sum + sample * weights[i], 0);
+  return weightedSum / weights.reduce((sum, w) => sum + w, 0);
+}
+
+function _tunerRms(buffer) {
+  let sum = 0;
+  for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+  return Math.sqrt(sum / buffer.length);
+}
+
+function _tunerYinDetect(buffer, sampleRate) {
+  const threshold = 0.2, minFreq = 65, maxFreq = 380, rmsThreshold = 0.00008, analysisSize = 3072;
+  const rms = _tunerRms(buffer);
+  if (rms < rmsThreshold) return null;
+  const tauMin = Math.max(2, Math.floor(sampleRate / maxFreq));
+  const tauMax = Math.min(Math.floor(sampleRate / minFreq), Math.floor(buffer.length / 2));
+  const maxSamples = buffer.length - tauMax;
+  if (maxSamples < 32) return null;
+  const len = Math.min(analysisSize, maxSamples);
+  // Step 1: Difference function
+  const yin = new Float32Array(tauMax + 1);
+  for (let tau = 1; tau <= tauMax; tau++) {
+    let delta = 0;
+    for (let i = 0; i < len; i++) { const d = buffer[i] - buffer[i + tau]; delta += d * d; }
+    yin[tau] = delta;
+  }
+  // Step 2: Cumulative mean normalized difference function
+  yin[0] = 1;
+  let runningSum = 0;
+  for (let tau = 1; tau <= tauMax; tau++) {
+    runningSum += yin[tau];
+    yin[tau] = runningSum === 0 ? 1 : (yin[tau] * tau) / runningSum;
+  }
+  // Step 3: Find first dip below threshold
+  let tauEst = -1;
+  for (let tau = tauMin; tau <= tauMax; tau++) {
+    if (yin[tau] < threshold) {
+      while (tau + 1 <= tauMax && yin[tau + 1] < yin[tau]) tau++;
+      tauEst = tau; break;
+    }
+  }
+  if (tauEst === -1) return null;
+  // Step 4: Parabolic interpolation for sub-sample accuracy
+  const prev = yin[tauEst - 1] ?? yin[tauEst];
+  const curr = yin[tauEst];
+  const next = yin[tauEst + 1] ?? yin[tauEst];
+  const div = prev + next - 2 * curr;
+  if (div !== 0) tauEst += (prev - next) / (2 * div);
+  const freq = sampleRate / tauEst;
+  if (!Number.isFinite(freq) || freq < minFreq || freq > maxFreq) return null;
+  return freq;
+}
+
+function _tunerFreqToNote(freq) {
+  if (freq < 60 || freq > 1400) return null;
+  const midi = 12 * (Math.log(freq / 440) / Math.log(2)) + 69;
+  const rounded = Math.round(midi);
+  const cents = Math.round(100 * (midi - rounded));
+  const noteIndex = ((rounded % 12) + 12) % 12;
+  const octave = Math.floor((rounded - 12) / 12);
+  return { name: TUNER_NOTES[noteIndex], octave: Math.max(0, octave), cents, freq: Math.round(freq) };
+}
 
 function _tunerBuildNeck() {
   const neck = document.getElementById('tunerNeck');
   const fretsEl = document.getElementById('tunerFrets');
   neck.innerHTML = ''; fretsEl.innerHTML = '';
   const maxFret = 13;
-  for (const f of TUNER_FRETS) {
-    const lbl = document.createElement('span');
-    lbl.textContent = f; lbl.style.cssText = 'flex:1;text-align:center';
-    fretsEl.appendChild(lbl);
-  }
+  for (const f of TUNER_FRETS) { const lbl = document.createElement('span'); lbl.textContent = f; lbl.style.cssText = 'flex:1;text-align:center'; fretsEl.appendChild(lbl); }
   for (const s of GUITAR_STRINGS) {
     const row = document.createElement('div');
     row.id = 'tunerStringRow' + s.num;
@@ -2456,8 +2532,7 @@ function _tunerBuildNeck() {
     const label = document.createElement('div');
     label.textContent = s.label;
     label.style.cssText = 'width:28px;font-size:.8rem;font-weight:700;color:var(--muted);text-align:right;padding-right:6px;flex-shrink:0;transition:color .15s';
-    label.id = 'tunerStringLabel' + s.num;
-    row.appendChild(label);
+    label.id = 'tunerStringLabel' + s.num; row.appendChild(label);
     const track = document.createElement('div');
     track.id = 'tunerStringTrack' + s.num;
     track.style.cssText = 'flex:1;height:100%;position:relative;border-radius:3px;background:var(--surface2);transition:background .15s';
@@ -2472,8 +2547,7 @@ function _tunerBuildNeck() {
         track.appendChild(dot2);
       }
     }
-    row.appendChild(track);
-    neck.appendChild(row);
+    row.appendChild(track); neck.appendChild(row);
   }
 }
 
@@ -2482,119 +2556,60 @@ function _tunerHighlightString(num) {
     const row = document.getElementById('tunerStringRow' + s.num);
     const label = document.getElementById('tunerStringLabel' + s.num);
     const track = document.getElementById('tunerStringTrack' + s.num);
-    if (s.num === num) {
-      row.style.background = 'rgba(212,175,55,.15)';
-      label.style.color = 'var(--gold)';
-      track.style.background = 'rgba(212,175,55,.08)';
-    } else if (num === -1 && _tunerActive) {
-      row.style.background = '';
-      label.style.color = 'var(--muted)';
-      track.style.background = 'var(--surface2)';
-    } else if (!_tunerActive) {
-      row.style.background = '';
-      label.style.color = 'var(--muted)';
-      track.style.background = 'var(--surface2)';
-    }
+    if (s.num === num) { row.style.background = 'rgba(212,175,55,.15)'; label.style.color = 'var(--gold)'; track.style.background = 'rgba(212,175,55,.08)'; }
+    else if (num === -1 && _tunerActive) { row.style.background = ''; label.style.color = 'var(--muted)'; track.style.background = 'var(--surface2)'; }
+    else if (!_tunerActive) { row.style.background = ''; label.style.color = 'var(--muted)'; track.style.background = 'var(--surface2)'; }
   }
 }
 
 function _tunerFindClosestString(noteName) {
-  for (const s of GUITAR_STRINGS) {
-    if (s.note === noteName) return s.num;
-  }
+  for (const s of GUITAR_STRINGS) { if (s.note === noteName) return s.num; }
   return -1;
 }
 
-function _tunerFreqToNote(freq) {
-  if (freq < 60 || freq > 1400) return null;
-  const midi = 12 * (Math.log(freq / 440) / Math.log(2)) + 69;
-  const rounded = Math.round(midi);
-  const cents = Math.round(100 * (midi - rounded));
-  const noteIndex = ((rounded % 12) + 12) % 12;
-  const octave = Math.floor((rounded - 12) / 12);
-  return { name: TUNER_NOTES[noteIndex], octave: Math.max(0, octave), cents, freq: Math.round(freq) };
-}
-
-function _tunerFindPeak() {
-  if (!_tunerAnalyser) return 0;
-  _tunerAnalyser.getByteFrequencyData(_tunerData);
-  let maxIdx = 0, maxVal = 0, sum = 0, count = 0;
-  for (let i = 0; i < _tunerData.length; i++) {
-    const v = _tunerData[i];
-    if (v > 0) { sum += v; count++; }
-    if (v > maxVal) { maxVal = v; maxIdx = i; }
-  }
-  const avg = count > 0 ? sum / count : 0;
-  // Require peak to be at least 4x the average background (signal confidence)
-  if (maxVal < 40 || maxVal < avg * 4) return 0;
-  const len = _tunerData.length;
-  const left = maxIdx > 0 ? _tunerData[maxIdx - 1] : 0;
-  const right = maxIdx < len - 1 ? _tunerData[maxIdx + 1] : 0;
-  const a = (left + right) / 2 - _tunerData[maxIdx];
-  const b = (right - left) / 2;
-  const correction = a !== 0 ? -b / (2 * a) : 0;
-  const clamped = Math.max(-0.8, Math.min(0.8, correction));
-  const bin = maxIdx + clamped;
-  return (bin * _tunerCtx.sampleRate) / _tunerAnalyser.fftSize;
+function _tunerCentsOff(freq, targetFreq) {
+  return 1200 * Math.log2(freq / targetFreq);
 }
 
 function _tunerProcess() {
   if (!_tunerActive) return;
-  const rawFreq = _tunerFindPeak();
-  if (rawFreq > 0) {
-    _tunerSmoothFreq = _tunerSmoothFreq > 0 ? Math.min(_tunerSmoothFreq * 0.97 + rawFreq * 0.03, _tunerSmoothFreq * 1.5) : rawFreq;
-    const note = _tunerFreqToNote(_tunerSmoothFreq);
+  _tunerAnalyser.getFloatTimeDomainData(_tunerData);
+  const rawFreq = _tunerYinDetect(_tunerData, _tunerCtx.sampleRate);
+  if (rawFreq !== null) {
+    _tunerSilenceFrames = 0;
+    const smoothFreq = _tunerSmoothAdd(rawFreq);
+    if (smoothFreq === null) { _tunerRaf = requestAnimationFrame(_tunerProcess); return; }
+    _tunerSmoothFreq = smoothFreq;
+    const note = _tunerFreqToNote(smoothFreq);
     if (note) {
-      if (note.name === _tunerStableNote) {
-        _tunerStableCount++;
-      } else {
-        _tunerStableNote = note.name;
-        _tunerStableCount = 0;
-      }
-      // Show note instantly after just 3 frames of stability
+      // Stability gate — need 3 consecutive same-note frames
+      if (note.name === _tunerStableNote) { _tunerStableCount++; }
+      else { _tunerStableNote = note.name; _tunerStableCount = 0; }
       if (_tunerStableCount < 3) {
         document.getElementById('tunerNote').textContent = '…';
         document.getElementById('tunerCents').textContent = 'Hold…';
         document.getElementById('tunerFreq').textContent = '';
-        _tunerHighlightString(-1);
-        _tunerActiveString = -1;
-        _tunerRaf = requestAnimationFrame(_tunerProcess);
-        return;
+        _tunerHighlightString(-1); _tunerActiveString = -1;
+        _tunerRaf = requestAnimationFrame(_tunerProcess); return;
       }
       const select = document.getElementById('tunerStringSelect');
       const isAuto = select.value === 'auto';
-      let targetString = -1;
-      if (isAuto) {
-        targetString = _tunerFindClosestString(note.name);
-      } else {
-        targetString = parseInt(select.value);
-      }
-      _tunerHighlightString(targetString);
-      _tunerActiveString = targetString;
-
-      // In manual mode, compute cents against the target string's exact frequency
+      let targetString = isAuto ? _tunerFindClosestString(note.name) : parseInt(select.value);
+      _tunerHighlightString(targetString); _tunerActiveString = targetString;
+      // Compute cents against target string if manual, else against detected note
       let displayNote = note;
       if (!isAuto && targetString > 0) {
         const target = GUITAR_STRINGS.find(s => s.num === targetString);
         if (target) {
-          const targetMidi = 12 * (Math.log(target.freq / 440) / Math.log(2)) + 69;
-          const detectedMidi = 12 * (Math.log(_tunerSmoothFreq / 440) / Math.log(2)) + 69;
-          const diffCents = Math.round(100 * (detectedMidi - targetMidi));
-          displayNote = {
-            name: target.note,
-            octave: target.octave,
-            cents: diffCents,
-            freq: Math.round(_tunerSmoothFreq),
-          };
+          const cents = Math.round(_tunerCentsOff(smoothFreq, target.freq));
+          displayNote = { name: target.note, octave: target.octave, cents, freq: Math.round(smoothFreq) };
         }
       }
-
       document.getElementById('tunerNote').textContent = displayNote.name + displayNote.octave;
-      document.getElementById('tunerFreq').textContent = displayNote.freq + ' Hz' + (displayNote.name !== note.name ? ' (' + note.name + note.octave + ' detected)' : '');
+      document.getElementById('tunerFreq').textContent = displayNote.freq + ' Hz' + (displayNote.name !== note.name ? ' (' + note.name + note.octave + ')' : '');
       const pct = 50 + (Math.max(-50, Math.min(50, displayNote.cents)) / 50) * 50;
       document.getElementById('tunerNeedle').style.left = pct + '%';
-      const color = Math.abs(displayNote.cents) <= 5 ? 'var(--success)' : Math.abs(displayNote.cents) <= 12 ? 'var(--gold)' : 'var(--danger)';
-      document.getElementById('tunerNeedle').style.background = color;
+      document.getElementById('tunerNeedle').style.background = Math.abs(displayNote.cents) <= 5 ? 'var(--success)' : Math.abs(displayNote.cents) <= 12 ? 'var(--gold)' : 'var(--danger)';
       document.getElementById('tunerCents').innerHTML = Math.abs(displayNote.cents) <= 5
         ? '<span style="color:var(--success);font-weight:600">✓ In Tune</span>'
         : (displayNote.cents > 0
@@ -2602,11 +2617,14 @@ function _tunerProcess() {
           : '<span style="color:var(--gold)">♭ ' + Math.abs(displayNote.cents) + '¢ flat</span>');
     }
   } else {
-    _tunerSmoothFreq = 0;
-    _tunerStableNote = null;
-    _tunerStableCount = 0;
-    _tunerHighlightString(-1);
-    _tunerActiveString = -1;
+    _tunerSilenceFrames++;
+    if (_tunerSilenceFrames > 8) {
+      _tunerResetSmoother(); _tunerSmoothFreq = 0; _tunerStableNote = null; _tunerStableCount = 0;
+      _tunerHighlightString(-1); _tunerActiveString = -1;
+      document.getElementById('tunerNote').textContent = '…';
+      document.getElementById('tunerCents').textContent = 'Play a string';
+      document.getElementById('tunerFreq').textContent = '';
+    }
   }
   _tunerRaf = requestAnimationFrame(_tunerProcess);
 }
@@ -2617,21 +2635,19 @@ window.tunerToggle = async function() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
     _tunerStream = stream;
     _tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
-    _tunerAnalyser = _tunerCtx.createAnalyser();
-    _tunerAnalyser.fftSize = 4096;
     const src = _tunerCtx.createMediaStreamSource(stream);
+    _tunerAnalyser = _tunerCtx.createAnalyser();
+    _tunerAnalyser.fftSize = 8192;
     src.connect(_tunerAnalyser);
-    _tunerData = new Uint8Array(_tunerAnalyser.frequencyBinCount);
-    _tunerActive = true;
-    _tunerSmoothFreq = 0;
+    _tunerData = new Float32Array(_tunerAnalyser.fftSize);
+    _tunerActive = true; _tunerSilenceFrames = 0; _tunerSmoothFreq = 0;
+    _tunerResetSmoother(); _tunerStableNote = null; _tunerStableCount = 0;
     _tunerBuildNeck();
     document.getElementById('tunerBtn').textContent = '⏹ Stop Tuner';
     document.getElementById('tunerNote').textContent = '…';
     document.getElementById('tunerCents').textContent = 'Listening…';
     _tunerProcess();
-  } catch (e) {
-    alert('Microphone access denied. Please allow microphone permissions and try again.');
-  }
+  } catch (e) { alert('Microphone access denied. Please allow microphone permissions and try again.'); }
 };
 
 window.tunerStop = function() {
@@ -2640,6 +2656,7 @@ window.tunerStop = function() {
   if (_tunerStream) _tunerStream.getTracks().forEach(t => t.stop());
   if (_tunerCtx) _tunerCtx.close();
   _tunerStream = null; _tunerCtx = null; _tunerAnalyser = null; _tunerData = null; _tunerSmoothFreq = 0;
+  _tunerResetSmoother(); _tunerStableNote = null; _tunerStableCount = 0; _tunerSilenceFrames = 0;
   document.getElementById('tunerBtn').textContent = '🎤 Start Tuner';
   document.getElementById('tunerNote').textContent = '—';
   document.getElementById('tunerFreq').textContent = '';
