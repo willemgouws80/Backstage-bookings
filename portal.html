@@ -1101,11 +1101,10 @@ async function loadStudentData() {
       _firstSnap = false;
       const hasCourse = _bookings.some(b => b.courseId);
       if (hasCourse && !localStorage.getItem('bw_firstLessonSeen')) {
-        setTimeout(() => {
-          localStorage.setItem('bw_firstLessonSeen', '1');
-          showPanel('first-lesson', document.querySelector('[onclick*="first-lesson"]'));
-          renderFirstLesson();
-        }, 800);
+          setTimeout(() => {
+            localStorage.setItem('bw_firstLessonSeen', '1');
+            window.goFirstLesson();
+          }, 800);
       }
     }
   }, e => console.error('bookings snapshot error:', e));
@@ -1207,7 +1206,7 @@ function renderDashboard() {
   if (next) {
     const countdownHtml = next.startDate ? countdownTo(next.startDate) : '';
     const isCourse = !!next.courseId;
-    block.innerHTML = `<div class="next-lesson" style="cursor:pointer" onclick="showPanel('first-lesson',document.querySelector('[onclick*=\"first-lesson\"]'))">
+    block.innerHTML = `<div class="next-lesson" style="cursor:pointer" onclick="window.goFirstLesson()">
       <div class="nl-left">
         <div class="nl-label">Next Lesson</div>
         <div class="nl-title">${next.plan||'Lesson'}${next.instrument?' · '+next.instrument:''}</div>
@@ -1237,7 +1236,7 @@ function renderDashboard() {
     const slot = course?.slotOptions?.find(s => (s.name||s.label||'') === slotName);
     const hasPrep = slot && (slot.whatToBring?.length || slot.firstLessonPrep || slot.whatYouWillLearn);
     if (hasPrep) {
-      prepBlock.innerHTML = `<div class="card" style="border-left:3px solid var(--gold);margin-bottom:1rem;cursor:pointer" onclick="showPanel('first-lesson',document.querySelector('[onclick*=\"first-lesson\"]'))">
+      prepBlock.innerHTML = `<div class="card" style="border-left:3px solid var(--gold);margin-bottom:1rem;cursor:pointer" onclick="window.goFirstLesson()">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
           <div>
             <div style="font-size:.72rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.25rem">🎒 First Lesson Prep</div>
@@ -2772,6 +2771,9 @@ function renderAchievements() {
 
 // ── FIRST LESSON ──
 window._firstLessonCourses = null;
+window.goFirstLesson = function() {
+  showPanel('first-lesson', document.querySelector('.nav-item[onclick*="first-lesson"]'));
+};
 async function renderFirstLesson() {
   const view = document.getElementById('firstLessonView');
   const email = _currentUser?.email;
