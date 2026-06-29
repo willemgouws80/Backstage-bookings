@@ -2358,7 +2358,6 @@ function waUpdateRecipients() {
   const bookings = window._bookings || [];
   const courses = window._courses || [];
   const slotSel = document.getElementById('waSlotSelect');
-  // Save selected slot BEFORE rebuilding
   const prevSlotVal = slotSel.value;
   let recipients = [];
 
@@ -2375,16 +2374,16 @@ function waUpdateRecipients() {
         slotSel.innerHTML = '<option value="">— All slots —</option>' +
           slots.map(s => `<option value="${(s.name||s.label||s).replace(/"/g,'&quot;')}">${s.name||s.label||s}</option>`).join('');
         document.getElementById('waSlotGroup').style.display = 'block';
-        // Restore selected slot
         if (prevSlotVal) slotSel.value = prevSlotVal;
         const slotVal = slotSel.value;
-        if (slotVal) recipients = recipients.filter(b => (b.chosenSlot||'').includes(slotVal));
+        if (slotVal) recipients = recipients.filter(b => b.chosenSlot === slotVal);
       } else {
         document.getElementById('waSlotGroup').style.display = 'none';
       }
+    } else {
+      document.getElementById('waSlotGroup').style.display = 'none';
     }
   } else if (type === 'slot') {
-    // Build list of unique slots across all courses
     const allSlots = [];
     courses.forEach(c => (c.slotOptions||[]).forEach(s => {
       const name = s.name || s.label || s;
@@ -2393,11 +2392,12 @@ function waUpdateRecipients() {
     slotSel.innerHTML = '<option value="">— Select slot —</option>' +
       allSlots.map(s => `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
     document.getElementById('waSlotGroup').style.display = 'block';
-    // Restore selected slot
     if (prevSlotVal) slotSel.value = prevSlotVal;
     const slotVal = slotSel.value;
-    if (slotVal) recipients = bookings.filter(b => (b.chosenSlot||'').includes(slotVal));
+    if (slotVal) recipients = bookings.filter(b => b.chosenSlot === slotVal);
   }
+
+  console.log('WA filter:', type, 'slotVal:', slotSel.value, 'recipients:', recipients.length);
 
   // Deduplicate by phone
   const seen = new Set();
