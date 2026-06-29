@@ -2359,7 +2359,7 @@ function waUpdateRecipients() {
       const slotSel = document.getElementById('waSlotSelect');
       if (slots.length) {
         slotSel.innerHTML = '<option value="">— All slots —</option>' +
-          slots.map(s => `<option value="${s.name||s.label||s}">${s.name||s.label||s}</option>`).join('');
+          slots.map(s => `<option value="${(s.name||s.label||s).replace(/"/g,'&quot;')}">${s.name||s.label||s}</option>`).join('');
         document.getElementById('waSlotGroup').style.display = 'block';
         const slotVal = slotSel.value;
         if (slotVal) recipients = recipients.filter(b => (b.chosenSlot||'').includes(slotVal));
@@ -2376,7 +2376,7 @@ function waUpdateRecipients() {
     }));
     const slotSel = document.getElementById('waSlotSelect');
     slotSel.innerHTML = '<option value="">— Select slot —</option>' +
-      allSlots.map(s => `<option value="${s}">${s}</option>`).join('');
+      allSlots.map(s => `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
     const slotVal = slotSel.value;
     if (slotVal) recipients = bookings.filter(b => (b.chosenSlot||'').includes(slotVal));
   }
@@ -2401,10 +2401,13 @@ function waUpdateRecipients() {
 
   document.getElementById('waCount').textContent = window._waRecipients.length + ' recipients';
   const preview = document.getElementById('waPreview');
-  preview.innerHTML = window._waRecipients.map(r =>
-    `<div style="padding:.3rem 0;border-bottom:1px solid var(--border)">${r.firstName} ${r.surname} — ${r.phone}</div>`
-  ).join('') || '<div style="color:var(--muted)">No recipients match this filter</div>';
+  preview.innerHTML = window._waRecipients.length
+    ? window._waRecipients.map(r =>
+        `<div style="padding:.3rem 0;border-bottom:1px solid var(--border)">${r.firstName.replace(/</g,'&lt;')} ${r.surname.replace(/</g,'&lt;')} — ${r.phone}</div>`
+      ).join('')
+    : '<div style="color:var(--muted)">No recipients match this filter</div>';
 }
+window.waUpdateRecipients = waUpdateRecipients;
 
 function waInsert(placeholder) {
   const ta = document.getElementById('waMessage');
@@ -2413,6 +2416,7 @@ function waInsert(placeholder) {
   ta.focus();
   ta.selectionStart = ta.selectionEnd = start + placeholder.length;
 }
+window.waInsert = waInsert;
 
 function waLoadTemplate(name) {
   const ta = document.getElementById('waMessage');
@@ -2450,6 +2454,7 @@ Can't wait to see you there! 🙌`
   };
   ta.value = templates[name] || ta.value;
 }
+window.waLoadTemplate = waLoadTemplate;
 
 function waSend() {
   const recipients = window._waRecipients;
@@ -2475,6 +2480,7 @@ function waSend() {
 
   toast(`Opened ${opened} WhatsApp tabs. Press Enter to send each one.`, 'success');
 }
+window.waSend = waSend;
 
 // ── ATTENDANCE ──
 async function loadAttendancePanel() {
