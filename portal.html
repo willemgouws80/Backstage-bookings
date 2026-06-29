@@ -2774,6 +2774,9 @@ window._firstLessonCourses = null;
 window.goFirstLesson = function() {
   showPanel('first-lesson', document.querySelector('.nav-item[onclick*="first-lesson"]'));
 };
+window.goResources = function() {
+  showPanel('resources', document.querySelector('.nav-item[onclick*="resources"]'));
+};
 async function renderFirstLesson() {
   const view = document.getElementById('firstLessonView');
   const email = _currentUser?.email;
@@ -2909,6 +2912,14 @@ async function renderFirstLesson() {
           <a href="${url}" target="_blank" class="btn btn-sm btn-outline">Download</a>
         </div>`;
       }).join('')}
+      <div style="margin-top:.75rem;text-align:center">
+        <button class="btn btn-gold btn-sm" onclick="window.goResources()">📂 View All Resources</button>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="card" style="margin-bottom:1rem;text-align:center;padding:1.5rem">
+      <p style="color:var(--muted);margin-bottom:.75rem">📂 No resources assigned to your course yet.</p>
+      <button class="btn btn-outline btn-sm" onclick="window.goResources()">Go to Resources</button>
     </div>`;
   }
 
