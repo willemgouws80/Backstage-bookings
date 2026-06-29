@@ -2385,7 +2385,7 @@ function waUpdateRecipients() {
   const seen = new Set();
   window._waRecipients = [];
   recipients.forEach(b => {
-    const phone = (b.phone || '').replace(/[^0-9+]/g, '');
+    const phone = (b.phone || '').replace(/[^0-9]/g, '').replace(/^0+/, '');
     if (!phone || seen.has(phone)) return;
     seen.add(phone);
     const course = courses.find(c => c.id === b.courseId);
@@ -2467,7 +2467,7 @@ function waSend() {
       .replace(/\{date\}/g, r.date)
       .replace(/\{amount\}/g, 'R500');
 
-    const phone = r.phone.replace(/[^0-9]/g, '');
+    const phone = r.phone.replace(/[^0-9]/g, '').replace(/^0+/, '');
     const url = `https://wa.me/27${phone.startsWith('27') ? phone.slice(2) : phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
     opened++;
