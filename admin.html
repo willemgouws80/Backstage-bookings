@@ -2354,26 +2354,29 @@ async function waInit() {
 function waUpdateRecipients() {
   const type = document.getElementById('waFilterType').value;
   document.getElementById('waCourseGroup').style.display = type === 'course' ? 'block' : 'none';
-  document.getElementById('waSlotGroup').style.display = type === 'slot' ? 'block' : 'none';
 
   const bookings = window._bookings || [];
   const courses = window._courses || [];
+  const slotSel = document.getElementById('waSlotSelect');
+  // Save selected slot BEFORE rebuilding
+  const prevSlotVal = slotSel.value;
   let recipients = [];
 
   if (type === 'all') {
     recipients = bookings;
+    document.getElementById('waSlotGroup').style.display = 'none';
   } else if (type === 'course') {
     const courseId = document.getElementById('waCourseSelect').value;
     const course = courses.find(c => c.id === courseId);
     if (course) {
       recipients = bookings.filter(b => b.courseId === courseId);
-      // Populate slots for this course
       const slots = course.slotOptions || [];
-      const slotSel = document.getElementById('waSlotSelect');
       if (slots.length) {
         slotSel.innerHTML = '<option value="">— All slots —</option>' +
           slots.map(s => `<option value="${(s.name||s.label||s).replace(/"/g,'&quot;')}">${s.name||s.label||s}</option>`).join('');
         document.getElementById('waSlotGroup').style.display = 'block';
+        // Restore selected slot
+        if (prevSlotVal) slotSel.value = prevSlotVal;
         const slotVal = slotSel.value;
         if (slotVal) recipients = recipients.filter(b => (b.chosenSlot||'').includes(slotVal));
       } else {
@@ -2387,9 +2390,11 @@ function waUpdateRecipients() {
       const name = s.name || s.label || s;
       if (!allSlots.includes(name)) allSlots.push(name);
     }));
-    const slotSel = document.getElementById('waSlotSelect');
     slotSel.innerHTML = '<option value="">— Select slot —</option>' +
       allSlots.map(s => `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
+    document.getElementById('waSlotGroup').style.display = 'block';
+    // Restore selected slot
+    if (prevSlotVal) slotSel.value = prevSlotVal;
     const slotVal = slotSel.value;
     if (slotVal) recipients = bookings.filter(b => (b.chosenSlot||'').includes(slotVal));
   }
