@@ -483,6 +483,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
       <!-- Next Lesson -->
       <div id="nextLessonBlock"></div>
+      <div id="firstLessonPrepDash"></div>
 
       <!-- Stats: simple compact row -->
       <div class="dash-stats-row">
@@ -1077,6 +1078,15 @@ async function loadStudentData() {
   renderProfile();
   ccLoadConfig();
 
+  // Pre-load courses for first lesson prep
+  if (!window._firstLessonCourses) {
+    try {
+      const snap = await getDocs(collection(db,'courses'));
+      window._firstLessonCourses = {};
+      snap.forEach(d => window._firstLessonCourses[d.id] = {id:d.id,...d.data()});
+    } catch(e) { /* non-critical */ }
+  }
+
   // Real-time listeners
   const bookingsQ = query(collection(db,'bookings'), where('email','==',email));
   let _firstSnap = true;
@@ -1191,12 +1201,13 @@ function renderDashboard() {
   document.getElementById('statAttendance').textContent = rate + '%';
   document.getElementById('statDue').textContent = dueTotal ? 'R '+dueTotal.toLocaleString() : 'R 0';
 
-  // Next lesson
+  // Next lesson — clickable, leads to first lesson prep
   const next = _bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed').sort((a,b) => ((a.startDate||'') > (b.startDate||'') ? 1 : -1))[0];
   const block = document.getElementById('nextLessonBlock');
   if (next) {
     const countdownHtml = next.startDate ? countdownTo(next.startDate) : '';
-    block.innerHTML = `<div class="next-lesson">
+    const isCourse = !!next.courseId;
+    block.innerHTML = `<div class="next-lesson" style="cursor:pointer" onclick="showPanel('first-lesson',document.querySelector('[onclick*=\"first-lesson\"]'))">
       <div class="nl-left">
         <div class="nl-label">Next Lesson</div>
         <div class="nl-title">${next.plan||'Lesson'}${next.instrument?' · '+next.instrument:''}</div>
@@ -1215,6 +1226,32 @@ function renderDashboard() {
         <a href="index.html#book" class="btn btn-gold" style="display:inline-block;margin-top:1rem">Book Your First Lesson</a>
       </div>
     </div>`;
+  }
+
+  // First lesson prep card on dashboard (if course booking with prep data exists)
+  const prepBlock = document.getElementById('firstLessonPrepDash');
+  const courseBooking = _bookings.find(b => b.courseId && (b.status === 'confirmed' || b.status === 'pending'));
+  if (courseBooking && window._firstLessonCourses) {
+    const course = window._firstLessonCourses[courseBooking.courseId];
+    const slotName = courseBooking.chosenSlot || '';
+    const slot = course?.slotOptions?.find(s => (s.name||s.label||'') === slotName);
+    const hasPrep = slot && (slot.whatToBring?.length || slot.firstLessonPrep || slot.whatYouWillLearn);
+    if (hasPrep) {
+      prepBlock.innerHTML = `<div class="card" style="border-left:3px solid var(--gold);margin-bottom:1rem;cursor:pointer" onclick="showPanel('first-lesson',document.querySelector('[onclick*=\"first-lesson\"]'))">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+          <div>
+            <div style="font-size:.72rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.25rem">🎒 First Lesson Prep</div>
+            ${slot.whatToBring?.length ? '<div style="font-size:.85rem;color:var(--muted)">Bring: '+slot.whatToBring.join(', ')+'</div>' : ''}
+            ${slot.firstLessonPrep ? '<div style="font-size:.85rem;color:var(--muted);margin-top:.2rem">'+slot.firstLessonPrep.slice(0,80)+(slot.firstLessonPrep.length>80?'…':'')+'</div>' : ''}
+          </div>
+          <span style="color:var(--gold);font-size:1.2rem">→</span>
+        </div>
+      </div>`;
+    } else {
+      prepBlock.innerHTML = '';
+    }
+  } else {
+    prepBlock.innerHTML = '';
   }
 
   // Recent practice
