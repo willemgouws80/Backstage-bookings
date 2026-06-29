@@ -1425,6 +1425,18 @@ window.duplicateBooking = async function(id) {
       updatedAt: new Date().toISOString()
     };
     const docRef = await addDoc(collection(db,'bookings'), copy);
+    // Auto-create / update student profile
+    try {
+      await setDoc(doc(db,'students', copy.email || copy.firstName+'.'+copy.lastName+'@temp.com'), {
+        firstName: copy.firstName,
+        surname: copy.lastName,
+        email: copy.email || '',
+        phone: copy.phone || '',
+        ageGroup: copy.ageGroup || '',
+        instrument: copy.instrument || '',
+        memberSince: new Date().toISOString()
+      }, { merge: true });
+    } catch(e) {}
     if (b.courseId) {
       await updateDoc(doc(db,'courses',b.courseId), { bookedCount: increment(1) });
     }

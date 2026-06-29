@@ -6,6 +6,11 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if true;
     }
+    // Students — public write (auto-created from bookings), admin/portal read
+    match /students/{doc} {
+      allow read: if request.auth != null;
+      allow write: if true;
+    }
     // Courses — public read, admin write
     match /courses/{doc} {
       allow read: if true;

@@ -1029,6 +1029,19 @@ window.submitBooking = async () => {
     const docRef = await addDoc(collection(db, 'bookings'), booking);
     const bookingId = docRef.id;
 
+    // Auto-create / update student profile
+    try {
+      await setDoc(doc(db, 'students', booking.email), {
+        firstName: booking.firstName,
+        surname: booking.lastName,
+        email: booking.email,
+        phone: booking.phone,
+        ageGroup: booking.ageGroup,
+        instrument: booking.instrument,
+        memberSince: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) { /* rules may not allow */ }
+
     // Handle Yoco payment
     if (method === 'yoco') {
       try {
