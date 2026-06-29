@@ -422,6 +422,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <div class="nav-item" onclick="showPanel('repertoire',this)"><span class="icon">📋</span> Repertoire</div>
     <div class="nav-item" onclick="showPanel('achievements',this)"><span class="icon">🏆</span> Achievements</div>
     <span class="sidebar-label">📋 Info</span>
+    <div class="nav-item" onclick="showPanel('first-lesson',this)"><span class="icon">🎓</span> First Lesson</div>
     <div class="nav-item" onclick="showPanel('lessons',this)"><span class="icon">🎵</span> My Lessons</div>
     <div class="nav-item" onclick="showPanel('progress',this)"><span class="icon">📈</span> Progress</div>
     <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
@@ -549,6 +550,14 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
           <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.8rem" id="resCount"></span>
         </div>
         <div id="resourcesList"><div class="loading-text">Loading resources…</div></div>
+      </div>
+    </div>
+
+    <!-- FIRST LESSON -->
+    <div class="panel" id="panel-first-lesson">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" class="icon-gold" opacity=".2"/><path d="M12 6v6l4 2" stroke="var(--gold)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></span>Your First <em>Lesson</em></h1></div>
+      <div id="firstLessonView">
+        <div class="card"><div class="loading-text">Loading your lesson info…</div></div>
       </div>
     </div>
 
@@ -988,10 +997,28 @@ async function loadResources() {
       }
       return '';
     }).filter(Boolean));
+    // Build slot map: courseTitle → set of slot names the student belongs to
+    const studentSlots = {};
+    _bookings.filter(b => b.courseId && b.chosenSlot).forEach(b => {
+      for (const [title, id] of Object.entries(courses)) {
+        if (id === b.courseId) {
+          if (!studentSlots[id]) studentSlots[id] = new Set();
+          studentSlots[id].add(b.chosenSlot);
+        }
+      }
+    });
     const items = all.filter(r => {
       if (!r.targetType || r.targetType === 'all') return true;
       if (r.targetType === 'individual') return r.targetEmail === email;
-      if (r.targetType === 'course') return r.targetCourseName && courseTitles.has(r.targetCourseName);
+      if (r.targetType === 'course') {
+        if (!r.targetCourseName || !courseTitles.has(r.targetCourseName)) return false;
+        // If resource targets a specific slot, only show to students in that slot
+        if (r.targetSlotName) {
+          const courseId = courses[r.targetCourseName];
+          return studentSlots[courseId]?.has(r.targetSlotName);
+        }
+        return true;
+      }
       if (r.targetType === 'individual_lesson') return isIndiv;
       return true;
     });
@@ -1052,12 +1079,25 @@ async function loadStudentData() {
 
   // Real-time listeners
   const bookingsQ = query(collection(db,'bookings'), where('email','==',email));
+  let _firstSnap = true;
   onSnapshot(bookingsQ, snap => {
     _bookings = [];
     snap.forEach(d => _bookings.push({id:d.id,...d.data()}));
     _bookings.sort((a,b) => ((b.startDate||b.createdAt||'') > (a.startDate||a.createdAt||'') ? 1 : -1));
     renderDashboard();
     renderLessons(_lessonFilter);
+    // Auto-navigate to first-lesson view on first load if student has a course booking
+    if (_firstSnap) {
+      _firstSnap = false;
+      const hasCourse = _bookings.some(b => b.courseId);
+      if (hasCourse && !localStorage.getItem('bw_firstLessonSeen')) {
+        setTimeout(() => {
+          localStorage.setItem('bw_firstLessonSeen', '1');
+          showPanel('first-lesson', document.querySelector('[onclick*="first-lesson"]'));
+          renderFirstLesson();
+        }, 800);
+      }
+    }
   }, e => console.error('bookings snapshot error:', e));
 
   const attQ = query(collection(db,'attendance'), where('studentEmail','==',email));
@@ -2693,6 +2733,151 @@ function renderAchievements() {
 // ── REPERTOIRE LISTENER (in loadStudentData) ──
 // Repertoire is loaded on-demand when panel is shown (via listener below)
 
+// ── FIRST LESSON ──
+window._firstLessonCourses = null;
+async function renderFirstLesson() {
+  const view = document.getElementById('firstLessonView');
+  const email = _currentUser?.email;
+  if (!email) { view.innerHTML = '<div class="card"><div class="loading-text">Sign in to see your first lesson info.</div></div>'; return; }
+
+  // Find confirmed course bookings for this student
+  const courseBookings = _bookings.filter(b => b.courseId && (b.status === 'confirmed' || b.status === 'pending'));
+  if (!courseBookings.length) {
+    view.innerHTML = `<div class="card" style="text-align:center;padding:2rem">
+      <span style="font-size:2.5rem;display:block;margin-bottom:1rem">🎓</span>
+      <h3 style="color:var(--gold);margin-bottom:.5rem">Welcome to Backstage!</h3>
+      <p style="color:var(--muted)">You don't have any course bookings yet. <a href="index.html" style="color:var(--gold)">Book your first lesson</a> and come back here to see what to bring.</p>
+    </div>`;
+    return;
+  }
+
+  // Load course data (once)
+  if (!window._firstLessonCourses) {
+    try {
+      const snap = await getDocs(collection(db,'courses'));
+      window._firstLessonCourses = {};
+      snap.forEach(d => window._firstLessonCourses[d.id] = {id:d.id,...d.data()});
+    } catch(e) {
+      view.innerHTML = '<div class="card"><div class="loading-text">Could not load course info.</div></div>';
+      return;
+    }
+  }
+
+  // Pick the most recent confirmed booking with prep info
+  const best = courseBookings[0];  // already sorted newest-first from onSnapshot
+  const course = window._firstLessonCourses[best.courseId];
+  if (!course) {
+    view.innerHTML = '<div class="card"><div class="loading-text">Course info not found.</div></div>';
+    return;
+  }
+
+  // Find the slot
+  const slotName = best.chosenSlot || '';
+  const slot = (course.slotOptions||[]).find(s => (s.name||s.label||'') === slotName);
+  const whatToBring = slot?.whatToBring || [];
+  const firstPrep = slot?.firstLessonPrep || '';
+  const whatLearn = slot?.whatYouWillLearn || '';
+
+  // Find next session date from the course's sessionDates matching this slot
+  const now = new Date();
+  const upcomingSessions = (course.sessionDates||[]).filter(s => s.date >= now.toISOString().split('T')[0]);
+  const nextSession = upcomingSessions.length ? upcomingSessions[0] : null;
+
+  // Find resources for this course + slot
+  let courseResources = [];
+  try {
+    const resSnap = await getDocs(query(collection(db,'resources'), where('targetCourseId','==',best.courseId)));
+    resSnap.forEach(d => {
+      const r = {id:d.id,...d.data()};
+      if (!r.targetSlotName || r.targetSlotName === slotName) {
+        courseResources.push(r);
+      }
+    });
+  } catch(e) { /* ignore resource errors */ }
+
+  // Build HTML
+  let html = '';
+
+  // Welcome banner
+  html += `<div class="card" style="background:linear-gradient(135deg,var(--gold-dim),transparent);border:1px solid var(--gold);margin-bottom:1rem;padding:1.5rem">
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;margin-bottom:.25rem">Hey ${window._studentProfile?.firstName||'there'}! 👋</h2>
+    <p style="color:var(--muted);font-size:.9rem">Here's everything you need to know for your first lesson at Backstage.</p>
+  </div>`;
+
+  // Your course info
+  html += `<div class="card" style="margin-bottom:1rem">
+    <div class="card-title" style="margin-bottom:.75rem">🎵 Your Course</div>
+    <div style="font-weight:600;font-size:1.05rem;margin-bottom:.25rem">${course.title}</div>`;
+  if (slotName) {
+    html += `<div style="color:var(--muted);font-size:.85rem">Slot: ${slotName}</div>`;
+  }
+  if (course.venue) {
+    html += `<div style="color:var(--muted);font-size:.85rem">📍 ${course.venue}</div>`;
+  }
+  if (nextSession) {
+    const d = new Date(nextSession.date+'T'+ (nextSession.startTime||'00:00'));
+    html += `<div style="color:var(--gold);font-size:.9rem;margin-top:.5rem">
+      📅 First session: <strong>${d.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</strong>
+      ${nextSession.startTime ? 'at <strong>'+nextSession.startTime+'</strong>' : ''}
+    </div>`;
+  }
+  html += `</div>`;
+
+  // What to bring
+  if (whatToBring.length) {
+    html += `<div class="card" style="margin-bottom:1rem">
+      <div class="card-title" style="margin-bottom:.75rem">🎒 What to Bring</div>
+      <ul style="list-style:none;padding:0">`;
+    whatToBring.forEach(item => {
+      html += `<li style="padding:.4rem 0;display:flex;align-items:center;gap:.75rem">
+        <span style="color:var(--gold);font-size:1.1rem">☐</span>
+        <span>${item}</span>
+      </li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  // First lesson prep
+  if (firstPrep) {
+    html += `<div class="card" style="margin-bottom:1rem">
+      <div class="card-title" style="margin-bottom:.75rem">📝 First Lesson Prep</div>
+      <p style="line-height:1.7;color:var(--text)">${firstPrep}</p>
+    </div>`;
+  }
+
+  // What you'll learn
+  if (whatLearn) {
+    html += `<div class="card" style="margin-bottom:1rem">
+      <div class="card-title" style="margin-bottom:.75rem">🎯 What You'll Learn</div>
+      <p style="line-height:1.7;color:var(--text)">${whatLearn}</p>
+    </div>`;
+  }
+
+  // Resources
+  if (courseResources.length) {
+    html += `<div class="card" style="margin-bottom:1rem">
+      <div class="card-title" style="margin-bottom:.75rem">📂 Resources for Your Course</div>
+      ${courseResources.map(r => {
+        const url = r.fileUrl||r.fileURL||'#';
+        return `<div style="display:flex;align-items:center;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+          <span>📄</span>
+          <div style="flex:1">${r.title||'Resource'}</div>
+          <a href="${url}" target="_blank" class="btn btn-sm btn-outline">Download</a>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // No prep info at all — show generic message
+  if (!whatToBring.length && !firstPrep && !whatLearn) {
+    html += `<div class="card" style="text-align:center;padding:2rem">
+      <p style="color:var(--muted)">Your instructor hasn't added prep info for this course yet. Check back later or <a href="https://wa.me/27834822895" target="_blank" style="color:var(--gold)">contact us</a> if you have questions.</p>
+    </div>`;
+  }
+
+  view.innerHTML = html;
+}
+
 // Override showPanel to trigger chord creator config load and progress render
 const _origShowPanel = window.showPanel;
 window.showPanel = function(name, el) {
@@ -2715,6 +2900,9 @@ window.showPanel = function(name, el) {
   }
   if (name === 'metronome') {
     setTimeout(() => metroUpdateBpm(document.getElementById('metroBpm').value), 50);
+  }
+  if (name === 'first-lesson') {
+    renderFirstLesson();
   }
   _origShowPanel(name, el);
 };
