@@ -2409,6 +2409,11 @@ function _metroSchedule() {
     strip.appendChild(bar);
   }
 
+  // Chord practice: highlight the strum cell for the current subdivision
+  if (_cpRunning && _cpState === 'running') {
+    _cpRenderStrum(subIdx);
+  }
+
   // Session time
   const elapsed = Math.floor((_metroCtx.currentTime - _metroStartTime));
   document.getElementById('metroSessionTime').textContent = 'Session: ' + Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
@@ -2513,25 +2518,26 @@ function cpShowChord(name) {
   diagram.innerHTML = '';
 }
 
-function _cpRenderStrum(barBeat) {
+function _cpRenderStrum(subIdx) {
   const id = document.getElementById('cpStrum').value;
   const pattern = CP_STRUM[id];
   if (!pattern) return;
   const p = pattern.pattern;
   const beatsPerBar = parseInt(document.getElementById('metroTimeSig').value) || 4;
+  const sub = parseInt(document.getElementById('metroSub').value) || 1;
+  const totalSubs = beatsPerBar * sub;
   const display = document.getElementById('cpStrumDisplay');
   display.innerHTML = '';
-  const cellsPerBeat = Math.floor(p.length / beatsPerBar);
   for (let i = 0; i < p.length; i++) {
     const cell = document.createElement('div');
     const ch = p[i];
     if (ch === 'D') cell.textContent = '↓';
     else if (ch === 'U') cell.textContent = '↑';
     else cell.textContent = '—';
-    const beatOfCell = Math.floor(i / cellsPerBeat);
-    const isCurrent = beatOfCell === barBeat;
+    const cellSub = Math.floor(i / p.length * totalSubs);
+    const isCurrent = cellSub === subIdx;
     cell.style.cssText = 'width:34px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;border-radius:4px;background:' + (isCurrent ? 'var(--gold)' : 'var(--surface3)') + ';color:' + (isCurrent ? '#1a1a1a' : 'var(--muted)') + ';transition:background .08s';
-    if (i % cellsPerBeat === 0) cell.style.marginLeft = '3px';
+    if (i % Math.max(1, Math.round(p.length / beatsPerBar)) === 0) cell.style.marginLeft = '3px';
     display.appendChild(cell);
   }
 }
@@ -2559,8 +2565,6 @@ function _cpOnBeat(globalBeat, isDownbeat) {
     const beatsPerBar = parseInt(document.getElementById('metroTimeSig').value) || 4;
     const beatsPerChord = parseInt(document.getElementById('cpBeats').value) || 4;
     const barBeat = _cpTotalBeats % beatsPerBar;
-
-    _cpRenderStrum(barBeat);
 
     if (_cpTotalBeats > 0 && _cpTotalBeats % beatsPerChord === 0) {
       _cpChordIndex = (_cpChordIndex + 1) % _cpChords.length;
