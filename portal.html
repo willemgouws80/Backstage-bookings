@@ -12,7 +12,33 @@
 <meta name="apple-mobile-web-app-title" content="Backstage">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#C9911A;--gold-light:#e8b040;--gold-dim:rgba(201,145,26,.12);--black:#090805;--surface:#111009;--surface2:#1a1810;--surface3:#232116;--border:rgba(201,145,26,.16);--text:#f0ead8;--muted:#7a7060;--danger:#c0392b;--success:#27ae60}
+:root{
+  --gold:#C9911A;
+  --gold-light:#e8b040;
+  --gold-dim:rgba(201,145,26,.12);
+  --gold-glow:0 0 20px rgba(201,145,26,.15);
+  --black:#090805;
+  --surface:#111009;
+  --surface2:#1a1810;
+  --surface3:#232116;
+  --glass-bg:rgba(255,255,255,.06);
+  --glass-border:rgba(201,145,26,.08);
+  --border:rgba(201,145,26,.16);
+  --text:#f0ead8;
+  --muted:#7a7060;
+  --danger:#c0392b;
+  --success:#27ae60;
+  --radius-sm:10px;
+  --radius-md:12px;
+  --radius-lg:16px;
+  --radius-xl:20px;
+  --radius-pill:100px;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
+  --shadow-md:0 4px 16px rgba(0,0,0,.35);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.4);
+  --shadow-gold:0 4px 20px rgba(201,145,26,.15);
+  --bg:#090805;--green:#35c47c;--muted3:#9a9180;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
 body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;opacity:.4}
@@ -30,22 +56,22 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 /* LOGIN SCREEN */
 #authScreen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem}
 #authScreen.hidden{display:none}
-.auth-box{background:rgba(17,16,9,.75);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(201,145,26,.12);border-radius:6px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center}
+.auth-box{background:var(--glass-bg);-webkit-backdrop-filter:blur(32px);backdrop-filter:blur(32px);border:1px solid var(--glass-border);border-radius:var(--radius-xl);padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.5)}
 .auth-logo{width:80px;height:80px;object-fit:contain;margin-bottom:1.5rem}
 .auth-box h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;margin-bottom:.4rem}
 .auth-box h2 em{font-style:italic;color:var(--gold)}
 .auth-box p{font-size:.85rem;color:var(--muted);margin-bottom:2rem}
 .auth-error{color:var(--danger);font-size:.85rem;margin-bottom:1rem;min-height:1.2rem}
-.auth-tabs{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:1.5rem}
-.auth-tab{flex:1;padding:.7rem .5rem;background:transparent;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-right:1px solid var(--border)}
+.auth-tabs{display:flex;border:1px solid var(--glass-border);border-radius:var(--radius-pill);overflow:hidden;margin-bottom:1.5rem;background:rgba(255,255,255,.03)}
+.auth-tab{flex:1;padding:.7rem .5rem;background:transparent;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-right:1px solid var(--glass-border)}
 .auth-tab:last-child{border-right:none}
-.auth-tab.active{background:var(--gold-dim);color:var(--gold)}
+.auth-tab.active{background:var(--gold-dim);color:var(--gold);font-weight:600}
 .auth-form{display:none}.auth-form.active{display:block;animation:fadeIn .3s ease}
 .auth-switch{font-size:.82rem;color:var(--muted);margin-top:1.25rem}
 .auth-switch a{color:var(--gold);cursor:pointer;text-decoration:underline}
 
 /* TOP BAR */
-.topbar{background:linear-gradient(90deg,#0f0d07,#1a1810,#0f0d07);background-size:200% 100%;border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;animation:topbarShimmer 8s ease-in-out infinite}
+.topbar{background:linear-gradient(90deg,rgba(15,13,7,.85),rgba(26,24,16,.85),rgba(15,13,7,.85));background-size:200% 100%;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;animation:topbarShimmer 8s ease-in-out infinite}
 @keyframes topbarShimmer{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
 .tb-logo{display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--text)}
 .tb-logo img{width:40px;height:40px;object-fit:contain;border-radius:3px}
@@ -55,22 +81,22 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .tb-right{display:flex;align-items:center;gap:1rem}
 .tb-greeting{font-size:.82rem;color:var(--muted)}
 .tb-greeting strong{color:var(--text)}
-.tb-link{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:4px;transition:all .3s;background:transparent;cursor:pointer}
+.tb-link{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .9rem;border-radius:var(--radius-pill);transition:all .3s;background:transparent;cursor:pointer}
 .tb-link:hover{color:var(--gold);border-color:var(--gold)}
 @media(max-width:640px){.tb-greeting{display:none}.topbar{padding:.7rem 1rem}}
 
 /* LAYOUT */
 .app{display:flex;flex:1;overflow:hidden}
-.sidebar{width:200px;background:rgba(17,16,9,.8);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-right:1px solid var(--border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
+.sidebar{width:200px;background:var(--glass-bg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-right:1px solid var(--glass-border);padding:1.5rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
 .sidebar-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:.5rem 1.5rem;margin-top:1rem;display:block}
 .sidebar-label:first-child{margin-top:0}
-.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;color:var(--muted);cursor:pointer;transition:all .3s;font-size:.85rem;border-left:2px solid transparent;user-select:none;position:relative}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;margin:.15rem .75rem;border-radius:var(--radius-sm);color:var(--muted);cursor:pointer;transition:all .3s;font-size:.85rem;user-select:none;position:relative}
 .nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
-.nav-item.active{color:var(--gold);background:var(--gold-dim);border-left-color:var(--gold)}
-.nav-item .icon{display:inline-block;transition:transform .15s ease}
-.nav-item:hover .icon{animation:stringPluck .45s ease}
+.nav-item.active{color:var(--gold);background:var(--gold-dim);box-shadow:inset 0 0 0 1px var(--glass-border)}
+.nav-item .icon{display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0;transition:transform .15s ease}
+.nav-item:hover .icon{transform:scale(1.12)}
 @keyframes stringPluck{0%{transform:scaleY(1)}15%{transform:scaleY(1.35) scaleX(.8)}35%{transform:scaleY(.85)}55%{transform:scaleY(1.08)}75%{transform:scaleY(.95)}100%{transform:scaleY(1)}}
-.main{flex:1;overflow-y:auto;padding:2rem}
+.main{flex:1;overflow-y:auto;padding:2rem;background:radial-gradient(ellipse at 20% 50%,rgba(201,145,26,.06),transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(201,145,26,.04),transparent 50%),var(--black)}
 .panel{display:none;will-change:transform,opacity}
 .panel.active{display:block;animation:fadeIn .35s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -82,21 +108,23 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 /* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:2rem}
-.stat{background:rgba(17,16,9,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1rem;text-align:center;position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease}
-.stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.stat{background:var(--glass-bg);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:1.5rem 1rem;text-align:center;position:relative;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.25),0 6px 16px rgba(0,0,0,.15);transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease}
+.stat:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 4px 12px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.2),0 0 30px rgba(201,145,26,.08)}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7}
 .stat-val{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--gold);line-height:1;margin-bottom:.25rem}
 .stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 
 /* CARDS */
-.card{background:rgba(17,16,9,.6);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(201,145,26,.1);border-radius:6px;padding:1.75rem;margin-bottom:1.5rem;transition:box-shadow .3s ease}
-.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.card{background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.15);transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,border-color .25s;--text:#241e14;--muted:#6b5f4a;--muted3:#6b5f4a;color:var(--text);--glass-border:rgba(150,120,40,.18)}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.6;transition:opacity .3s}
+
+.card:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 12px 40px rgba(0,0,0,.2),0 0 30px rgba(201,145,26,.12);border-color:var(--gold)}.card:hover::before{opacity:1}
 .card-title{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between}
 
 /* FORM */
 .fg{margin-bottom:1.25rem}
 .fg label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
-.fg input,.fg select,.fg textarea{width:100%;padding:.75rem .9rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;transition:border-color .3s}
+.fg input,.fg select,.fg textarea{width:100%;padding:.75rem .9rem;background:rgba(255,255,255,.04);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--glass-border);border-radius:var(--radius-md);color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;outline:none;transition:border-color .25s ease,box-shadow .25s ease}
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold)}
 .fg textarea{resize:vertical;min-height:80px}
 .fg input:disabled{opacity:.5;cursor:not-allowed}
@@ -104,7 +132,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 @media(max-width:640px){.two-col{grid-template-columns:1fr}}
 
 /* BUTTONS */
-.btn{padding:.7rem 1.5rem;border:none;border-radius:1px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .3s}
+.btn{padding:.7rem 1.5rem;border:none;border-radius:var(--radius-sm);font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .3s}
 .btn-gold{background:var(--gold);color:#000}
 .btn-gold:hover{background:var(--gold-light);box-shadow:0 4px 12px rgba(201,145,26,.3)}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
@@ -113,7 +141,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .btn-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem}
 
 /* LIST ITEMS */
-.list-item{background:var(--surface2);border:1px solid var(--border);border-radius:1px;padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.list-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}.card .list-item{background:rgba(0,0,0,.05);border-color:rgba(150,120,40,.18);color:var(--text)}
 .li-content{flex:1}
 .li-title{font-weight:500;margin-bottom:.2rem;font-size:.95rem}
 .li-meta{font-size:.8rem;color:var(--muted);line-height:1.6}
@@ -121,7 +149,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 @media(max-width:640px){.list-item{flex-direction:column;align-items:stretch}.li-actions{justify-content:flex-end}}
 
 /* STATUS BADGES */
-.status-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:2px}
+.status-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:var(--radius-pill)}
 .status-pending{background:rgba(201,145,26,.15);color:var(--gold);border:1px solid rgba(201,145,26,.3)}
 .status-confirmed{background:rgba(39,174,96,.15);color:var(--success);border:1px solid rgba(39,174,96,.3)}
 .status-cancelled{background:rgba(192,57,43,.15);color:var(--danger);border:1px solid rgba(192,57,43,.3)}
@@ -134,7 +162,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .attendance-row{display:flex;align-items:center;gap:1rem;padding:.75rem 0;border-top:1px solid rgba(255,255,255,.04)}
 .attendance-row:first-of-type{border-top:none}
 .att-date{font-size:.85rem;color:var(--text);min-width:110px}
-.att-status{padding:.25rem .7rem;border-radius:2px;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.att-status{padding:.25rem .7rem;border-radius:var(--radius-pill);font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
 .att-present{background:rgba(39,174,96,.15);color:var(--success)}
 .att-absent{background:rgba(192,57,43,.15);color:var(--danger)}
 .att-note{font-size:.8rem;color:var(--muted);flex:1;text-align:right}
@@ -155,14 +183,14 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .profile-value{font-size:.92rem;color:var(--text)}
 
 /* TOAST */
-.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1rem 1.5rem;font-size:.9rem;z-index:9999;transform:translateY(80px);opacity:0;transition:all .4s;pointer-events:none;min-width:260px}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--glass-bg);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:1rem 1.5rem;font-size:.9rem;z-index:9999;transform:translateY(80px);opacity:0;transition:all .4s;pointer-events:none;min-width:260px;box-shadow:var(--shadow-md)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{border-color:var(--success);color:var(--success)}
 .toast.error{border-color:var(--danger);color:var(--danger)}
 
 /* MISC */
 .loading-text{color:var(--muted);font-size:.9rem;padding:1.5rem 0}
-.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:1px;height:60px;margin-bottom:.6rem}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm);height:60px;margin-bottom:.6rem}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
 .empty-state .icon{font-size:2.5rem;margin-bottom:1rem;display:block}
@@ -175,7 +203,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .mobile-overlay.open{display:block}
 
 /* NEXT LESSON CARD */
-.next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.12) 0%,var(--surface2) 100%);border:1px solid var(--gold);border-radius:2px;padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+.next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.12) 0%,var(--surface2) 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--gold);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
 .nl-left{flex:1}
 .nl-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
 .nl-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--text);margin-bottom:.2rem}
@@ -197,7 +225,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
 
 /* CHORD CREATOR */
-.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.3rem .15rem;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px}
+.cc-fretboard{display:flex;flex-direction:column;gap:0;padding:.3rem .15rem;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)}
 .cc-nut{width:5px;flex-shrink:0;background:var(--muted);border-radius:1px;margin:0;height:22px;align-self:stretch;display:flex;align-items:center;justify-content:center}
 .cc-fret-nums .cc-nut{height:auto;background:var(--muted);width:5px;margin:0;border-radius:1px}
 .cc-dot-9{background:#81c784}
@@ -206,9 +234,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .cc-fret {width:28px;height:22px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;border-right:1px solid rgba(255,255,255,.08)}
 .cc-fret:last-child{border-right:none}
 
-.cc-dot{width:14px;height:14px;border-radius:3px;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer;bottom:-7px;left:50%;transform:translateX(-50%)}
+.cc-dot{width:14px;height:14px;border-radius:50%;position:absolute;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer;bottom:-7px;left:50%;transform:translateX(-50%)}
 .cc-dot:hover{transform:scale(1.25)}
-.cc-dot .cc-tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--gold);border-radius:2px;padding:.2rem .45rem;font-size:.6rem;color:var(--gold);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
+.cc-dot .cc-tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--glass-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--gold);border-radius:var(--radius-sm);padding:.2rem .45rem;font-size:.6rem;color:var(--gold);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
 .cc-dot:hover .cc-tip{opacity:1}
 .cc-dot-R{background:var(--gold)}
 .cc-dot-3{background:#f06292}
@@ -235,23 +263,23 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 @keyframes stringShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* NEXT LESSON GLOW */
-.next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.1) 0%,var(--surface2) 100%);border:1px solid var(--gold);box-shadow:0 0 20px rgba(201,145,26,.05);border-radius:6px;padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+.next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.1) 0%,var(--surface2) 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--gold);box-shadow:var(--shadow-gold);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
 
 /* METRONOME BEAT BARS */
-.metro-beat{width:14px;min-height:6px;border-radius:2px;background:var(--surface3);transition:all .1s ease;align-self:center}
-.metro-beat.active{background:var(--gold);min-height:20px;box-shadow:0 0 8px rgba(201,145,26,.4)}
+.metro-beat{width:26px;height:20px;min-height:6px;border-radius:6px;background:var(--surface3);transition:all .1s ease;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:var(--muted)}
+.metro-beat.active{background:var(--gold);color:#1a1a1a;min-height:20px;box-shadow:0 0 8px rgba(201,145,26,.4);transform:scale(1.05)}
 
 /* TUNER CURSOR */
 #panel-tuner.active #tunerNeck{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L3 21L12 18L21 21Z' fill='%23C9911A' opacity='.9'/%3E%3C/svg%3E") 12 18, auto}
 
 /* LIST ITEMS GLASS */
-.list-item{background:rgba(26,24,16,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:transform .2s ease,box-shadow .2s ease}
-.list-item:hover{transform:translateX(3px);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.list-item{background:var(--glass-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:transform .2s ease,box-shadow .2s ease}
+.list-item:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.3),0 0 16px rgba(201,145,26,.06)}
 
 /* HERO GREETING */
-.hero-greeting{position:relative;overflow:hidden;border-radius:8px;margin-bottom:2rem;padding:2.5rem 2rem;min-height:160px}
-.hero-greeting::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,145,26,.08) 0%,transparent 50%,rgba(201,145,26,.04) 100%);border-radius:8px;z-index:0}
-.hero-greeting .hero-bg{position:absolute;inset:0;overflow:hidden;border-radius:8px;z-index:0}
+.hero-greeting{position:relative;overflow:hidden;border-radius:var(--radius-lg);margin-bottom:2rem;padding:2.5rem 2rem;min-height:160px;background:var(--glass-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--glass-border)}
+.hero-greeting::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,145,26,.08) 0%,transparent 50%,rgba(201,145,26,.04) 100%);border-radius:var(--radius-lg);z-index:0}
+.hero-greeting .hero-bg{position:absolute;inset:0;overflow:hidden;border-radius:var(--radius-lg);z-index:0}
 .hero-greeting .hero-bg svg{position:absolute;right:-20px;bottom:-20px;width:260px;height:260px;opacity:.08}
 .hero-greeting .hero-bg .hero-strings{position:absolute;right:20px;bottom:30px}
 .hero-greeting .hero-bg .hero-strings line{stroke:var(--gold);stroke-width:.5;opacity:.15}
@@ -315,9 +343,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 /* Quick action cards */
 .dash-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
-.dash-action-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.5rem 1.25rem;text-align:center;transition:all .25s ease;position:relative;overflow:hidden}
+.dash-action-card{background:var(--glass-bg);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:1.5rem 1.25rem;text-align:center;transition:all .25s ease;position:relative;overflow:hidden}
 .dash-action-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
-.dash-action-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.3);border-color:rgba(201,145,26,.3)}
+.dash-action-card:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 6px 16px rgba(0,0,0,.35),0 16px 40px rgba(0,0,0,.2),0 0 30px rgba(201,145,26,.08);border-color:var(--gold)}
 .dash-action-card:hover::before{opacity:.8}
 .dash-action-icon{font-size:2.2rem;margin-bottom:.6rem;display:block}
 .dash-action-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400;color:var(--text);margin-bottom:.2rem}
@@ -325,7 +353,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 /* Compact stats row */
 .dash-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-bottom:2rem}
-.dash-stat-item{background:rgba(17,16,9,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;text-align:center}
+.dash-stat-item{background:var(--glass-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:.85rem 1rem;text-align:center}
 .dash-stat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;color:var(--text);line-height:1.2}
 .dash-stat-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .sv-wrap{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem 1rem;margin-bottom:1.5rem}
@@ -335,7 +363,27 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .sv-cell{width:42px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.85rem;border-radius:2px;font-weight:500;background:var(--bg);border:1px solid var(--surface2)}
 .sv-cell.roman{font-size:.65rem;color:var(--muted);height:24px;border:none;background:transparent}
 .sv-cell.ct{background:rgba(201,145,26,.16);border-color:var(--gold);color:var(--gold);font-weight:700}
-</style>
+#sigCanvas{border:1px solid var(--border);border-radius:4px;background:#fff;cursor:crosshair;width:100%;height:160px;display:block;touch-action:none}
+#agreementView .agree-section{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem;margin-bottom:1rem}
+#agreementView .agree-section h3{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:400;color:var(--gold);margin-bottom:.5rem}
+#agreementView .agree-scroll{max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;padding:1.25rem;background:var(--surface2);font-size:.88rem;line-height:1.7;color:var(--text)}
+#agreementView .agree-scroll h3{font-size:.95rem;color:var(--gold);margin:1rem 0 .4rem;font-family:'Cormorant Garamond',serif;font-weight:400}
+#agreementView .agree-scroll p{margin-bottom:.6rem}
+#agreementView .agree-check{display:flex;align-items:start;gap:.6rem;padding:.5rem 0;font-size:.88rem;cursor:pointer}
+#agreementView .agree-check input{margin-top:.15rem;width:18px;height:18px;accent-color:var(--gold);flex-shrink:0}
+#agreementView .agree-signed{text-align:center;padding:2rem}
+#agreementView .agree-signed .sig-preview{max-width:300px;margin:.5rem auto;border:1px solid var(--border);border-radius:4px;padding:.5rem;background:#fff}
+#mapModal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:1rem}
+#mapModal.open{display:flex}
+#mapModal .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;max-width:700px;overflow:hidden;animation:modalIn .25s ease}
+@keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+#mapModal .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+#mapModal .modal-header h3{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:400}
+#mapModal .modal-close{background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:.25rem;line-height:1}
+#mapModal .modal-close:hover{color:var(--text)}
+#venueMap{height:400px;width:100%}
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -411,25 +459,26 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <span class="sidebar-label">Overview</span>
-    <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span> Dashboard</div>
-    <span class="sidebar-label">🎸 Tools</span>
-    <div class="nav-item" onclick="showPanel('practice',this)"><span class="icon">⏱</span> Practice</div>
-    <div class="nav-item" onclick="showPanel('metronome',this)"><span class="icon">🎯</span> Metronome</div>
-    <div class="nav-item" onclick="showPanel('chord-practice',this)"><span class="icon">🔄</span> Chord Practice</div>
-    <div class="nav-item" id="nav-chord-creator" onclick="showPanel('chord-creator',this)" style="display:none"><span class="icon">🎸</span> Chord Creator</div>
-    <div class="nav-item" onclick="showPanel('ear-training',this)"><span class="icon">👂</span> Ear Training</div>
-    <div class="nav-item" onclick="showPanel('tuner',this)"><span class="icon">🎛️</span> Tuner</div>
-    <div class="nav-item" onclick="showPanel('repertoire',this)"><span class="icon">📋</span> Repertoire</div>
-    <div class="nav-item" onclick="showPanel('achievements',this)"><span class="icon">🏆</span> Achievements</div>
-    <span class="sidebar-label">📋 Info</span>
-    <div class="nav-item" onclick="showPanel('first-lesson',this)"><span class="icon">🎓</span> First Lesson</div>
-    <div class="nav-item" onclick="showPanel('lessons',this)"><span class="icon">🎵</span> My Lessons</div>
-    <div class="nav-item" onclick="showPanel('progress',this)"><span class="icon">📈</span> Progress</div>
-    <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon">✅</span> Attendance</div>
-    <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon">🧾</span> Invoices</div>
-    <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon">📂</span> Resources</div>
-    <span class="sidebar-label">👤 Account</span>
-    <div class="nav-item" onclick="showPanel('profile',this)"><span class="icon">👤</span> My Profile</div>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span> Dashboard</div>
+    <span class="sidebar-label">Tools</span>
+    <div class="nav-item" onclick="showPanel('practice',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Practice</div>
+    <div class="nav-item" onclick="showPanel('metronome',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg></span> Metronome</div>
+    <div class="nav-item" onclick="showPanel('chord-practice',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span> Chord Practice</div>
+    <div class="nav-item" id="nav-chord-creator" onclick="showPanel('chord-creator',this)" style="display:none"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 8.5C9 7 11 6 12 6c2 0 3.5.5 4.5 1.5"/><path d="M12 6V3"/><path d="M5 14c0 3.5 2.5 6.5 7 6.5 2.5 0 4.5-1 5.5-2.5"/><path d="M5 14c0-2.5 1-4.5 2.5-6"/><path d="M17.5 18c.5-1.5.5-4 0-6"/><circle cx="12" cy="14" r="2.8"/><circle cx="12" cy="14" r="1.2"/><line x1="11.2" y1="8" x2="11.2" y2="11"/><line x1="11.6" y1="8" x2="11.6" y2="11"/><line x1="12" y1="8" x2="12" y2="11"/><line x1="12.4" y1="8" x2="12.4" y2="11"/><line x1="12.8" y1="8" x2="12.8" y2="11"/><line x1="11.25" y1="6" x2="11.25" y2="8"/><line x1="12.75" y1="6" x2="12.75" y2="8"/><circle cx="11.25" cy="4" r="0.6"/><circle cx="12.75" cy="4" r="0.6"/></svg></span> Chord Creator</div>
+    <div class="nav-item" onclick="showPanel('ear-training',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5-3 7-3 10"/><circle cx="12" cy="18" r="1"/></svg></span> Ear Training</div>
+    <div class="nav-item" onclick="showPanel('tuner',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg></span> Tuner</div>
+    <div class="nav-item" onclick="showPanel('repertoire',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></svg></span> Repertoire</div>
+    <div class="nav-item" onclick="showPanel('achievements',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 22V16"/><path d="M14 22V16"/><path d="M12 16c-3 0-5-3-5-8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3c0 5-2 8-5 8z"/></svg></span> Achievements</div>
+    <span class="sidebar-label">Info</span>
+    <div class="nav-item" onclick="showPanel('first-lesson',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> First Lesson</div>
+    <div class="nav-item" onclick="showPanel('agreement',this)" id="nav-agreement"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Tuition Agreement <span id="agreementNavBadge" style="display:none;background:var(--danger);color:#fff;font-size:.6rem;padding:.15rem .45rem;border-radius:8px;margin-left:auto">!</span></div>
+    <div class="nav-item" onclick="showPanel('lessons',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> My Lessons</div>
+    <div class="nav-item" onclick="showPanel('progress',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span> Progress</div>
+    <div class="nav-item" onclick="showPanel('attendance',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Attendance</div>
+    <div class="nav-item" onclick="showPanel('invoices',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></span> Invoices</div>
+    <div class="nav-item" onclick="showPanel('resources',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Resources</div>
+    <span class="sidebar-label">Account</span>
+    <div class="nav-item" onclick="showPanel('profile',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> My Profile</div>
   </aside>
 
   <!-- MAIN -->
@@ -457,8 +506,31 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         </div>
       </div>
 
+      <div id="agreementBanner" style="display:none;margin-bottom:1rem">
+        <div class="card" style="border-left:3px solid var(--danger);background:rgba(192,57,43,.08);padding:1rem 1.25rem">
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <span style="font-size:1.5rem"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span>
+            <div style="flex:1">
+              <strong>Tuition Agreement not yet signed</strong>
+              <div style="font-size:.82rem;color:var(--muted)">Please read and sign your Tuition Agreement before your first lesson.</div>
+            </div>
+            <button class="btn btn-gold btn-sm" onclick="window.goAgreement()">Sign Now</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Quick Actions -->
       <div class="dash-actions">
+        <div class="dash-action-card" onclick="window.goAgreement()" style="cursor:pointer">
+          <div class="dash-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
+          <div class="dash-action-title">Tuition Agreement</div>
+          <div class="dash-action-desc">Read and sign your agreement</div>
+        </div>
+        <div class="dash-action-card" onclick="openMapModal()" style="cursor:pointer">
+          <div class="dash-action-icon">📍</div>
+          <div class="dash-action-title">Where Is My Lesson</div>
+          <div class="dash-action-desc">See lesson venue on a map</div>
+        </div>
         <div class="dash-action-card" onclick="showPanel('practice')" style="cursor:pointer">
           <div class="dash-action-icon">⏱</div>
           <div class="dash-action-title">Practice</div>
@@ -468,11 +540,6 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
           <div class="dash-action-icon">🎛️</div>
           <div class="dash-action-title">Tune Guitar</div>
           <div class="dash-action-desc">Get in tune before you play</div>
-        </div>
-        <div class="dash-action-card" onclick="showPanel('ear-training')" style="cursor:pointer">
-          <div class="dash-action-icon">👂</div>
-          <div class="dash-action-title">Ear Training</div>
-          <div class="dash-action-desc">Train your musical ear</div>
         </div>
         <div class="dash-action-card" onclick="showPanel('chord-practice')" style="cursor:pointer">
           <div class="dash-action-icon">🔄</div>
@@ -510,6 +577,11 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
           <button class="btn btn-outline btn-sm" onclick="filterLessons('upcoming')">Upcoming</button>
           <button class="btn btn-outline btn-sm" onclick="filterLessons('past')">Past</button>
         </div>
+      </div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:.82rem;color:var(--muted)" id="lessonsSummary">
+        <span id="lessonsCount">— lessons</span>
+        <span id="lessonsPaidCount">— paid</span>
+        <span id="lessonsDueTotal">— due</span>
       </div>
       <div id="lessonsList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
       <div class="card" style="margin-top:1.5rem">
@@ -559,6 +631,16 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" class="icon-gold" opacity=".2"/><path d="M12 6v6l4 2" stroke="var(--gold)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></span>Your First <em>Lesson</em></h1></div>
       <div id="firstLessonView">
         <div class="card"><div class="loading-text">Loading your lesson info…</div></div>
+      </div>
+    </div>
+
+    <!-- TUITION AGREEMENT -->
+    <div class="panel" id="panel-agreement">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" class="icon-gold" opacity=".15" rx="2"/><path d="M8 8h8M8 12h6M8 16h4" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/><path d="M16 16l3 3M19 13l3 3" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/></svg></span>Tuition <em>Agreement</em></h1>
+        <div id="agreementBadge" style="display:none"></div>
+      </div>
+      <div id="agreementView">
+        <div class="card"><div class="loading-text">Loading agreement…</div></div>
       </div>
     </div>
 
@@ -676,7 +758,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <input type="range" id="metroBpm" min="20" max="280" value="120" oninput="metroUpdateBpm(this.value)" style="width:80%;max-width:300px;margin:.75rem auto;display:block;accent-color:var(--gold)">
         <div class="two-col" style="max-width:300px;margin:0 auto">
           <div class="fg"><label>Time Sig</label><select id="metroTimeSig" onchange="metroUpdateTimeSig()"><option value="4">4/4</option><option value="3">3/4</option><option value="2">2/4</option><option value="6">6/8</option><option value="5">5/4</option><option value="7">7/8</option></select></div>
-          <div class="fg"><label>Subdivision</label><select id="metroSub" onchange="metroStop()"><option value="1">None</option><option value="2">Eighth</option><option value="3">Triplet</option><option value="4">Sixteenth</option></select></div>
+          <div class="fg"><label>Subdivision</label><select id="metroSub" onchange="metroStop()"><option value="1">None</option><option value="2" selected>Eighth</option><option value="3">Triplet</option><option value="4">Sixteenth</option></select></div>
         </div>
         <div style="display:flex;gap:4px;justify-content:center;align-items:flex-end;margin:1rem 0;min-height:24px" id="metroBeatStrip"></div>
         <div class="btn-row" style="justify-content:center">
@@ -834,6 +916,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div class="profile-row"><span class="profile-label">Surname</span><span class="profile-value" id="pLName">—</span></div>
         <div class="profile-row"><span class="profile-label">Email</span><span class="profile-value" id="pEmail">—</span></div>
         <div class="profile-row"><span class="profile-label">Phone / WhatsApp</span><span class="profile-value" id="pPhone">—</span></div>
+        <div class="profile-row"><span class="profile-label">Payment Method</span><span class="profile-value" id="pMethod">—</span></div>
         <div class="profile-row"><span class="profile-label">Member Since</span><span class="profile-value" id="pSince">—</span></div>
         <div class="btn-row">
           <button class="btn btn-outline btn-sm" onclick="showEditProfile()">Edit Profile</button>
@@ -848,6 +931,16 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
           <div class="fg"><label>Surname</label><input type="text" id="eLName"></div>
         </div>
         <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="ePhone"></div>
+        <div class="fg"><label>Preferred Payment Method</label>
+          <select id="ePayMethod" style="width:100%;padding:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:.88rem;font-family:'Barlow',sans-serif">
+            <option value="">Select…</option>
+            <option value="eft">EFT (Bank Transfer)</option>
+            <option value="cash">Cash (at lesson)</option>
+            <option value="card">Card Machine (at lesson)</option>
+            <option value="stripe">Stripe (online)</option>
+            <option value="yoco">Yoco (in-person)</option>
+          </select>
+        </div>
         <div class="toggle-row" style="margin-top:.5rem">
           <div class="toggle-label">Enable Chord Creator<small>Show chord diagrams tool in your portal</small></div>
           <label class="toggle"><input type="checkbox" id="eChordCreator"><span class="toggle-slider"></span></label>
@@ -888,6 +981,7 @@ let _currentUser = null;
 let _bookings = [];
 let _attendanceRecords = [];
 let _invoices = [];
+let _payments = [];
 let _lessonFilter = 'all';
 
 // ── AUTH STATE ──
@@ -896,9 +990,12 @@ onAuthStateChanged(auth, user => {
     _currentUser = user;
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('panel-dashboard')?.classList.add('active');
+    // Record login timestamp for already-authenticated sessions
+    try { setDoc(doc(db,'students',user.email), { lastLoginAt: new Date().toISOString() }, { merge: true }).then(() => console.log('✅ Login timestamp saved')); }
+    catch(e) { console.warn('Login timestamp failed:', e); }
     // Force token refresh so Firestore permissions apply for newly created accounts
     (user.getIdToken(true) || Promise.resolve()).then(() => {
-      loadStudentData().catch(e => {
+      loadStudentData().then(checkAgreementStatus).catch(e => {
         console.error('loadStudentData error:', e);
         renderDashboard();
         renderLessons('all');
@@ -907,7 +1004,7 @@ onAuthStateChanged(auth, user => {
         loadResources();
       });
     }).catch(() => {
-      loadStudentData().catch(e => {
+      loadStudentData().then(checkAgreementStatus).catch(e => {
         console.error('loadStudentData error:', e);
         renderDashboard();
         renderLessons('all');
@@ -935,6 +1032,8 @@ function renderProfile() {
   document.getElementById('pLName').textContent = p.lastName||'—';
   document.getElementById('pEmail').textContent = p.email||'—';
   document.getElementById('pPhone').textContent = p.phone||'—';
+  const methodLabels = { eft:'EFT (Bank Transfer)', cash:'Cash', card:'Card Machine', stripe:'Stripe', yoco:'Yoco' };
+  document.getElementById('pMethod').textContent = p.paymentMethod ? (methodLabels[p.paymentMethod] || p.paymentMethod) : '—';
   document.getElementById('pSince').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
   const avatar = document.getElementById('profileAvatar');
   if (p.photoURL) { avatar.innerHTML = '<img src="'+p.photoURL+'" style="width:60px;height:60px;border-radius:50%;object-fit:cover">'; }
@@ -945,6 +1044,8 @@ window.showEditProfile = function() {
   document.getElementById('eFName').value = p.firstName||'';
   document.getElementById('eLName').value = p.lastName||'';
   document.getElementById('ePhone').value = p.phone||'';
+  const payMethodEl = document.getElementById('ePayMethod');
+  if (payMethodEl) payMethodEl.value = p.paymentMethod||'';
   const ccToggle = document.getElementById('eChordCreator');
   if (ccToggle) ccToggle.checked = p.chordCreatorEnabled !== false;
   document.getElementById('editProfileCard').style.display = 'block';
@@ -957,7 +1058,8 @@ window.saveProfile = async function() {
   const fileInput = document.getElementById('ePhoto');
   if (!fName) { alert('First name is required.'); return; }
   const ccEnabled = document.getElementById('eChordCreator')?.checked;
-  const updated = { firstName:fName, lastName:lName, phone, email:_currentUser.email, chordCreatorEnabled: ccEnabled };
+  const paymentMethod = document.getElementById('ePayMethod').value;
+  const updated = { firstName:fName, lastName:lName, phone, paymentMethod, email:_currentUser.email, chordCreatorEnabled: ccEnabled };
   // Upload photo if selected
   if (fileInput.files.length) {
     const file = fileInput.files[0];
@@ -1065,14 +1167,11 @@ async function loadStudentData() {
     try { await setDoc(doc(db,'students',email), profile); } catch(e) { /* rules may not allow */ }
   }
 
-  // Set name from profile – always show a clean display name
-  const prof = window._studentProfile;
-  const emailPrefix = email.split('@')[0];
-  let displayName = prof.firstName || '';
-  // If no proper first name, derive one from email prefix
-  if (!displayName || displayName === emailPrefix) {
-    displayName = emailPrefix.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  }
+  // Detect siblings sharing this email — combine names for display
+  const allNames = [...new Set(_bookings.map(b => (b.firstName||'').trim()).filter(Boolean))];
+  const displayName = allNames.length > 1
+    ? allNames.join(' & ')
+    : (window._studentProfile?.firstName || email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
   document.getElementById('dashName').textContent = displayName;
   document.getElementById('greetingName').textContent = displayName;
   renderProfile();
@@ -1094,8 +1193,18 @@ async function loadStudentData() {
     _bookings = [];
     snap.forEach(d => _bookings.push({id:d.id,...d.data()}));
     _bookings.sort((a,b) => ((b.startDate||b.createdAt||'') > (a.startDate||a.createdAt||'') ? 1 : -1));
+    // Update greeting with combined names from all bookings
+    const allNames = [...new Set(_bookings.map(b => (b.firstName||'').trim()).filter(Boolean))];
+    const displayName = allNames.length > 1
+      ? allNames.join(' & ')
+      : allNames.length === 1
+        ? allNames[0]
+        : (_currentUser?.email?.split('@')[0]?.replace(/[._]/g, ' ')?.replace(/\b\w/g, c => c.toUpperCase()) || 'Student');
+    document.getElementById('greetingName').textContent = displayName;
+    document.getElementById('dashName').textContent = displayName;
     renderDashboard();
     renderLessons(_lessonFilter);
+    loadResources();
     // Auto-navigate to first-lesson view on first load if student has a course booking
     if (_firstSnap) {
       _firstSnap = false;
@@ -1125,7 +1234,17 @@ async function loadStudentData() {
     snap.forEach(d => _invoices.push({id:d.id,...d.data()}));
     _invoices.sort((a,b) => ((b.date||b.createdAt||'') > (a.date||a.createdAt||'') ? 1 : -1));
     renderInvoices();
+    renderPaymentHistory();
   }, e => console.error('invoices snapshot error:', e));
+
+  // Payments
+  const payQ = query(collection(db,'payments'), where('studentEmail','==',email));
+  onSnapshot(payQ, snap => {
+    _payments = [];
+    snap.forEach(d => _payments.push({id:d.id,...d.data()}));
+    _payments.sort((a,b) => ((b.date||'') > (a.date||'') ? 1 : -1));
+    renderPaymentHistory();
+  }, e => console.error('payments snapshot error:', e));
 
   // Practice sessions
   const pracQ = query(collection(db,'practiceSessions'), where('email','==',email));
@@ -1172,7 +1291,8 @@ async function loadStudentData() {
 // ── DASHBOARD ──
 function renderDashboard() {
   updateHeroGreeting();
-  const upcoming = _bookings.filter(b => b.status !== 'cancelled' && (!b.status || b.status === 'pending' || b.status === 'confirmed'));
+  const courses = window._firstLessonCourses || {};
+  const upcoming = _bookings.filter(b => b.status !== 'cancelled' && (!b.status || b.status === 'pending' || b.status === 'confirmed') && (!b.courseId || courses[b.courseId]?.status !== 'archived'));
   const completed = _attendanceRecords.filter(r => r.status === 'present').length;
   const present = _attendanceRecords.filter(r => r.status === 'present').length;
   const totalAtt = _attendanceRecords.length;
@@ -1200,24 +1320,26 @@ function renderDashboard() {
   document.getElementById('statAttendance').textContent = rate + '%';
   document.getElementById('statDue').textContent = dueTotal ? 'R '+dueTotal.toLocaleString() : 'R 0';
 
-  // Next lesson — clickable, leads to first lesson prep
-  const next = _bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed').sort((a,b) => ((a.startDate||'') > (b.startDate||'') ? 1 : -1))[0];
+  // All upcoming lessons — list all active bookings
+  const activeBookings = _bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed' && (!b.courseId || courses[b.courseId]?.status !== 'archived'));
   const block = document.getElementById('nextLessonBlock');
-  if (next) {
-    const countdownHtml = next.startDate ? countdownTo(next.startDate) : '';
-    const isCourse = !!next.courseId;
-    block.innerHTML = `<div class="next-lesson" style="cursor:pointer" onclick="window.goFirstLesson()">
-      <div class="nl-left">
-        <div class="nl-label">Next Lesson</div>
-        <div class="nl-title">${next.plan||'Lesson'}${next.instrument?' · '+next.instrument:''}</div>
-        <div class="nl-detail">${next.prefDay||next.chosenSlot||''} ${next.prefTime||''}${next.venue?' · '+next.venue:''}</div>
-      </div>
-      <div class="nl-right">
-        <div class="nl-date">${next.startDate ? new Date(next.startDate+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}) : '—'}</div>
-        <div class="nl-time">${next.totalSessions ? next.totalSessions+' sessions' : ''}</div>
-        ${countdownHtml ? '<div class="nl-time" style="color:var(--gold);font-size:.9rem;margin-top:.3rem">'+countdownHtml+'</div>' : ''}
-      </div>
-    </div>`;
+  if (activeBookings.length) {
+    const sorted = [...activeBookings].sort((a,b) => ((a.startDate||'') > (b.startDate||'') ? 1 : -1));
+    block.innerHTML = sorted.map(b => {
+      const countdownHtml = b.startDate ? countdownTo(b.startDate) : '';
+      return `<div class="next-lesson" style="cursor:pointer" onclick="window.goFirstLesson()">
+        <div class="nl-left">
+          <div class="nl-label">${b.firstName||''}${b.firstName?' — ':''}${b.chosenSlot||b.prefDay||b.plan||'Lesson'}</div>
+          <div class="nl-title">${b.plan||''}</div>
+          <div class="nl-detail">${b.venue||''}</div>
+        </div>
+        <div class="nl-right">
+          <div class="nl-date">${b.startDate ? new Date(b.startDate+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'}) : '—'}</div>
+          <div class="nl-time">${b.totalSessions ? b.totalSessions+' sessions' : ''}</div>
+          ${countdownHtml ? '<div class="nl-time" style="color:var(--gold);font-size:.9rem;margin-top:.3rem">'+countdownHtml+'</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
   } else {
     block.innerHTML = `<div class="card" style="border-color:var(--gold);background:linear-gradient(135deg,rgba(201,145,26,.08),var(--surface))">
       <div style="text-align:center;padding:1rem">
@@ -1227,28 +1349,29 @@ function renderDashboard() {
     </div>`;
   }
 
-  // First lesson prep card on dashboard (if course booking with prep data exists)
+  // First lesson prep cards on dashboard — show for ALL courses
   const prepBlock = document.getElementById('firstLessonPrepDash');
-  const courseBooking = _bookings.find(b => b.courseId && (b.status === 'confirmed' || b.status === 'pending'));
-  if (courseBooking && window._firstLessonCourses) {
-    const course = window._firstLessonCourses[courseBooking.courseId];
-    const slotName = courseBooking.chosenSlot || '';
-    const slot = course?.slotOptions?.find(s => (s.name||s.label||'') === slotName);
-    const hasPrep = slot && (slot.whatToBring?.length || slot.firstLessonPrep || slot.whatYouWillLearn);
-    if (hasPrep) {
-      prepBlock.innerHTML = `<div class="card" style="border-left:3px solid var(--gold);margin-bottom:1rem;cursor:pointer" onclick="window.goFirstLesson()">
+  const courseBookings = _bookings.filter(b => b.courseId && (b.status === 'confirmed' || b.status === 'pending') && window._firstLessonCourses?.[b.courseId]?.status !== 'archived');
+  if (courseBookings.length && window._firstLessonCourses) {
+    prepBlock.innerHTML = courseBookings.map(cb => {
+      const course = window._firstLessonCourses[cb.courseId];
+      if (!course) return '';
+      const slotName = cb.chosenSlot || '';
+      const slot = course?.slotOptions?.find(s => (s.name||s.label||'') === slotName);
+      const hasPrep = slot && (slot.whatToBring?.length || slot.firstLessonPrep || slot.whatYouWillLearn);
+      if (!hasPrep) return '';
+      const nameLabel = cb.firstName ? slotName+' · '+cb.firstName : slotName;
+      return `<div class="card" style="border-left:3px solid var(--gold);margin-bottom:1rem;cursor:pointer" onclick="window.goFirstLesson()">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
           <div>
-            <div style="font-size:.72rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.25rem">🎒 First Lesson Prep</div>
+            <div style="font-size:.72rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.25rem">🎒 ${nameLabel}</div>
             ${slot.whatToBring?.length ? '<div style="font-size:.85rem;color:var(--muted)">Bring: '+slot.whatToBring.join(', ')+'</div>' : ''}
             ${slot.firstLessonPrep ? '<div style="font-size:.85rem;color:var(--muted);margin-top:.2rem">'+slot.firstLessonPrep.slice(0,80)+(slot.firstLessonPrep.length>80?'…':'')+'</div>' : ''}
           </div>
           <span style="color:var(--gold);font-size:1.2rem">→</span>
         </div>
       </div>`;
-    } else {
-      prepBlock.innerHTML = '';
-    }
+    }).filter(Boolean).join('');
   } else {
     prepBlock.innerHTML = '';
   }
@@ -1279,17 +1402,39 @@ function renderLessons(filter) {
   document.getElementById('lessonsList').innerHTML = list.length
     ? list.map(b => lessonRow(b)).join('')
     : emptyStateSVG('note','No '+(filter!=='all'?filter+' ':'')+'lessons found.');
+  // Update summary counts
+  const paidCount = list.filter(b => { const amt=_payments.filter(p=>p.bookingId===b.id).reduce((t,p)=>t+Number(p.amount||0),0); return Number(b.price||0)>0 && amt>=Number(b.price||0); }).length;
+  const dueTotal = list.filter(b => !b.courseId).reduce((t,b) => { const amt=_payments.filter(p=>p.bookingId===b.id).reduce((x,p)=>x+Number(p.amount||0),0); return t + Math.max(0, Number(b.price||0)-amt); }, 0);
+  document.getElementById('lessonsCount').textContent = list.length + ' lesson'+(list.length!==1?'s':'');
+  document.getElementById('lessonsPaidCount').textContent = paidCount + ' paid';
+  document.getElementById('lessonsDueTotal').textContent = dueTotal ? 'R '+dueTotal.toLocaleString()+' due' : 'All paid ✓';
 }
 
 function lessonRow(b) {
   const s = b.status||'pending';
-  const paidBadge = b.paid ? '<span class="status-badge status-paid" style="margin-left:.3rem">Paid</span>' : '';
-  return `<div class="list-item">
-    <div class="li-content">
-      <div class="li-title">${b.plan||'Private Lesson'} <span class="status-badge status-${s}">${s}</span>${paidBadge}</div>
-      <div class="li-meta">${b.instrument?'🎸 '+b.instrument+' · ':''}${b.prefDay||b.chosenSlot||''} ${b.prefTime||''}${b.startDate?' · '+new Date(b.startDate+'T12:00:00').toLocaleDateString('en-ZA'):''}${b.venue?' · 📍 '+b.venue:''}${b.totalSessions?' · '+b.totalSessions+'x':''}</div>
-    </div>
-  </div>`;
+  const paidAmt = _payments.filter(p => p.bookingId === b.id).reduce((t,p) => t+Number(p.amount||0), 0);
+  const price = Number(b.price||0);
+  const isPaid = price > 0 && paidAmt >= price;
+  const paidBadge = isPaid ? '<span class="status-badge status-paid" style="margin-left:.3rem">Paid</span>' : (price > 0 && paidAmt > 0 ? '<span class="status-badge" style="background:rgba(255,193,7,.2);color:var(--gold);font-size:.65rem;padding:.1rem .4rem;border-radius:3px;margin-left:.3rem">R '+paidAmt.toLocaleString()+' paid</span>' : '');
+  // Session progress for courses
+  let progHtml = '';
+  if (b.courseId && b.totalSessions) {
+    const attCount = _attendanceRecords.filter(r => r.bookingId === b.id && r.status === 'present').length;
+    progHtml = '<div class="li-progress" style="display:flex;align-items:center;gap:.5rem;margin-top:.25rem"><span style="font-size:.75rem;color:var(--muted)">Progress:</span><div style="flex:1;max-width:200px;height:4px;background:var(--border);border-radius:2px"><div style="width:'+Math.min(100,Math.round(attCount/b.totalSessions*100))+'%;height:4px;background:var(--gold);border-radius:2px;transition:width .4s"></div></div><span style="font-size:.75rem;color:var(--muted)">'+attCount+'/'+b.totalSessions+'</span></div>';
+  }
+  // Payment info line
+  const payInfo = (price > 0 && !isPaid) ? '<div class="li-meta" style="color:var(--gold);margin-top:.15rem">R '+price.toLocaleString()+' due'+(b.payMethod?' · via '+b.payMethod:'')+'</div>' : '';
+  // Next lesson date highlight
+  const dateStr = b.startDate ? new Date(b.startDate+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : '—';
+  const isUpcoming = b.startDate && b.startDate >= new Date().toISOString().split('T')[0];
+  return '<div class="list-item" style="'+(isUpcoming && s !== 'cancelled' ? 'border-left:3px solid var(--gold);padding-left:.75rem' : '')+'">' +
+    '<div class="li-content">' +
+      '<div class="li-title">'+(b.plan||'Private Lesson')+' <span class="status-badge status-'+s+'">'+s+'</span>'+paidBadge+'</div>' +
+      '<div class="li-meta">'+(b.instrument?'🎸 '+b.instrument+' · ':'')+(b.prefDay||b.chosenSlot||'')+' '+(b.prefTime||'')+(b.startDate?' · '+dateStr:'')+(b.venue?' · 📍 '+b.venue:'')+(b.totalSessions?' · '+b.totalSessions+'x':'')+'</div>' +
+      payInfo +
+      progHtml +
+    '</div>' +
+  '</div>';
 }
 
 window.filterLessons = function(f) { renderLessons(f); };
@@ -1317,8 +1462,8 @@ function renderAttendance() {
 
 // ── INVOICES ──
 function renderInvoices() {
-  const total = _invoices.reduce((s,i) => s+Number(i.amount||0), 0);
-  const paid = _invoices.filter(i => i.status === 'paid').reduce((s,i) => s+Number(i.amount||0), 0);
+  const total = _invoices.reduce((s,i) => s+Number(i.total||i.amount||0), 0);
+  const paid = _invoices.filter(i => i.status === 'paid').reduce((s,i) => s+Number(i.total||i.amount||0), 0);
   const unpaid = total - paid;
   document.getElementById('invTotalLabel').textContent = `R ${total.toLocaleString()} total · R ${paid.toLocaleString()} paid`;
 
@@ -1326,20 +1471,84 @@ function renderInvoices() {
     ? _invoices.map(i => {
         const d = i.date ? new Date(i.date+'T12:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
         const s = i.status||'unpaid';
+        const invoiceAmount = i.total !== undefined ? i.total : (i.amount||0);
+        const fullPrice = i.subtotal || invoiceAmount;
+        const hasDiscount = i.discount && i.discount.amount > 0;
+        const studentDiscount = i.studentDiscount;
+        const sv = i._studentChosenDiscount || 0;
+        const discAmount = studentDiscount ? Math.round(fullPrice * sv / 100) : 0;
+        const finalAmount = studentDiscount ? fullPrice - discAmount : invoiceAmount;
         return `<div class="invoice-row">
           <div style="flex:1">
-            <div class="inv-desc">${i.description||'Lesson'}</div>
+            <div class="inv-desc">${i.description||i.plan||'Lesson'}</div>
             <div class="inv-date">${d}${i.dueDate?' · Due '+new Date(i.dueDate+'T12:00:00').toLocaleDateString('en-ZA'):''}</div>
+            ${hasDiscount ? `<div class="inv-date" style="color:var(--green)">Full: R ${Number(i.subtotal||0).toLocaleString()} · Discount: -R ${Number(i.discount.amount).toLocaleString()}</div>` : ''}
+            ${i.items?.length ? `<div class="inv-date">${i.items.length} item${i.items.length===1?'':'s'}</div>` : ''}
+            ${studentDiscount && s !== 'paid' ? `
+              <div style="margin-top:.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+                <span style="font-size:.82rem;color:var(--muted)">Your discount:</span>
+                <input type="range" min="0" max="100" value="${sv}" oninput="updateStudentDiscount('${i.id}', this.value, '${encodeURIComponent(JSON.stringify(i))}')" style="flex:1;max-width:200px;accent-color:var(--gold)">
+                <span style="font-size:.85rem;font-weight:600;min-width:3rem">${sv}%</span>
+                <span style="font-size:.85rem;color:var(--gold)">Pay: R ${Number(finalAmount).toLocaleString()}</span>
+              </div>
+            ` : ''}
+            ${studentDiscount && s === 'paid' ? `
+              <div class="inv-date" style="color:var(--green)">Student chose ${i._studentChosenDiscount||0}% discount · Paid R ${Number(finalAmount).toLocaleString()}</div>
+            ` : ''}
           </div>
           <div style="text-align:right">
-            <div class="inv-amount">R ${Number(i.amount||0).toLocaleString()}</div>
+            <div class="inv-amount">R ${Number(finalAmount).toLocaleString()}</div>
             <span class="status-badge status-${s === 'paid' ? 'paid' : 'unpaid'}">${s}</span>
-            <button class="btn btn-outline btn-sm" style="margin-top:.3rem" onclick="downloadInvoicePDF('${encodeURIComponent(JSON.stringify(i))}')">⬇ PDF</button>
+            <button class="btn btn-outline btn-sm" style="margin-top:.3rem" onclick="downloadInvoicePDF('${encodeURIComponent(JSON.stringify({...i, _displayDiscount: studentDiscount ? sv : 0, _displayFullPrice: fullPrice}))}')">⬇ PDF</button>
           </div>
         </div>`;
       }).join('')
     : emptyStateSVG('note','No invoices yet.');
 }
+
+function renderPaymentHistory() {
+  const totalPaid = _payments.reduce((s,p) => s + Number(p.amount||0), 0);
+  document.getElementById('payTotalLabel').textContent = 'R ' + totalPaid.toLocaleString() + ' total paid';
+  document.getElementById('paymentHistoryList').innerHTML = _payments.length
+    ? _payments.map(p => {
+        const methodIcons = { eft:'🏦', cash:'💵', card:'💳', stripe:'💳', yoco:'💳' };
+        const d = p.date ? new Date(p.date+'T12:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
+        // Find the booking for context
+        const bk = _bookings.find(b => b.id === p.bookingId);
+        return '<div class="invoice-row" style="border-left:3px solid var(--success);padding-left:.75rem;margin-bottom:.5rem">' +
+          '<div style="flex:1">' +
+            '<div class="inv-desc">R ' + Number(p.amount||0).toLocaleString() + ' <span class="status-badge" style="font-size:.68rem;background:rgba(255,255,255,.05);padding:.15rem .4rem;border-radius:2px">' + (methodIcons[p.method]||'') + ' ' + (p.method||'').toUpperCase() + '</span></div>' +
+            '<div class="inv-date">' + d + (p.reference ? ' · ' + p.reference : '') + (bk ? ' · ' + (bk.firstName||'') + ' ' + (bk.lastName||'') : '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right"><span class="status-badge status-paid">Paid</span></div>' +
+        '</div>';
+      }).join('')
+    : '<div style="padding:.5rem 0;font-size:.85rem;color:var(--muted)">No payments recorded yet.</div>';
+}
+
+window.updateStudentDiscount = function(invId, val, enc) {
+  const i = JSON.parse(decodeURIComponent(enc));
+  const pct = Math.min(100, Math.max(0, parseInt(val)||0));
+  const inv = _invoices.find(x => x.id === invId);
+  if (inv) inv._studentChosenDiscount = pct;
+  renderInvoices();
+};
+
+window.saveStudentDiscount = async function(invId) {
+  const inv = _invoices.find(x => x.id === invId);
+  if (!inv) return;
+  const pct = inv._studentChosenDiscount || 0;
+  const full = inv.subtotal || inv.total || inv.amount || 0;
+  const disc = Math.round(full * pct / 100);
+  try {
+    await updateDoc(doc(db, 'invoices', invId), {
+      _studentChosenDiscount: pct,
+      _studentDiscountAmount: disc,
+      _studentDiscountedAt: new Date().toISOString()
+    });
+    toast('Discount saved!','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
 
 window.downloadInvoicePDF = function(enc) {
   const i = JSON.parse(decodeURIComponent(enc));
@@ -1370,9 +1579,26 @@ window.downloadInvoicePDF = function(enc) {
       <div><div class="lbl">Bill To</div>${name}<br>${i.email||'—'}</div>
       <div style="text-align:right"><div class="lbl">Invoice Date</div>${date}<br><div class="lbl" style="margin-top:.5rem">Invoice #</div>${i.invoiceNumber||i.id||'—'}</div>
     </div>
-    <table class="table"><tr><th>Description</th><th style="text-align:right">Amount</th></tr>
-    <tr><td>${i.description||'Music Lesson'}</td><td style="text-align:right">R ${Number(i.amount||0).toLocaleString()}</td></tr>
-    <tr><td colspan="2" class="total">Total: R ${Number(i.amount||0).toLocaleString()}</td></tr></table>
+    <table class="table">
+      <tr><th>Description</th><th style="text-align:right">Amount</th></tr>
+      ${i.items?.length ? i.items.map(it => `
+        <tr><td>${it.desc}${it.qty > 1 ? ' × '+it.qty : ''}</td><td style="text-align:right">R ${Number((it.qty||1)*(it.unit||0)).toLocaleString()}</td></tr>
+      `).join('') : `
+        <tr><td>${i.description||i.plan||'Music Lesson'}</td><td style="text-align:right">R ${Number(i._displayFullPrice||i.subtotal||i.amount||0).toLocaleString()}</td></tr>
+      `}
+      ${i._displayDiscount > 0 ? `
+        <tr><td style="color:#c0392b">Student discount (${i._displayDiscount}%)</td><td style="text-align:right;color:#c0392b">-R ${Number(Math.round((i._displayFullPrice||i.subtotal||i.amount||0) * i._displayDiscount / 100)).toLocaleString()}</td></tr>
+      ` : ''}
+      ${i.discount && i.discount.amount > 0 && !i._displayDiscount ? `
+        <tr><td style="color:#c0392b">Discount (${i.discount.type==='percentage' ? i.discount.value+'%' : '-R '+Number(i.discount.value).toLocaleString()})</td><td style="text-align:right;color:#c0392b">-R ${Number(i.discount.amount).toLocaleString()}</td></tr>
+      ` : ''}
+      ${i.studentDiscount && !i._displayDiscount ? `
+        <tr><td style="color:#c0392b">Discount (0–100%):</td><td style="text-align:right;border-bottom:1px solid #999;color:#999">_______________</td></tr>
+        <tr><td colspan="2" class="total" style="border-top:2px solid #999">Total: <span style="border-bottom:1px solid #999;min-width:120px;display:inline-block">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>
+      ` : `
+        <tr><td colspan="2" class="total">Total: R ${Number(i.total||i.amount||0).toLocaleString()}</td></tr>
+      `}
+    </table>
     <p style="text-align:center;color:#666;font-size:.82rem">Payment due: ${due}</p>
     <div class="footer">Thank you for choosing Backstage Worship Music School</div>
     <script>window.onload=function(){window.print();}<\/script>
@@ -1553,7 +1779,10 @@ window.doSignIn = async function() {
   if (!email || !pass) { err.textContent = 'Please enter your email and password.'; return; }
   btn.textContent = 'Signing in…'; btn.disabled = true; err.textContent = '';
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const userCred = await signInWithEmailAndPassword(auth, email, pass);
+    // Record login timestamp (use canonical email from auth)
+    try { await setDoc(doc(db,'students',userCred.user.email), { lastLoginAt: new Date().toISOString() }, { merge: true }); console.log('✅ Login timestamp saved'); }
+    catch(e) { console.warn('Login timestamp failed:', e); }
   } catch(e) {
     let msg = 'Sign in failed.';
     if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'Incorrect email or password.';
@@ -2143,10 +2372,10 @@ function metroPlayClick(time, beat, sub) {
   const osc = _metroCtx.createOscillator();
   const gain = _metroCtx.createGain();
   osc.connect(gain); gain.connect(_metroCtx.destination);
-  if (isSub) { osc.frequency.value = 600; gain.gain.setValueAtTime(0.2, time); }
-  else if (isAccent) { osc.frequency.value = 1200; gain.gain.setValueAtTime(0.5, time); }
-  else { osc.frequency.value = 900; gain.gain.setValueAtTime(0.35, time); }
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+  if (isSub) { osc.frequency.value = 600; gain.gain.setValueAtTime(0.4, time); }
+  else if (isAccent) { osc.frequency.value = 1200; gain.gain.setValueAtTime(1.0, time); }
+  else { osc.frequency.value = 900; gain.gain.setValueAtTime(0.7, time); }
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
   osc.start(time); osc.stop(time + 0.04);
 }
 
@@ -2161,23 +2390,24 @@ function _metroSchedule() {
   while (_metroNextTime < _metroCtx.currentTime + _metroScheduleAhead) {
     const beatInBar = _metroBeat % beatsPerBar;
     metroPlayClick(_metroNextTime, beatInBar, false);
-    for (let s = 1; s < sub; s++) {
-      metroPlayClick(_metroNextTime + s * subInt, beatInBar, true);
-    }
     if (_metroOnBeat) _metroOnBeat(_metroBeat, _metroBeat % beatsPerBar === 0);
     _metroBeat++;
     _metroNextTime += interval;
   }
   _metroTimer = setTimeout(_metroSchedule, 25);
 
-  // Update beat strip
+  // Update beat strip (flashes 1 + 2 + 3 + 4 + when subdivision active; '+' is silent)
   const strip = document.getElementById('metroBeatStrip');
-  const b = (_metroBeat - 1) % beatsPerBar;
+  const beatStart = _metroNextTime - interval;
+  const subNow = Math.max(0, Math.floor((_metroCtx.currentTime - beatStart) / subInt));
+  const cellIdx = ((_metroBeat - 1) % beatsPerBar) * sub + Math.min(sub - 1, subNow);
+  const totalCells = beatsPerBar * sub;
   strip.innerHTML = '';
-  for (let i = 0; i < beatsPerBar; i++) {
+  for (let i = 0; i < totalCells; i++) {
     const bar = document.createElement('div');
-    bar.className = 'metro-beat' + (i === b ? ' active' : '');
-    bar.style.height = (6 + (i === b ? (14 - (i % 3) * 2) : 0)) + 'px';
+    bar.className = 'metro-beat' + (i === cellIdx ? ' active' : '');
+    bar.style.width = Math.max(8, Math.min(26, 200 / totalCells)) + 'px';
+    bar.textContent = (i % sub === 0) ? String(Math.floor(i / sub) + 1) : '+';
     strip.appendChild(bar);
   }
 
@@ -2791,6 +3021,9 @@ window._firstLessonCourses = null;
 window.goFirstLesson = function() {
   showPanel('first-lesson', document.querySelector('.nav-item[onclick*="first-lesson"]'));
 };
+window.goAgreement = function() {
+  showPanel('agreement', document.getElementById('nav-agreement'));
+};
 window.goResources = function() {
   showPanel('resources', document.querySelector('.nav-item[onclick*="resources"]'));
 };
@@ -2798,17 +3031,6 @@ async function renderFirstLesson() {
   const view = document.getElementById('firstLessonView');
   const email = _currentUser?.email;
   if (!email) { view.innerHTML = '<div class="card"><div class="loading-text">Sign in to see your first lesson info.</div></div>'; return; }
-
-  // Find confirmed course bookings for this student
-  const courseBookings = _bookings.filter(b => b.courseId && (b.status === 'confirmed' || b.status === 'pending'));
-  if (!courseBookings.length) {
-    view.innerHTML = `<div class="card" style="text-align:center;padding:2rem">
-      <span style="font-size:2.5rem;display:block;margin-bottom:1rem">🎓</span>
-      <h3 style="color:var(--gold);margin-bottom:.5rem">Welcome to Backstage!</h3>
-      <p style="color:var(--muted)">You don't have any course bookings yet. <a href="index.html" style="color:var(--gold)">Book your first lesson</a> and come back here to see what to bring.</p>
-    </div>`;
-    return;
-  }
 
   // Load course data (once)
   if (!window._firstLessonCourses) {
@@ -2822,106 +3044,152 @@ async function renderFirstLesson() {
     }
   }
 
-  // Pick the most recent confirmed booking with prep info
-  const best = courseBookings[0];  // already sorted newest-first from onSnapshot
-  const course = window._firstLessonCourses[best.courseId];
-  if (!course) {
-    view.innerHTML = '<div class="card"><div class="loading-text">Course info not found.</div></div>';
+  // Find confirmed course bookings for this student
+  const courseBookings = _bookings.filter(b => b.courseId && (b.status === 'confirmed' || b.status === 'pending'));
+  if (!courseBookings.length) {
+    view.innerHTML = `<div class="card" style="text-align:center;padding:2rem">
+      <span style="font-size:2.5rem;display:block;margin-bottom:1rem">🎓</span>
+      <h3 style="color:var(--gold);margin-bottom:.5rem">Welcome to Backstage!</h3>
+      <p style="color:var(--muted)">You don't have any course bookings yet. <a href="index.html" style="color:var(--gold)">Book your first lesson</a> and come back here to see what to bring.</p>
+    </div>`;
     return;
   }
 
-  // Find the slot
-  const slotName = best.chosenSlot || '';
-  const slot = (course.slotOptions||[]).find(s => (s.name||s.label||'') === slotName);
-  const whatToBring = slot?.whatToBring || [];
-  const firstPrep = slot?.firstLessonPrep || '';
-  const whatLearn = slot?.whatYouWillLearn || '';
+  // Load all resources once for all courses
+  let allResources = [];
+  try {
+    const resSnap = await getDocs(collection(db,'resources'));
+    resSnap.forEach(d => allResources.push({id:d.id,...d.data()}));
+  } catch(e) { /* ignore */ }
 
-  // Find next session date matching this student's slot
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
-  const slotStart = slot?.start || '';
-  const upcomingSessions = (course.sessionDates||[]).filter(s =>
-    s.date >= todayStr &&
-    (!slotStart || s.startTime === slotStart)
-  );
-  const nextSession = upcomingSessions.length ? upcomingSessions[0] : null;
 
-  // Find resources for this course + slot
-  let courseResources = [];
-  try {
-    const resSnap = await getDocs(query(collection(db,'resources'), where('targetCourseId','==',best.courseId)));
-    resSnap.forEach(d => {
-      const r = {id:d.id,...d.data()};
-      if (!r.targetSlotName || r.targetSlotName === slotName) {
-        courseResources.push(r);
-      }
-    });
-  } catch(e) { /* ignore resource errors */ }
-
-  // Build HTML
+  // Build HTML for each course booking
   let html = '';
 
   // Welcome banner
   html += `<div class="card" style="background:linear-gradient(135deg,var(--gold-dim),transparent);border:1px solid var(--gold);margin-bottom:1rem;padding:1.5rem">
-    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;margin-bottom:.25rem">Hey ${window._studentProfile?.firstName||'there'}! 👋</h2>
-    <p style="color:var(--muted);font-size:.9rem">Here's everything you need to know for your first lesson at Backstage.</p>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;margin-bottom:.25rem">Hey ${document.getElementById('greetingName')?.textContent||'there'}! 👋</h2>
+    <p style="color:var(--muted);font-size:.9rem">Here's everything you need to know for your lessons at Backstage.</p>
   </div>`;
 
-  // Your course info
-  html += `<div class="card" style="margin-bottom:1rem">
-    <div class="card-title" style="margin-bottom:.75rem">🎵 Your Course</div>
-    <div style="font-weight:600;font-size:1.05rem;margin-bottom:.25rem">${course.title}</div>`;
-  if (slotName) {
-    html += `<div style="color:var(--muted);font-size:.85rem">Slot: ${slotName}</div>`;
-  }
-  if (course.venue) {
-    html += `<div style="color:var(--muted);font-size:.85rem">📍 ${course.venue}</div>`;
-  }
-  if (nextSession) {
-    const d = new Date(nextSession.date+'T'+ (nextSession.startTime||'00:00'));
-    html += `<div style="color:var(--gold);font-size:.9rem;margin-top:.5rem">
-      📅 First session: <strong>${d.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</strong>
-      ${nextSession.startTime ? 'at <strong>'+nextSession.startTime+'</strong>' : ''}
-    </div>`;
-  }
-  html += `</div>`;
+  courseBookings.forEach((cb, idx) => {
+    const course = window._firstLessonCourses[cb.courseId];
+    if (!course) return;
 
-  // What to bring
-  if (whatToBring.length) {
-    html += `<div class="card" style="margin-bottom:1rem">
-      <div class="card-title" style="margin-bottom:.75rem">🎒 What to Bring</div>
-      <ul style="list-style:none;padding:0">`;
-    whatToBring.forEach(item => {
-      html += `<li style="padding:.4rem 0;display:flex;align-items:center;gap:.75rem">
-        <span style="color:var(--gold);font-size:1.1rem">☐</span>
-        <span>${item}</span>
-      </li>`;
+    const slotName = cb.chosenSlot || '';
+    const slot = (course.slotOptions||[]).find(s => (s.name||s.label||'') === slotName);
+    const whatToBring = slot?.whatToBring || [];
+    const firstPrep = slot?.firstLessonPrep || '';
+    const whatLearn = slot?.whatYouWillLearn || '';
+    const personLabel = cb.firstName ? cb.firstName + ' · ' : '';
+
+    // Find next session date matching this student's slot
+    const slotStart = slot?.start || '';
+    const upcomingSessions = (course.sessionDates||[]).filter(s =>
+      s.date >= todayStr &&
+      (!slotStart || s.startTime === slotStart)
+    );
+    const nextSession = upcomingSessions.length ? upcomingSessions[0] : null;
+
+    // Filter resources for this course + slot
+    const courseResources = allResources.filter(r => {
+      const isCourseMatch = r.targetCourseId && r.targetCourseId === cb.courseId;
+      const isGeneral = !r.targetType || r.targetType === 'all';
+      const isCourseType = r.targetType === 'course' && r.targetCourseName && isCourseMatch;
+      if (!isGeneral && !isCourseType) return false;
+      if (r.targetSlotName && r.targetSlotName !== slotName) return false;
+      return true;
     });
-    html += `</ul></div>`;
-  }
 
-  // First lesson prep
-  if (firstPrep) {
-    html += `<div class="card" style="margin-bottom:1rem">
-      <div class="card-title" style="margin-bottom:.75rem">📝 First Lesson Prep</div>
-      <p style="line-height:1.7;color:var(--text)">${firstPrep}</p>
-    </div>`;
-  }
+    if (idx > 0) html += `<hr style="border-color:var(--border);margin:1.5rem 0">`;
 
-  // What you'll learn
-  if (whatLearn) {
-    html += `<div class="card" style="margin-bottom:1rem">
-      <div class="card-title" style="margin-bottom:.75rem">🎯 What You'll Learn</div>
-      <p style="line-height:1.7;color:var(--text)">${whatLearn}</p>
-    </div>`;
-  }
+    // Course header
+    const headerLabel = personLabel + (slotName ? slotName + ' — ' : '') + course.title;
+    html += `<div class="card" style="margin-bottom:1rem;border-left:3px solid var(--gold)">
+      <div style="font-weight:600;font-size:1rem;margin-bottom:.25rem">${headerLabel}</div>`;
+    if (course.venue) {
+      html += `<div style="color:var(--muted);font-size:.85rem">📍 <a href="https://www.google.com/maps/search/${encodeURIComponent(course.venue)}" target="_blank" style="color:var(--muted);text-decoration:underline;text-underline-offset:2px">${course.venue}</a></div>`;
+      // Add parking info if available
+      if (course.parkingInfo) {
+        html += `<div style="color:var(--muted);font-size:.82rem;margin-top:.25rem">🚗 ${course.parkingInfo}</div>`;
+      }
+    }
+    if (nextSession) {
+      const d = new Date(nextSession.date+'T'+ (nextSession.startTime||'00:00'));
+      html += `<div style="color:var(--gold);font-size:.9rem;margin-top:.5rem">
+        📅 First session: <strong>${d.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</strong>
+        ${nextSession.startTime ? 'at <strong>'+nextSession.startTime+'</strong>' : ''}
+      </div>`;
+    }
+    html += `</div>`;
 
-  // Resources
-  if (courseResources.length) {
+    // What to bring
+    if (whatToBring.length) {
+      const hasGuitarItem = whatToBring.some(i => i.toLowerCase().includes('guitar'));
+      html += `<div class="card" style="margin-bottom:1rem">
+        <div class="card-title" style="margin-bottom:.75rem">🎒 What to Bring</div>
+        <ul style="list-style:none;padding:0">`;
+      whatToBring.forEach(item => {
+        html += `<li style="padding:.4rem 0;display:flex;align-items:center;gap:.75rem">
+          <span style="color:var(--gold);font-size:1.1rem">☐</span>
+          <span>${item}</span>
+        </li>`;
+      });
+      if (hasGuitarItem) {
+        html += `<li style="padding:.5rem 0 0;font-size:.85rem;color:var(--gold);border-top:1px solid var(--border);margin-top:.5rem;padding-top:.75rem">
+          <span>🎸 <strong>Don't have a guitar yet?</strong> No worries — we have one you can use for your first lesson!</span>
+        </li>`;
+      }
+      html += `</ul></div>`;
+    }
+
+    // First lesson prep
+    if (firstPrep) {
+      html += `<div class="card" style="margin-bottom:1rem">
+        <div class="card-title" style="margin-bottom:.75rem">📝 First Lesson Prep</div>
+        <p style="line-height:1.7;color:var(--text)">${firstPrep}</p>
+      </div>`;
+    }
+
+    // What you'll learn
+    if (whatLearn) {
+      html += `<div class="card" style="margin-bottom:1rem">
+        <div class="card-title" style="margin-bottom:.75rem">🎯 What You'll Learn</div>
+        <p style="line-height:1.7;color:var(--text)">${whatLearn}</p>
+      </div>`;
+    }
+
+    // Resources
+    if (courseResources.length) {
+      html += `<div class="card" style="margin-bottom:1rem">
+        <div class="card-title" style="margin-bottom:.75rem">📂 Resources</div>
+        ${courseResources.map(r => {
+          const url = r.fileUrl||r.fileURL||'#';
+          return `<div style="display:flex;align-items:center;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+            <span>📄</span>
+            <div style="flex:1">${r.title||'Resource'}</div>
+            <a href="${url}" target="_blank" class="btn btn-sm btn-outline">Download</a>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    // No prep info at all for this course
+    if (!whatToBring.length && !firstPrep && !whatLearn) {
+      html += `<div class="card" style="text-align:center;padding:1.5rem;margin-bottom:1rem">
+        <p style="color:var(--muted)">No prep info for this course yet. Check back later or <a href="https://wa.me/27834822895" target="_blank" style="color:var(--gold)">contact us</a>.</p>
+      </div>`;
+    }
+  });
+
+  // Shared resources block at the bottom (only if there are general resources)
+  const generalRes = allResources.filter(r => !r.targetType || r.targetType === 'all');
+  if (generalRes.length) {
     html += `<div class="card" style="margin-bottom:1rem">
-      <div class="card-title" style="margin-bottom:.75rem">📂 Resources for Your Course</div>
-      ${courseResources.map(r => {
+      <div class="card-title" style="margin-bottom:.75rem">📂 General Resources</div>
+      ${generalRes.map(r => {
         const url = r.fileUrl||r.fileURL||'#';
         return `<div style="display:flex;align-items:center;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
           <span>📄</span>
@@ -2932,18 +3200,6 @@ async function renderFirstLesson() {
       <div style="margin-top:.75rem;text-align:center">
         <button class="btn btn-gold btn-sm" onclick="window.goResources()">📂 View All Resources</button>
       </div>
-    </div>`;
-  } else {
-    html += `<div class="card" style="margin-bottom:1rem;text-align:center;padding:1.5rem">
-      <p style="color:var(--muted);margin-bottom:.75rem">📂 No resources assigned to your course yet.</p>
-      <button class="btn btn-outline btn-sm" onclick="window.goResources()">Go to Resources</button>
-    </div>`;
-  }
-
-  // No prep info at all — show generic message
-  if (!whatToBring.length && !firstPrep && !whatLearn) {
-    html += `<div class="card" style="text-align:center;padding:2rem">
-      <p style="color:var(--muted)">Your instructor hasn't added prep info for this course yet. Check back later or <a href="https://wa.me/27834822895" target="_blank" style="color:var(--gold)">contact us</a> if you have questions.</p>
     </div>`;
   }
 
@@ -2976,11 +3232,262 @@ window.showPanel = function(name, el) {
   if (name === 'first-lesson') {
     renderFirstLesson();
   }
+  if (name === 'agreement') {
+    renderAgreement();
+  }
   _origShowPanel(name, el);
 };
 
-// Activate guitar strings background
-setTimeout(() => document.getElementById('bgStrings')?.classList.add('loaded'), 100);
+// ── TUITION AGREEMENT ──
+window._agreementData = null;
+let _sigCanvas = null, _sigCtx = null, _sigDrawing = false;
+
+async function renderAgreement() {
+  const view = document.getElementById('agreementView');
+  const email = _currentUser?.email;
+  if (!email) { view.innerHTML = '<div class="card"><div class="loading-text">Sign in to view the Tuition Agreement.</div></div>'; return; }
+
+  // Check if already signed
+  const studentSnap = await getDoc(doc(db, 'students', email));
+  const existing = studentSnap.exists() && studentSnap.data().agreement;
+
+  if (existing) {
+    view.innerHTML = `
+      <div class="agree-signed">
+        <div style="font-size:3rem;margin-bottom:1rem">✅</div>
+        <h3 style="color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400">Agreement Signed</h3>
+        <p style="color:var(--muted);font-size:.9rem;margin:.5rem 0">Signed on ${new Date(existing.signedAt).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+        ${existing.parentName ? `<p style="color:var(--muted);font-size:.85rem">Parent/Guardian: ${existing.parentName}</p>` : ''}
+        ${existing.signatureDataURL ? `<div class="sig-preview"><img src="${existing.signatureDataURL}" alt="Signature" style="max-width:100%;height:auto"></div>` : ''}
+        <p style="font-size:.78rem;color:var(--muted3);margin-top:1rem">Agreement v${existing.version||'1.0'} · ID: ${existing.agreementId||'—'}</p>
+        <button class="btn btn-outline btn-sm" style="margin-top:1rem" onclick="printAgreement()">🖨️ View / Print</button>
+      </div>`;
+    document.getElementById('agreementBadge').style.display = 'none';
+    return;
+  }
+
+  // Load agreement template
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'agreement'));
+    if (snap.exists()) {
+      window._agreementData = snap.data();
+    } else {
+      view.innerHTML = '<div class="card"><div class="loading-text">Agreement not yet configured.</div></div>';
+      return;
+    }
+  } catch(e) {
+    view.innerHTML = '<div class="card"><div class="loading-text">Could not load agreement.</div></div>';
+    return;
+  }
+
+  const a = window._agreementData;
+  const checkboxes = a.requiredCheckboxes || [];
+
+  view.innerHTML = `
+    <div style="margin-bottom:1rem">
+      <p style="color:var(--muted);font-size:.85rem">Please read the Tuition Agreement below, then confirm each point and sign to accept.</p>
+    </div>
+    <div class="agree-section">
+      <h3>${a.title||'Tuition Agreement'}</h3>
+      <div class="agree-scroll">${a.content||''}</div>
+    </div>
+    <div class="agree-section" id="mediaConsentSection">
+      <h3>📸 Media Consent</h3>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">I grant permission for photographs or videos of the student to be used for promotional purposes (website, social media, printed material).</p>
+      <div style="display:flex;gap:1rem">
+        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.88rem"><input type="radio" name="mediaConsent" value="grant" checked style="accent-color:var(--gold)"> I Grant Permission</label>
+        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.88rem"><input type="radio" name="mediaConsent" value="decline" style="accent-color:var(--gold)"> I Decline</label>
+      </div>
+    </div>
+    <div class="agree-section">
+      <h3>✅ Confirmation</h3>
+      ${checkboxes.map((c, i) => `
+        <label class="agree-check">
+          <input type="checkbox" id="agreeCb${i}" data-idx="${i}">
+          <span>${c}</span>
+        </label>
+      `).join('')}
+    </div>
+    <div class="agree-section">
+      <h3>✍️ Signature</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem">
+        <div class="fg"><label>Student Name</label><input type="text" id="agreeStudentName" placeholder="Full name"></div>
+        <div class="fg"><label>Parent / Guardian (if student is under 18)</label><input type="text" id="agreeParentName" placeholder="Full name (leave blank if adult student)"></div>
+      </div>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Draw your signature below:</p>
+      <canvas id="sigCanvas"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-outline btn-sm" onclick="clearSignature()">Clear</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted3);margin-top:.75rem">By signing, you consent to this electronic signature having the same legal effect as a handwritten signature in terms of the Electronic Communications and Transactions Act (ECTA).</p>
+    </div>
+    <button class="btn btn-gold" id="agreeSubmitBtn" onclick="submitAgreement()" style="width:100%">Sign &amp; Accept Agreement</button>
+  `;
+
+  // Init signature canvas
+  setTimeout(initSignatureCanvas, 100);
+}
+
+function initSignatureCanvas() {
+  const canvas = document.getElementById('sigCanvas');
+  if (!canvas) return;
+  _sigCanvas = canvas;
+  _sigCtx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = canvas.clientWidth || (rect?.width || 400);
+  canvas.height = 160;
+  _sigCtx.strokeStyle = '#000';
+  _sigCtx.lineWidth = 2;
+  _sigCtx.lineCap = 'round';
+  _sigCtx.lineJoin = 'round';
+
+  canvas.addEventListener('mousedown', sigStart);
+  canvas.addEventListener('mousemove', sigMove);
+  canvas.addEventListener('mouseup', sigEnd);
+  canvas.addEventListener('mouseleave', sigEnd);
+  canvas.addEventListener('touchstart', sigTouchStart, {passive:false});
+  canvas.addEventListener('touchmove', sigTouchMove, {passive:false});
+  canvas.addEventListener('touchend', sigEnd);
+}
+
+function sigStart(e) {
+  _sigDrawing = true;
+  const p = sigPos(e);
+  _sigCtx.beginPath();
+  _sigCtx.moveTo(p.x, p.y);
+}
+function sigMove(e) {
+  if (!_sigDrawing) return;
+  const p = sigPos(e);
+  _sigCtx.lineTo(p.x, p.y);
+  _sigCtx.stroke();
+}
+function sigEnd() { _sigDrawing = false; }
+function sigTouchStart(e) { e.preventDefault(); sigStart(e.touches[0]); }
+function sigTouchMove(e) { e.preventDefault(); sigMove(e.touches[0]); }
+function sigPos(e) {
+  const rect = _sigCanvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) * (_sigCanvas.width / rect.width), y: (e.clientY - rect.top) * (_sigCanvas.height / rect.height) };
+}
+window.clearSignature = function() {
+  if (!_sigCtx || !_sigCanvas) return;
+  _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+};
+
+window.submitAgreement = async function() {
+  const btn = document.getElementById('agreeSubmitBtn');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const name = document.getElementById('agreeStudentName')?.value.trim();
+  const parent = document.getElementById('agreeParentName')?.value.trim() || '';
+  if (!name) { toast('Please enter the student name.','error'); btn.disabled = false; btn.textContent = 'Sign & Accept Agreement'; return; }
+
+  // Check all required checkboxes
+  const a = window._agreementData;
+  const checks = a.requiredCheckboxes || [];
+  for (let i = 0; i < checks.length; i++) {
+    const cb = document.getElementById('agreeCb'+i);
+    if (!cb || !cb.checked) {
+      toast('Please tick all confirmation boxes before signing.','error');
+      btn.disabled = false; btn.textContent = 'Sign & Accept Agreement';
+      return;
+    }
+  }
+
+  // Check signature is not empty
+  if (!_sigCanvas) { toast('Signature canvas not ready.','error'); btn.disabled = false; btn.textContent = 'Sign & Accept Agreement'; return; }
+  const sigData = _sigCanvas.toDataURL('image/png');
+  // Check if canvas is blank (all white pixels)
+  const imageData = _sigCtx.getImageData(0, 0, _sigCanvas.width, _sigCanvas.height).data;
+  let hasStroke = false;
+  for (let i = 3; i < imageData.length; i += 4) { if (imageData[i] > 0) { hasStroke = true; break; } }
+  if (!hasStroke) { toast('Please draw your signature.','error'); btn.disabled = false; btn.textContent = 'Sign & Accept Agreement'; return; }
+
+  const mediaConsent = document.querySelector('input[name="mediaConsent"]:checked')?.value || 'decline';
+  const email = _currentUser?.email;
+  if (!email) { toast('Please sign in.','error'); btn.disabled = false; btn.textContent = 'Sign & Accept Agreement'; return; }
+
+  const agreementData = {
+    signed: true,
+    signedAt: new Date().toISOString(),
+    version: a.version || '1.0',
+    signatureDataURL: sigData,
+    studentName: name,
+    parentName: parent,
+    mediaConsent,
+    checkboxes: Object.fromEntries(checks.map((c, i) => [c, true])),
+    agreementId: 'BWMS-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6),
+    ipAddress: ''
+  };
+
+  try {
+    await setDoc(doc(db, 'students', email), { agreement: agreementData }, { merge: true });
+    toast('Agreement signed successfully! ✅','success');
+    document.getElementById('agreementBadge').style.display = 'none';
+    renderAgreement();
+  } catch(e) {
+    toast('Error saving agreement: '+e.message,'error');
+    btn.disabled = false; btn.textContent = 'Sign & Accept Agreement';
+  }
+};
+
+// Check agreement status on dashboard load — show badge if not signed
+window.printAgreement = async function() {
+  const email = _currentUser?.email;
+  if (!email) return;
+
+  const [studentSnap, configSnap] = await Promise.all([
+    getDoc(doc(db, 'students', email)),
+    getDoc(doc(db, 'siteConfig', 'agreement'))
+  ]);
+  const student = studentSnap.data();
+  const agreement = student?.agreement;
+  const template = configSnap.data();
+  if (!agreement || !template) return;
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tuition Agreement</title>
+<style>
+  @media print{@page{margin:2cm}}
+  body{font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#000;max-width:800px;margin:auto;padding:2rem}
+  h1{font-size:18pt;text-align:center;margin-bottom:1.5rem}
+  h3{font-size:13pt;margin-top:1.5rem;margin-bottom:.3rem}
+  p{margin-bottom:.6rem}
+  .sig-line{margin-top:2rem;border-top:1px solid #000;padding-top:.3rem;font-size:11pt}
+  .sig-img{max-width:250px;max-height:80px}
+  .meta{font-size:10pt;color:#555;margin-top:2rem}
+</style></head><body>
+<h1>${template.title||'Tuition Agreement'}</h1>
+${template.content||''}
+<div class="sig-line"><strong>Signed by:</strong> ${agreement.studentName||'—'}</div>
+${agreement.parentName ? `<div class="sig-line"><strong>Parent/Guardian:</strong> ${agreement.parentName}</div>` : ''}
+${agreement.signatureDataURL ? `<div><img src="${agreement.signatureDataURL}" alt="Signature" class="sig-img"></div>` : ''}
+<div class="meta">Signed: ${new Date(agreement.signedAt).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} · Agreement v${agreement.version||'1.0'} · ID: ${agreement.agreementId||'—'}</div>
+<script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}<\/script>
+</body></html>`);
+  w.document.close();
+};
+
+async function checkAgreementStatus() {
+  const email = _currentUser?.email;
+  const banner = document.getElementById('agreementBanner');
+  const badge = document.getElementById('agreementNavBadge');
+  if (!email) { if (banner) banner.style.display = 'none'; if (badge) badge.style.display = 'none'; return; }
+  try {
+    const snap = await getDoc(doc(db, 'students', email));
+    if (snap.exists() && snap.data().agreement?.signed) {
+      if (banner) banner.style.display = 'none';
+      if (badge) badge.style.display = 'none';
+    } else {
+      if (banner) banner.style.display = 'block';
+      if (badge) badge.style.display = 'inline';
+    }
+  } catch(e) {
+    if (banner) banner.style.display = 'none';
+    if (badge) badge.style.display = 'none';
+  }
+}
 
 // ── CONFETTI ──
 function showConfetti() {
@@ -3055,14 +3562,37 @@ function emptyStateSVG(type, msg) {
 }
 
 // ── HERO GREETING ──
-function updateHeroGreeting() {
+const _fallbackQuotes = [
+  'Ready for another great session?', 'Time to make some music!',
+  "Let's practice and grow!", 'Your journey continues today.',
+  'Music is the heartbeat of life.', 'Strive for progress, not perfection.',
+  'Keep showing up. Keep growing.', 'Every note you play matters.'
+];
+
+let _cachedQuote = null;
+
+async function updateHeroGreeting() {
   const h = new Date().getHours();
   const greeting = h<12?'Good morning':h<17?'Good afternoon':'Good evening';
-  const msgs = ['Ready for another great session?','Time to make some music!',"Let's practice and grow!",'Your journey continues today.','Music is the heartbeat of life.','Strive for progress, not perfection.'];
   const el=document.getElementById('heroTimeOfDay');
   if(el) el.textContent=greeting;
+
+  // Try to fetch a random inspirational quote from Firestore
+  if (!_cachedQuote) {
+    try {
+      const snap = await getDocs(query(collection(db,'inspirationalQuotes'), where('active','==',true)));
+      if (!snap.empty) {
+        const quotes = [];
+        snap.forEach(d => quotes.push(d.data().text));
+        if (quotes.length > 0) {
+          _cachedQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        }
+      }
+    } catch(e) { /* fallback to hardcoded */ }
+  }
+  const quote = _cachedQuote || _fallbackQuotes[Math.floor(Math.random()*_fallbackQuotes.length)];
   const sub=document.getElementById('heroMotivation');
-  if(sub) sub.textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  if(sub) sub.textContent=quote;
 }
 
 // ── DASHBOARD STATS ──
@@ -3124,6 +3654,46 @@ if ('serviceWorker' in navigator) {
 // Focus email on load
 setTimeout(() => document.getElementById('siEmail')?.focus(), 100);
 </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let _venueMap = null;
+window.openMapModal = function() {
+  const modal = document.getElementById('mapModal');
+  modal.classList.add('open');
+
+  const lat = -25.796893, lng = 28.295145;
+
+  if (_venueMap) { _venueMap.off(); _venueMap.remove(); _venueMap = null; }
+
+  _venueMap = L.map('venueMap', { zoomControl: true }).setView([lat, lng], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(_venueMap);
+
+  const m = L.circleMarker([lat, lng], {
+    radius: 18, color: '#C9911A', fillColor: '#C9911A', fillOpacity: .85, weight: 3
+  }).addTo(_venueMap).bindPopup('<b>Backstage Worship Studio</b><br>473 De Bron Road, Garsfontein, Pretoria East');
+  m.openPopup();
+
+  setTimeout(() => _venueMap.invalidateSize(), 400);
+};
+window.closeMapModal = function() {
+  document.getElementById('mapModal').classList.remove('open');
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMapModal();
+});
+</script>
+<div id="mapModal" onclick="if(event.target===this)closeMapModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📍 Lesson Venue — 473 De Bron Road, Garsfontein</h3>
+      <button class="modal-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div id="venueMap"></div>
+  </div>
+</div>
 <canvas id="confettiCanvas"></canvas>
 <div id="instrumentParticles" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden"></div>
 </body>
