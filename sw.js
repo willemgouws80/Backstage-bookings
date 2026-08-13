@@ -1,4 +1,4 @@
-const CACHE = 'backstage-portal-v1';
+const CACHE = 'backstage-portal-v3';
 const ASSETS = [
   '/portal.html',
   '/New_Backstage_logo.png',
@@ -11,9 +11,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
-  );
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -25,7 +23,29 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+
+  // Page navigations: network-first so the latest build is always served,
+  // with the cached copy as an offline fallback.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          if (res && res.ok && new URL(e.request.url).origin === self.location.origin) {
+            const copy = res.clone();
+            caches.open(CACHE).then(c => { try { c.put(e.request, copy); } catch(_) {} });
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request).then(p => p || new Response('Offline', { status: 503, statusText: 'Offline' })))
+    );
+    return;
+  }
+
+  // Everything else: cache-first, and never resolve to undefined.
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
+    caches.match(e.request).then(cached =>
+      cached || fetch(e.request).catch(() => new Response('', { status: 404 }))
+    )
   );
 });
