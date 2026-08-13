@@ -2398,14 +2398,12 @@ function _metroSchedule() {
 
   // Update beat strip (flashes 1 + 2 + 3 + 4 + when subdivision active; '+' is silent)
   const strip = document.getElementById('metroBeatStrip');
-  const beatStart = _metroNextTime - interval;
-  const subNow = Math.max(0, Math.floor((_metroCtx.currentTime - beatStart) / subInt));
-  const cellIdx = ((_metroBeat - 1) % beatsPerBar) * sub + Math.min(sub - 1, subNow);
   const totalCells = beatsPerBar * sub;
+  const subIdx = Math.max(0, Math.floor((_metroCtx.currentTime - _metroStartTime) / subInt)) % totalCells;
   strip.innerHTML = '';
   for (let i = 0; i < totalCells; i++) {
     const bar = document.createElement('div');
-    bar.className = 'metro-beat' + (i === cellIdx ? ' active' : '');
+    bar.className = 'metro-beat' + (i === subIdx ? ' active' : '');
     bar.style.width = Math.max(8, Math.min(26, 200 / totalCells)) + 'px';
     bar.textContent = (i % sub === 0) ? String(Math.floor(i / sub) + 1) : '+';
     strip.appendChild(bar);
