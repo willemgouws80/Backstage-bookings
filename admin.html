@@ -390,7 +390,6 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
     <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg></span> Bookings</div>
     <div class="nav-item" onclick="showPanel('calendar',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><circle cx="12" cy="16" r="1"/></svg></span> Calendar</div>
     <div class="nav-item" onclick="showPanel('students',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Students</div>
-    <div class="nav-item" onclick="showPanel('repertoire',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> Repertoire</div>
     <span class="sidebar-label">Automation</span>
     <span class="sidebar-label">Content</span>
     <div class="nav-item" onclick="showPanel('courses',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span> Courses</div>
@@ -1652,22 +1651,6 @@ See you soon! 🙌</textarea>
         <input type="text" id="studentSearch" placeholder="Search by name or email…" oninput="filterStudents(this.value)">
       </div>
       <div id="studentsList"><div class="loading-text">Loading students…</div></div>
-    </div>
-
-    <!-- REPERTOIRE -->
-    <div class="panel" id="panel-repertoire">
-      <div class="page-header">
-        <h1><em>Repertoire</em></h1>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <input type="text" id="repSearch" placeholder="Search song, student or key…" oninput="filterRepertoire(this.value)" style="padding:.45rem .7rem;background:var(--black);border:1px solid var(--border);border-radius:1px;color:var(--text);font-size:.85rem;width:220px">
-          <button class="btn btn-outline btn-sm" onclick="filterRepertoireStatus('all')" id="repFAll" style="border-color:var(--gold);color:var(--gold)">All</button>
-          <button class="btn btn-outline btn-sm" onclick="filterRepertoireStatus('learning')" id="repFLearning">Learning</button>
-          <button class="btn btn-outline btn-sm" onclick="filterRepertoireStatus('polishing')" id="repFPolishing">Polishing</button>
-          <button class="btn btn-outline btn-sm" onclick="filterRepertoireStatus('ready')" id="repFReady">Ready</button>
-        </div>
-      </div>
-      <div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem" id="repSummary"></div>
-      <div id="repertoireList"><div class="loading-text">Loading repertoire…</div></div>
     </div>
 
   </main>
@@ -3306,7 +3289,7 @@ window.deleteAnnouncement = async function(id) {
 
 // Expose for panel switching
 window._loaders = Object.assign(
-  { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:()=>{if(window.loadAvailability)window.loadAvailability();loadCalendar()}, students:loadStudents, repertoire:loadRepertoirePanel, attendance:loadAttendancePanel, terms:loadTerms, whatsapp:waInit, finance:loadFinance, bookkeeping:window.bkInit },
+  { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:()=>{if(window.loadAvailability)window.loadAvailability();loadCalendar()}, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms, whatsapp:waInit, finance:loadFinance, bookkeeping:window.bkInit },
   window._loaders || {}
 );
 
@@ -4576,71 +4559,35 @@ async function loadStudents() {
   }
 }
 
-// ── REPERTOIRE (student-managed songs) ──
-async function loadRepertoirePanel() {
-  const container = document.getElementById('repertoireList');
+// ── REPERTOIRE (per-student songs, added by the student in their portal) ──
+async function loadRepertoire(email, idx) {
+  const container = document.getElementById(`repertoire-${idx}`);
   try {
     const snap = await getDocs(collection(db,'repertoire'));
     const reps = [];
-    snap.forEach(d => reps.push({id:d.id, ...d.data()}));
+    snap.forEach(d => {
+      const r = d.data();
+      if ((r.email||'').toLowerCase() === email.toLowerCase()) reps.push({id:d.id, ...r});
+    });
     reps.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
-    window._repertoire = reps;
-    renderRepertoire();
-  } catch(e) {
-    console.warn('loadRepertoirePanel error:', e);
-    container.innerHTML = '<div class="loading-text">Could not load repertoire: '+e.message+'</div>';
-  }
-}
-
-function renderRepertoire() {
-  const container = document.getElementById('repertoireList');
-  const reps = window._repertoire || [];
-  const q = (window._repSearch||'').toLowerCase();
-  const st = window._repStatus || 'all';
-  let filtered = reps.filter(r => {
-    if (st !== 'all' && (r.status||'learning') !== st) return false;
-    if (q) {
-      const hay = ((r.title||'')+' '+(r.artist||'')+' '+(r.email||'')+' '+(r.key||'')+' '+(r.studentName||'')).toLowerCase();
-      if (!hay.includes(q)) return false;
+    if (!reps.length) {
+      container.innerHTML = '<div style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">No songs added yet — the student adds their own repertoire from their portal.</div>';
+      return;
     }
-    return true;
-  });
-  const summary = document.getElementById('repSummary');
-  summary.textContent = `${reps.length} song${reps.length===1?'':'s'} total · ${filtered.length} shown`;
-  if (!filtered.length) {
-    container.innerHTML = '<div class="loading-text">No repertoire found'+(q?' for "'+q+'"':'')+'.</div>';
-    return;
-  }
-  const nameOf = (r) => (r.studentName||r.name||'').trim() || r.email || 'Unknown';
-  container.innerHTML = filtered.map(r => {
-    const badge = r.status==='ready' ? 'status-confirmed' : r.status==='polishing' ? 'status-cancelled' : 'status-pending';
-    const label = (r.status==='ready' ? 'Performance Ready' : r.status==='polishing' ? 'Polishing' : 'Learning');
-    const d = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
-    return `
-    <div class="student-card">
-      <div class="student-card-header" style="cursor:default">
-        <div style="display:flex;align-items:center;gap:.85rem;flex:1">
-          <span style="font-size:1.4rem;flex-shrink:0">🎵</span>
-          <div style="flex:1">
-            <div class="student-name">${r.title||'Untitled'} ${r.artist?'<span style="color:var(--muted);font-weight:400">— '+r.artist+'</span>':''}</div>
-            <div class="student-meta">${nameOf(r)} · Key: ${r.key||'—'} · Added: ${d}</div>
-          </div>
-        </div>
+    container.innerHTML = reps.map(r => {
+      const badge = r.status==='ready' ? 'status-confirmed' : r.status==='polishing' ? 'status-cancelled' : 'status-pending';
+      const label = (r.status==='ready' ? 'Performance Ready' : r.status==='polishing' ? 'Polishing' : 'Learning');
+      const d = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '—';
+      return `
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.35rem 0;border-top:1px solid var(--border);font-size:.85rem">
+        <span style="flex:1">${r.title||'Untitled'} ${r.artist?'<span style="color:var(--muted)">— '+r.artist+'</span>':''} <span style="color:var(--muted);font-size:.75rem">· Key: ${r.key||'—'} · ${d}</span></span>
         <span class="status-badge ${badge}">${label}</span>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="font-size:.85rem;color:var(--muted)">Could not load repertoire</div>';
+  }
 }
-
-window.filterRepertoire = function(v) { window._repSearch = v; renderRepertoire(); };
-window.filterRepertoireStatus = function(s) {
-  window._repStatus = s;
-  document.querySelectorAll('#panel-repertoire .btn').forEach(b=>b.style.borderColor='');
-  document.querySelectorAll('#panel-repertoire .btn').forEach(b=>b.style.color='');
-  const btn = s==='all' ? document.getElementById('repFAll') : document.getElementById(s==='learning'?'repFLearning':s==='polishing'?'repFPolishing':'repFReady');
-  if (btn) { btn.style.borderColor='var(--gold)'; btn.style.color='var(--gold)'; }
-  renderRepertoire();
-};
 
 window.filterStudents = function(query) {
   const q = query.toLowerCase();
@@ -4717,6 +4664,10 @@ function renderStudentsList(students) {
         <div class="practice-log" id="practiceLog-${i}">
           <div style="font-size:.85rem;color:var(--muted)">Loading practice data…</div>
         </div>
+        <div style="margin-top:1.5rem;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem">Repertoire <span style="text-transform:none;color:var(--muted);font-size:.65rem">(added by student in their portal)</span></div>
+        <div class="practice-log" id="repertoire-${i}">
+          <div style="font-size:.85rem;color:var(--muted)">Loading repertoire…</div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -4735,6 +4686,7 @@ window.toggleStudent = function(id) {
     if (student) {
       loadNotes(student.email, idx);
       loadPracticeSessions(student.email, idx);
+      loadRepertoire(student.email, idx);
     }
   }
 };
