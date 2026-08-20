@@ -2021,9 +2021,9 @@ function loadDashboardFinance(invoices, bookings) {
 
   // 4) Income & expenses from BOOKKEEPING bank statements (real cash flow)
   const bankTxns = window._bkTxns || [];
-  const hasBank = bankTxns.length > 0;
   const bankIncome = bankTxns.filter(t => t.amount > 0 && inMonth(t.date)).reduce((s,t) => s + t.amount, 0);
   const bankExpense = bankTxns.filter(t => t.amount < 0 && inMonth(t.date)).reduce((s,t) => s + Math.abs(t.amount), 0);
+  const hasBank = bankTxns.some(t => inMonth(t.date));
 
   let monthIncome, monthExpenses, sourceNote;
   if (hasBank) {
