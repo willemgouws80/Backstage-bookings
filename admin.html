@@ -1985,6 +1985,7 @@ function renderThisWeek(weekDays) {
 }
 
 // -- LOAD NEXT CLASS --
+window._ncCtx = null;
 async function loadNextClass() {
   const box = document.getElementById('nextClass');
   if (!box) return;
@@ -2026,6 +2027,7 @@ async function loadNextClass() {
       ? (courses.find(c => c.id === b.courseId) || {}).title || 'Course'
       : ((b.firstName||'') + ' ' + (b.lastName||'')).trim() || 'Student';
     const email = b.email || '';
+    window._ncCtx = { email, name, date: next.date, courseId: b.courseId || '' };
     const dayName = new Date(next.date + 'T12:00:00').toLocaleDateString('en-ZA', { weekday:'long', day:'numeric', month:'short' });
     const time = b.prefTime || b.schedStartTime || b.startTime || 'TBC';
 
@@ -2099,11 +2101,89 @@ async function loadNextClass() {
     }
 
     box.innerHTML = row + statsHtml +
-      '<div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(201,145,26,.08);border:1px solid rgba(201,145,26,.2);border-radius:6px;font-size:.82rem;color:var(--text)"><span style="color:var(--gold);text-transform:uppercase;font-size:.62rem;letter-spacing:.08em;margin-right:.4rem">Next up:</span>' + nextSuggestion.replace(/</g,'&lt;') + '</div>';
+      '<div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(201,145,26,.08);border:1px solid rgba(201,145,26,.2);border-radius:6px;font-size:.82rem;color:var(--text)"><span style="color:var(--gold);text-transform:uppercase;font-size:.62rem;letter-spacing:.08em;margin-right:.4rem">Next up:</span>' + nextSuggestion.replace(/</g,'&lt;') + '</div>' +
+      '<div class="nc-actions" style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">' +
+        '<input id="ncNoteInput" placeholder="Quick note for this student…" style="flex:1;min-width:180px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:.5rem .65rem;font-size:.82rem;color:var(--text)">' +
+        '<button class="btn btn-gold btn-sm" onclick="window.ncAddNote()">Save note</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="window.ncAttend(\'present\')">✓ Present</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="window.ncAttend(\'absent\')">✕ Absent</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="window.ncToggleRep()">Repertoire</button>' +
+      '</div>' +
+      '<div id="ncRepWrap" style="display:none;margin-top:.75rem"></div>';
   } catch(e) {
     box.innerHTML = '<div style="color:var(--danger);font-size:.85rem">Could not load next class: ' + e.message + '</div>';
   }
 }
+
+window.ncAddNote = async function() {
+  const c = window._ncCtx;
+  const input = document.getElementById('ncNoteInput');
+  const text = (input?.value||'').trim();
+  if (!c?.email || !text) { toast('Write a note first','error'); return; }
+  try {
+    await addDoc(collection(db,'studentNotes'), { studentEmail:c.email, text, createdAt:new Date().toISOString() });
+    if (input) input.value = '';
+    toast('Note saved!','success');
+    loadNextClass();
+  } catch(e) { toast('Could not save note: '+e.message,'error'); }
+};
+
+window.ncAttend = async function(status) {
+  const c = window._ncCtx;
+  if (!c?.email) { toast('No student email linked','error'); return; }
+  try {
+    const q = query(collection(db,'attendance'), where('studentEmail','==',c.email), where('sessionDate','==',c.date));
+    const snap = await getDocs(q);
+    const existing = []; snap.forEach(d => existing.push({ id:d.id, ...d.data() }));
+    const baseData = { studentEmail:c.email, sessionDate:c.date, status, courseId:c.courseId||'', updatedAt:new Date().toISOString() };
+    if (existing.length) {
+      await updateDoc(doc(db,'attendance', existing[0].id), baseData);
+    } else {
+      await addDoc(collection(db,'attendance'), baseData);
+    }
+    toast(status === 'present' ? 'Marked present ✓' : 'Marked absent ✕','success');
+    loadNextClass();
+  } catch(e) { toast('Could not save attendance: '+e.message,'error'); }
+};
+
+window.ncToggleRep = async function() {
+  const wrap = document.getElementById('ncRepWrap');
+  if (!wrap) return;
+  if (wrap.style.display !== 'none') { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const c = window._ncCtx;
+  if (!c?.email) { wrap.innerHTML = '<div style="color:var(--muted);font-size:.82rem">No student email linked.</div>'; return; }
+  wrap.innerHTML = '<div class="loading-text">Loading repertoire…</div>';
+  try {
+    const snap = await getDocs(query(collection(db,'repertoire'), where('email','==',c.email)));
+    const reps = [];
+    snap.forEach(d => { const r = d.data(); if ((r.email||'').toLowerCase() === c.email.toLowerCase()) reps.push({id:d.id, ...r}); });
+    reps.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
+    if (!reps.length) { wrap.innerHTML = '<div style="color:var(--muted);font-size:.82rem">No songs yet — student adds repertoire from their portal.</div>'; return; }
+    wrap.innerHTML = '<div style="font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.25rem">Repertoire</div>' + reps.map(r => {
+      const badge = r.status==='ready' ? 'status-confirmed' : r.status==='polishing' ? 'status-cancelled' : 'status-pending';
+      const label = r.status==='ready' ? 'Ready' : r.status==='polishing' ? 'Polishing' : 'Learning';
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-top:1px solid var(--border);font-size:.82rem">' +
+        '<span style="flex:1">' + (r.title||'Untitled').replace(/</g,'&lt;') + (r.artist ? ' <span style="color:var(--muted)">— '+r.artist.replace(/</g,'&lt;')+'</span>' : '') + '</span>' +
+        '<select onchange="window.ncRepStatus(\''+r.id+'\',this.value)" style="font-size:.72rem;padding:.15rem .3rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;color:var(--text)">' +
+          '<option value="learning"'+(r.status==='learning'?' selected':'')+'>Learning</option>' +
+          '<option value="polishing"'+(r.status==='polishing'?' selected':'')+'>Polishing</option>' +
+          '<option value="ready"'+(r.status==='ready'?' selected':'')+'>Ready</option>' +
+        '</select>' +
+        '<span class="status-badge '+badge+'">'+label+'</span>' +
+      '</div>';
+    }).join('');
+  } catch(e) { wrap.innerHTML = '<div style="color:var(--danger);font-size:.82rem">'+e.message+'</div>'; }
+};
+
+window.ncRepStatus = async function(id, status) {
+  try {
+    await updateDoc(doc(db,'repertoire',id), { status });
+    toast('Status updated','success');
+    window.ncToggleRep();
+    loadNextClass();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
 
 // -- LOAD DASHBOARD FINANCE --
 function loadDashboardFinance(invoices, bookings) {
