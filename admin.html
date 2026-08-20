@@ -434,6 +434,10 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
         <div class="stat-light"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="stat-val" id="statToday">—</div><div class="stat-lbl">Today</div><div class="stat-trend flat" id="trendToday">→ 0%</div></div>
         <div class="stat-light"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="stat-val" id="statMonthIncome">—</div><div class="stat-lbl">Month Income</div><div class="stat-trend flat" id="trendIncome">→ 0%</div></div>
       </div>
+      <div class="card glass" style="margin-bottom:2rem">
+        <div class="card-title">Next Class</div>
+        <div id="nextClass"><div class="loading-text">Finding next class…</div></div>
+      </div>
       <div class="dash-two-col">
         <div class="card glass">
           <div class="card-title">Today’s Classes</div>
@@ -1806,6 +1810,7 @@ async function loadDashboard() {
     
     renderBookingsList(bookings);
     renderCoursesList(courses);
+    loadNextClass();
   } catch(e) { console.warn('Dashboard error:',e); }
 }
 
@@ -1977,6 +1982,127 @@ function renderThisWeek(weekDays) {
       '<div class="wd-names">' + d.names.join(', ') + '</div>' +
     '</div>').join('') +
     '</div>';
+}
+
+// -- LOAD NEXT CLASS --
+async function loadNextClass() {
+  const box = document.getElementById('nextClass');
+  if (!box) return;
+  try {
+    const bookings = window._bookings || [];
+    const courses  = window._courses || [];
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0,10);
+    const archivedCourseIds = new Set(courses.filter(c => c.status === 'archived').map(c => c.id));
+    const active = bookings.filter(b =>
+      (b.status === 'confirmed' || b.status === 'paid' || b.status === 'pending') &&
+      (!b.courseId || !archivedCourseIds.has(b.courseId))
+    );
+
+    // Find the single next upcoming session (earliest date across all active bookings)
+    let next = null; // { booking, date }
+    const horizon = new Date(now); horizon.setDate(horizon.getDate() + 90);
+    const horizonStr = horizon.toISOString().slice(0,10);
+    active.forEach(b => {
+      let dates = [];
+      if (Array.isArray(b.sessionDates) && b.sessionDates.length) {
+        dates = b.sessionDates.filter(d => d && d >= todayStr);
+      } else {
+        dates = sessionsInRange(b, todayStr, horizonStr);
+      }
+      if (!dates.length) return;
+      const earliest = dates.slice().sort()[0];
+      if (!next || earliest < next.date) next = { booking: b, date: earliest };
+    });
+
+    if (!next) {
+      box.innerHTML = '<div style="color:var(--muted);padding:.5rem 0;font-size:.85rem">No upcoming lessons scheduled.</div>';
+      return;
+    }
+
+    const b = next.booking;
+    const isCourse = !!b.courseId;
+    const name = isCourse
+      ? (courses.find(c => c.id === b.courseId) || {}).title || 'Course'
+      : ((b.firstName||'') + ' ' + (b.lastName||'')).trim() || 'Student';
+    const email = b.email || '';
+    const dayName = new Date(next.date + 'T12:00:00').toLocaleDateString('en-ZA', { weekday:'long', day:'numeric', month:'short' });
+    const time = b.prefTime || b.schedStartTime || b.startTime || 'TBC';
+
+    // Gather per-student portal data for private lessons
+    let weekMin = 0, lastPrac = null, lastNote = null, repCount = 0, repReady = 0, repPolishing = 0, repLearning = 0;
+    if (!isCourse && email) {
+      const [pSnap, rSnap, nSnap] = await Promise.all([
+        getDocs(query(collection(db,'practiceSessions'), where('email','==',email))),
+        getDocs(query(collection(db,'repertoire'), where('email','==',email))),
+        getDocs(query(collection(db,'studentNotes'), where('studentEmail','==',email)))
+      ]);
+      const sessions = []; pSnap.forEach(d => sessions.push({id:d.id, ...d.data()}));
+      const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
+      const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
+      sessions.forEach(s => { const d = new Date(s.createdAt); if (d >= weekStart && d < weekEnd) weekMin += Number(s.minutes||0); });
+      sessions.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
+      lastPrac = sessions[0] || null;
+
+      const reps = []; rSnap.forEach(d => reps.push({id:d.id, ...d.data()}));
+      repCount = reps.length;
+      repReady = reps.filter(r => r.status === 'ready').length;
+      repPolishing = reps.filter(r => r.status === 'polishing').length;
+      repLearning = reps.filter(r => r.status === 'learning').length;
+
+      const notes = []; nSnap.forEach(d => notes.push({id:d.id, ...d.data()}));
+      notes.sort((a,b) => ((b.createdAt||'') > (a.createdAt||'') ? 1 : -1));
+      lastNote = notes[0] || null;
+    }
+
+    // What's-next suggestion
+    let nextSuggestion;
+    if (isCourse) {
+      nextSuggestion = 'Group lesson — prepare the course material for ' + (b.instrument || 'the class') + '.';
+    } else if (!email) {
+      nextSuggestion = 'No student email linked — confirm their details before the lesson.';
+    } else if (weekMin === 0) {
+      nextSuggestion = 'No practice logged this week — check in with them and set a small weekly goal.';
+    } else if (weekMin < 30) {
+      nextSuggestion = 'Light practice this week (' + weekMin + ' min) — encourage 15–20 min a day.';
+    } else if (weekMin > 200) {
+      nextSuggestion = 'Excellent practice (' + weekMin + ' min)! Celebrate it and add a new challenge.';
+    } else {
+      nextSuggestion = 'Good practice (' + weekMin + ' min this week) — keep the momentum.';
+    }
+    if (!isCourse && email && repLearning) {
+      nextSuggestion += ' Continue "' + (lastPrac ? lastPrac.title : 'the current piece') + '" and aim to move it toward polishing.';
+    } else if (!isCourse && email && repCount && !repLearning) {
+      nextSuggestion += ' Repertoire is solid — pick a brand-new song to start.';
+    }
+
+    const waNumber = (b.phone||'').replace(/[\s\+\-\(\)]/g,'');
+    const waClean = waNumber.startsWith('0') ? '27' + waNumber.slice(1) : waNumber;
+
+    const row = '<div class="class-row" style="padding:.9rem .75rem;align-items:flex-start">' +
+      '<div class="class-time">' + time + '</div>' +
+      '<div class="class-name">' +
+        '<strong>' + name.replace(/</g,'&lt;') + '</strong>' +
+        '<small>' + dayName + (isCourse ? ' · Course' : ' · Private') + '</small>' +
+      '</div>' +
+      (waClean ? '<a href="https://wa.me/' + waClean + '?text=' + encodeURIComponent('Hi ' + name.split(' ')[0] + '! Looking forward to your lesson ' + dayName + ' at ' + time + '. See you at Backstage!') + '" target="_blank" class="class-wa wa-btn" style="padding:.25rem .5rem;font-size:.7rem">WA</a>' : '') +
+    '</div>';
+
+    let statsHtml = '';
+    if (!isCourse) {
+      statsHtml =
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem;margin-top:.75rem">' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:.6rem .75rem"><div style="font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Practised this week</div><div style="font-size:1.05rem;font-weight:600;color:var(--gold)">' + weekMin + ' min</div><div style="font-size:.7rem;color:var(--muted)">' + (lastPrac ? 'last ' + (lastPrac.title||'session') + ' · ' + new Date(lastPrac.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : 'no sessions yet') + '</div></div>' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:.6rem .75rem"><div style="font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Repertoire</div><div style="font-size:1.05rem;font-weight:600">' + repCount + ' song' + (repCount===1?'':'s') + '</div><div style="font-size:.7rem;color:var(--muted)">' + repReady + ' ready · ' + repPolishing + ' polishing · ' + repLearning + ' learning</div></div>' +
+          (lastNote ? '<div style="background:rgba(201,145,26,.06);border:1px solid rgba(201,145,26,.25);border-radius:6px;padding:.6rem .75rem;grid-column:1/-1"><div style="font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">Last note</div><div style="font-size:.82rem;color:var(--text);line-height:1.5;margin-top:.15rem">' + (lastNote.text||'').replace(/</g,'&lt;') + '</div><div style="font-size:.68rem;color:var(--muted);margin-top:.15rem">' + new Date(lastNote.createdAt).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + '</div></div>' : '') +
+        '</div>';
+    }
+
+    box.innerHTML = row + statsHtml +
+      '<div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(201,145,26,.08);border:1px solid rgba(201,145,26,.2);border-radius:6px;font-size:.82rem;color:var(--text)"><span style="color:var(--gold);text-transform:uppercase;font-size:.62rem;letter-spacing:.08em;margin-right:.4rem">Next up:</span>' + nextSuggestion.replace(/</g,'&lt;') + '</div>';
+  } catch(e) {
+    box.innerHTML = '<div style="color:var(--danger);font-size:.85rem">Could not load next class: ' + e.message + '</div>';
+  }
 }
 
 // -- LOAD DASHBOARD FINANCE --
