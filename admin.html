@@ -4974,7 +4974,15 @@ window.loadPracticeSessions = async function(email, idx) {
     container.innerHTML = '<div style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem">Total: <strong style="color:var(--gold)">'+totalMin+' min</strong> across '+sessions.length+' session'+(sessions.length===1?'':'s')+'</div>' +
       sessions.slice(0,20).map(s => {
         const d = s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-        const recHtml = s.recordingUrl ? `<audio controls src="${s.recordingUrl}" style="margin-left:auto;max-width:180px;height:28px"></audio>` : '';
+        let recHtml = '';
+        if (s.recordingUrl) {
+          const safeUrl = s.recordingUrl.replace(/"/g, '"');
+          recHtml = `<div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;flex-wrap:wrap">
+            <audio controls src="${safeUrl}" style="max-width:160px;height:28px"></audio>
+            <a href="${safeUrl}" download target="_blank" class="btn btn-outline btn-sm" style="padding:.15rem .5rem;font-size:.65rem" title="Download">⬇</a>
+            <button class="btn btn-danger btn-sm" style="padding:.15rem .5rem;font-size:.65rem" onclick="window.deletePracticeRecording('${s.id}','${safeUrl}')" title="Delete recording">🗑</button>
+          </div>`;
+        }
         return '<div style="display:flex;gap:.75rem;align-items:baseline;padding:.35rem 0;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)">' +
           '<span style="color:var(--gold);font-weight:500;white-space:nowrap">'+(s.minutes||0)+' min</span>' +
           '<span>'+(s.title||'Practice')+'</span>' +
@@ -4986,6 +4994,32 @@ window.loadPracticeSessions = async function(email, idx) {
     container.innerHTML = '<div style="font-size:.85rem;color:var(--danger)">Could not load practice data: ' + e.message + '</div>';
   }
 }
+
+window.deletePracticeRecording = async function(sessionId, recordingUrl) {
+  if (!confirm('Delete this recording from storage and remove the link from the practice session?')) return;
+  try {
+    const { ref: storageRef, deleteObject } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
+    const storage = window._pstorage || (await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js')).getStorage();
+    // Extract path from URL
+    const url = new URL(recordingUrl);
+    const path = decodeURIComponent(url.pathname.split('/o/')[1]?.split('?')[0] || '');
+    if (path) {
+      await deleteObject(storageRef(storage, path));
+    }
+    // Clear recordingUrl from Firestore
+    await updateDoc(doc(window._db, 'practiceSessions', sessionId), { recordingUrl: null });
+    toast('Recording deleted','success');
+    // Refresh the practice log - find which student panel is open
+    const openBody = document.querySelector('.student-body.open');
+    if (openBody) {
+      const idx = openBody.id.replace('s','');
+      const student = window._students?.[idx];
+      if (student) loadPracticeSessions(student.email, idx);
+    }
+  } catch(e) {
+    toast('Error deleting recording: '+e.message,'error');
+  }
+};
 
 window.addNote = async function(email, idx) {
   const input = document.getElementById(`noteInput-${idx}`);
