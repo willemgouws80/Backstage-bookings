@@ -252,13 +252,6 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
   </div>
 </section>
 
-<section class="section" id="courses">
-  <div class="section-label">Structured Learning</div>
-  <h2 class="section-title">Current <em>Courses</em></h2>
-  <div class="rule"></div>
-  <div id="coursesGrid"><div class="price-loading">Loading courses…</div></div>
-</section>
-
 <div class="pricing-wrap" id="pricing">
   <div class="section">
     <div class="section-label">Private Lessons</div>
@@ -292,6 +285,13 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
     </div>
   </div>
 </div>
+
+<section class="section" id="courses">
+  <div class="section-label">Structured Learning</div>
+  <h2 class="section-title">Current <em>Courses</em></h2>
+  <div class="rule"></div>
+  <div id="coursesGrid"><div class="price-loading">Loading courses…</div></div>
+</section>
 
 <!-- ── TESTIMONIALS ── -->
 <div style="border-top:1px solid var(--border)" id="testimonials">
@@ -338,7 +338,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
           <div class="contact-item"><span class="icon">📍</span><span id="contactLocation">Pretoria East, South Africa</span></div>
           <div class="contact-item"><span class="icon">📞</span><span id="contactPhone">+27 XX XXX XXXX</span></div>
           <div class="contact-item"><span class="icon">✉️</span><span id="contactEmail">info@backstage.co.za</span></div>
-          <div class="contact-item"><span class="icon">⏰</span><span>Mon–Fri 9am–6pm · Sat 9am–2pm</span></div>
+          <div class="contact-item"><span class="icon">⏰</span><span>Mon–Fri 9am–6pm · Sat 9am–12pm</span></div>
         </div>
       </div>
       <div class="form-panel">
@@ -423,7 +423,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
             <div class="order-row"><span id="sumPlan">—</span><span id="sumPrice">—</span></div>
             <div class="order-row"><span id="sumType">—</span><span id="sumSchedule">—</span></div>
           <div class="order-row" id="sumDateRow"><span style="color:var(--muted)">Start Date</span><span id="sumStartDate">—</span></div>
-          <div class="order-row" id="sumVenueRow"><span style="color:var(--muted)">Venue</span><span id="sumVenue">Backstage Worship Studio, Pretoria East</span></div>
+          <div class="order-row" id="sumVenueRow"><span style="color:var(--muted)">Venue</span><span id="sumVenue">Backstage Studio, Garsfontein</span></div>
             <div class="order-row order-total"><span>Total Due</span><span class="tot-amt" id="sumTotal" style="color:var(--muted);font-size:1.2rem">Select a plan above</span></div>
           </div>
           <div class="fg">
@@ -476,7 +476,7 @@ footer p{font-size:.8rem;color:var(--muted);line-height:1.8}
         <div class="success-state" id="successMsg">
           <div class="success-ring">✓</div>
           <h3>You're <em style="color:var(--gold);font-style:italic">booked in!</em></h3>
-          <p>Thank you — your booking is confirmed.<br>Check your email and WhatsApp for lesson details.<br><br>We look forward to seeing you at Backstage.</p>
+          <p>Thank you — your booking is confirmed.<br>Check your email and WhatsApp for lesson details.<br><br><span id="successVenueMsg">We look forward to seeing you at Backstage.</span></p>
         </div>
       </div>
     </div>
@@ -524,7 +524,7 @@ const db  = getFirestore(app);
   await setDoc(ref,{total:(d.total||0)+1,today:d.date===today?(d.today||0)+1:1,date:today,lastPage:location.href,lastVisit:new Date().toISOString(),bySource:bs,lastReferrer:document.referrer||'',lastUtmS:utmS,lastUtmM:utmM,lastUtmC:utmC},{merge:true});
 }catch(e){}})();
 
-window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{} };
+window._S = { step:1, plan:null, planName:'', price:0, isCourse:false, courseData:null, payMethod:'yoco', siteConfig:{}, venueType:'in_person' };
 
 // ── SITE CONFIG ──
 async function loadSiteConfig(retries=3) {
@@ -625,6 +625,16 @@ async function loadSchoolTerms() {
     _schoolTerms = DEFAULT_TERMS_2026;
   }
 }
+
+window.selectVenueType = function(type) {
+  window._S.venueType = type;
+  document.getElementById('venueTypeInPersonLabel').style.borderColor = type === 'in_person' ? 'var(--gold)' : 'var(--border)';
+  document.getElementById('venueTypeOnlineLabel').style.borderColor = type === 'online' ? 'var(--gold)' : 'var(--border)';
+  const addr = document.getElementById('venueAddressBlock');
+  if (addr) addr.innerHTML = type === 'in_person'
+    ? '📍 Venue: Backstage Worship Studio, 473 De Bron Road, Garsfontein. You\'ll receive the full address after registration.'
+    : '💻 Online via Skool.com. You\'ll receive the link after registration.';
+};
 
 window.checkDateAgainstTerms = function() {
   const el = document.getElementById('termWarning');
@@ -758,7 +768,11 @@ async function loadCourses(retries=3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const snap = await getDocs(collection(db,'courses'));
-      snap.forEach(d => courses.push({id:d.id,...d.data()}));
+      snap.forEach(d => {
+        const c = d.data();
+        const status = (c.status || 'active').toLowerCase();
+        if (status !== 'archived') courses.push({id:d.id,...c});
+      });
       break; // success
     } catch(e) {
       console.warn(`Courses attempt ${attempt} failed:`, e.message);
@@ -999,7 +1013,8 @@ window.submitBooking = async () => {
     prefTime: window._S.isCourse ? '' : (timeEl?.value || ''),
     startDate: window._S.isCourse ? '' : document.getElementById('fDate').value,
     notes: document.getElementById('fNotes').value,
-    venue: 'Backstage Worship Studio, Pretoria East',
+    venue: window._S.venueType === 'online' ? 'Online (Skool.com)' : 'Backstage Worship Studio, 473 De Bron Road, Garsfontein',
+    venueType: window._S.venueType,
     payMethod: method,
     status: 'pending',
     payStatus: method === 'yoco' ? 'processing' : (method === 'eft' ? 'pending_eft' : 'pending'),
@@ -1029,16 +1044,29 @@ window.submitBooking = async () => {
     const docRef = await addDoc(collection(db, 'bookings'), booking);
     const bookingId = docRef.id;
 
-    // Auto-create / update student profile
+    // Auto-create / update student profile (combine names for sibling sharing)
     try {
+      const existing = await getDoc(doc(db, 'students', booking.email));
+      let combinedFirst = booking.firstName;
+      let combinedLast = booking.lastName;
+      if (existing.exists()) {
+        const prev = existing.data();
+        const prevNames = new Set([prev.firstName, prev.surname].filter(Boolean));
+        if (prev.firstName && prev.firstName !== booking.firstName) {
+          combinedFirst = [...new Set([prev.firstName, booking.firstName])].join(' & ');
+        }
+        if (prev.surname && prev.surname !== booking.lastName) {
+          combinedLast = [...new Set([prev.surname, booking.lastName])].join(' & ');
+        }
+      }
       await setDoc(doc(db, 'students', booking.email), {
-        firstName: booking.firstName,
-        surname: booking.lastName,
+        firstName: combinedFirst,
+        surname: combinedLast,
         email: booking.email,
         phone: booking.phone,
         ageGroup: booking.ageGroup,
         instrument: booking.instrument,
-        memberSince: new Date().toISOString()
+        memberSince: existing.exists() ? existing.data().memberSince : new Date().toISOString()
       }, { merge: true });
     } catch (e) { /* rules may not allow */ }
 
@@ -1138,7 +1166,9 @@ window.submitBooking = async () => {
       method === 'cash' ? 'Pay cash at first lesson' : 'Pay via card machine at studio';
     document.querySelector('#successMsg p').innerHTML =
       'Thank you — your booking is confirmed.<br><strong style="color:var(--gold)">' + payText + '</strong><br><br>' +
-      'Check your email for confirmation details.<br><br>' +
+      (window._S.venueType === 'online'
+        ? '💻 You\'ll receive the Skool.com link via WhatsApp.<br><br>'
+        : '📍 You\'ll receive the studio address via WhatsApp.<br><br>') +
       'We will confirm your booking via WhatsApp within 24 hours.';
 
     // Send EmailJS confirmation (non-blocking)
@@ -1438,6 +1468,7 @@ function freePickHtml() {
       m += mins;
       if (m >= 60) { h += Math.floor(m/60); m = m % 60; }
     }
+    console.log('DEBUG makeSlots('+mins+') defStart='+defStart+' defEnd='+defEnd+' slots:', slots);
     return slots;
   }
 
@@ -1484,7 +1515,24 @@ function freePickHtml() {
   // Initial render with no day selected
   const initialOptions = allSlots.map(s => `<option value="${s}">${s}</option>`).join('');
 
-  return `<div class="two-col">
+  return `<div style="margin-bottom:1rem">
+    <label style="font-size:.82rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem;display:block">Lesson Type</label>
+    <div style="display:flex;gap:.5rem">
+      <label style="flex:1;padding:.7rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;text-align:center;background:var(--surface2);transition:all .2s" id="venueTypeInPersonLabel" onclick="selectVenueType('in_person')">
+        <input type="radio" name="venueType" value="in_person" checked style="display:none">
+        <span style="font-size:1.2rem">📍</span>
+        <div style="font-size:.85rem;margin-top:.25rem">In Person</div>
+        <div style="font-size:.72rem;color:var(--muted)">Backstage Studio, Garsfontein</div>
+      </label>
+      <label style="flex:1;padding:.7rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;text-align:center;background:var(--surface2);transition:all .2s" id="venueTypeOnlineLabel" onclick="selectVenueType('online')">
+        <input type="radio" name="venueType" value="online" style="display:none">
+        <span style="font-size:1.2rem">💻</span>
+        <div style="font-size:.85rem;margin-top:.25rem">Online</div>
+        <div style="font-size:.72rem;color:var(--muted)">Via Skool.com</div>
+      </label>
+    </div>
+  </div>
+  <div class="two-col">
     <div class="fg"><label>Preferred Day</label>
       <select id="fDay" onchange="updateTimeSlots()">
         <option value="">Select day</option>
@@ -1499,7 +1547,7 @@ function freePickHtml() {
       </select>
     </div>
   </div>
-  <div style="font-size:.85rem;color:var(--muted);margin-top:.3rem;padding:.4rem 0">📍 Venue: Backstage Worship Studio, Pretoria East. You&rsquo;ll receive the full address after registration.</div>`;
+  <div id="venueAddressBlock" style="font-size:.85rem;color:var(--muted);margin-top:.3rem;padding:.4rem 0">📍 Venue: Backstage Worship Studio, 473 De Bron Road, Garsfontein. You&rsquo;ll receive the full address after registration.</div>`;
 }
 
 // Called when day changes — refreshes time slot availability
@@ -1525,6 +1573,7 @@ function updateTimeSlots() {
       slots.push(`${s} – ${e}`);
       m += mins; if (m >= 60) { h += Math.floor(m/60); m = m % 60; }
     }
+    console.log('DEBUG updateTimeSlots makeSlots('+mins+') defStart='+defStart+' defEnd='+defEnd+' slots:', JSON.stringify(slots));
     return slots;
   }
 
@@ -1580,6 +1629,7 @@ function buildSummary() {
   const sumDateEl = document.getElementById('sumStartDate');
   const fDateEl   = document.getElementById('fDate');
   if (sumDateEl && fDateEl && !S.isCourse) sumDateEl.textContent = fDateEl.value || '—';
+  document.getElementById('sumVenue').textContent = S.venueType === 'online' ? '💻 Online (Skool.com)' : '📍 Backstage Studio, 473 De Bron Road, Garsfontein';
   document.getElementById('sumTotal').textContent    = S.price ? `R ${Number(S.price).toLocaleString()}` : 'R 0';
   const _amt = S.price ? 'R '+Number(S.price).toLocaleString() : 'R 0';
   const _c = document.getElementById('cashAmountDue'); if(_c) _c.textContent = _amt;
