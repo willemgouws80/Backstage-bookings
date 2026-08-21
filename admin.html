@@ -2549,6 +2549,8 @@ function bookingRow(b) {
 window._allBookings = [];
 window.filterBookings = function(filter) {
   let list = window._bookings||[];
+  const archivedIds = new Set((window._courses||[]).filter(c=>c.status==='archived').map(c=>c.id));
+  list = list.filter(b => !b.courseId || !archivedIds.has(b.courseId));
   if (filter==='paid') list = list.filter(b=>b.paid);
   else if (filter==='unpaid') list = list.filter(b=>!b.paid);
   else if (filter==='type_all') { /* no type filter */ }
@@ -2571,11 +2573,13 @@ window._highlightTypeFilter = function(filter) {
 
 window.searchBookings = function(query) {
   const q = query.toLowerCase();
+  const archivedIds = new Set((window._courses||[]).filter(c=>c.status==='archived').map(c=>c.id));
   const filtered = (window._bookings||[]).filter(b =>
-    (`${b.firstName||''} ${b.lastName||''}`).toLowerCase().includes(q) ||
-    (b.email||'').toLowerCase().includes(q) ||
-    (b.plan||'').toLowerCase().includes(q) ||
-    (b.phone||'').includes(q)
+    (!b.courseId || !archivedIds.has(b.courseId)) &&
+    ((`${b.firstName||''} ${b.lastName||''}`).toLowerCase().includes(q) ||
+     (b.email||'').toLowerCase().includes(q) ||
+     (b.plan||'').toLowerCase().includes(q) ||
+     (b.phone||'').includes(q))
   );
   renderBookingsList(filtered);
 };
