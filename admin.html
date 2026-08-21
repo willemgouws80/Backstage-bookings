@@ -4740,10 +4740,15 @@ async function loadStudents() {
     bookSnap.forEach(d => bookings.push({id:d.id,...d.data()}));
     window._lastStudentBookingCount = bookSnap.size;
 
+    const studentDocMap = {};
     const photoMap = {};
     studSnap.forEach(d => {
       const data = d.data();
-      if (data.email) photoMap[data.email.toLowerCase().trim()] = data.photoURL || '';
+      const emailKey = (data.email||'').toLowerCase().trim();
+      if (emailKey) {
+        photoMap[emailKey] = data.photoURL || '';
+        studentDocMap[emailKey] = data;
+      }
     });
 
     // Build archived course IDs for active computation
@@ -4760,11 +4765,13 @@ async function loadStudents() {
       const compositeKey = emailKey + '|' + nameKey;
       
       if (!studentMap[compositeKey]) {
+        const docData = studentDocMap[emailKey] || {};
         studentMap[compositeKey] = {
           name: name || b.firstName || emailKey,
           email: b.email||'',
           phone: b.phone||'',
           photoURL: photoMap[emailKey] || '',
+          lastLoginAt: docData.lastLoginAt || null,
           bookings: [],
           hasPrivate: false,
           hasCourse: false,
@@ -4855,7 +4862,8 @@ function renderStudentsList(students) {
             <div class="student-meta">
               ${s.email} · ${s.phone||'—'} ·
               ${s.bookings.length} booking${s.bookings.length===1?'':'s'} ·
-              Last: ${lastBook?.plan||'—'}
+              Last: ${lastBook?.plan||'—'} ·
+              ${s.lastLoginAt ? `Portal: ${new Date(s.lastLoginAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}` : 'Portal: never'}
             </div>
           </div>
         </div>
