@@ -2971,6 +2971,18 @@ window.deleteCourse = async function(id) {
   loadDashboard();
 };
 
+window.toggleCourseStatus = async function(id) {
+  const c = (window._courses||[]).find(x=>x.id===id);
+  if (!c) return;
+  const nextStatus = c.status === 'archived' ? 'active' : 'archived';
+  if (!confirm(`${nextStatus === 'archived' ? 'Archive' : 'Activate'} "${c.title}"?`)) return;
+  try {
+    await updateDoc(doc(db,'courses',id), { status: nextStatus, updatedAt: new Date().toISOString() });
+    toast(nextStatus === 'archived' ? 'Course archived' : 'Course activated','success');
+    loadDashboard();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
 window.backfillCourseCounts = async function() {
   const btn = event.target; btn.disabled = true; btn.textContent = 'Counting...';
   try {
@@ -3018,6 +3030,7 @@ function renderCoursesList(courses) {
     }
     return '📅 Free choice';
   };
+  const isArchived = c => c.status === 'archived';
   document.getElementById('coursesList').innerHTML = courses.length
     ? courses.map(c=>`
       <div class="list-item">
@@ -3035,6 +3048,7 @@ function renderCoursesList(courses) {
         </div>
         <div class="li-actions">
           <button class="btn btn-outline btn-sm" onclick="window.editCourse('${c.id}')">Edit</button>
+          <button class="btn btn-sm ${isArchived(c) ? 'btn-gold' : 'btn-outline'}" onclick="window.toggleCourseStatus('${c.id}')">${isArchived(c) ? 'Activate' : 'Archive'}</button>
           <button class="btn btn-danger btn-sm" onclick="window.deleteCourse('${c.id}')">Delete</button>
         </div>
       </div>`).join('')
