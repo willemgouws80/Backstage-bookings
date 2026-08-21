@@ -719,7 +719,12 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">
           <span style="font-size:.82rem;color:var(--muted)">Duration: <strong id="practiceLogDuration">0 min</strong></span>
         </div>
-        <button class="btn btn-gold" onclick="logPracticeSession()">✓ Log Session</button>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem">
+          <button class="btn btn-gold" onclick="logPracticeSession()">✓ Log Session</button>
+          <button class="btn btn-outline" id="practiceRecordBtn" onclick="togglePracticeRecording()">🎙 Record</button>
+          <span id="practiceRecordStatus" style="align-self:center;font-size:.75rem;color:var(--muted)"></span>
+        </div>
+        <div id="practiceRecordWave" style="display:none;height:60px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:4px;position:relative;margin-bottom:.5rem"></div>
       </div>
       <div class="card">
         <div class="card-title">History</div>
@@ -976,6 +981,7 @@ const storage = getStorage(app);
 
 window._auth = auth;
 window._db = db;
+window._pstorage = storage;
 
 let _currentUser = null;
 let _bookings = [];
@@ -1655,23 +1661,153 @@ window.resetPracticeTimer = function() {
   document.getElementById('practiceLogDuration').textContent = '0 min';
 };
 
+// ── PRACTICE RECORDING ──
+let _practiceMediaRecorder = null;
+let _practiceAudioChunks = [];
+let _practiceRecordStream = null;
+let _practiceRecordStartTime = 0;
+let _practiceRecordTimer = null;
+const MAX_RECORD_SECONDS = 120; // 2 minutes max
+
+function drawWaveform(canvas, chunks) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth;
+  const h = canvas.height = canvas.offsetHeight;
+  ctx.clearRect(0, 0, w, h);
+  if (!chunks.length) return;
+  // Simple visualization - draw bars
+  const barWidth = 3;
+  const gap = 1;
+  const numBars = Math.floor(w / (barWidth + gap));
+  const step = Math.max(1, Math.floor(chunks.length / numBars));
+  ctx.fillStyle = '#c9911a';
+  for (let i = 0; i < numBars; i++) {
+    const idx = Math.min(i * step, chunks.length - 1);
+    const val = Math.abs(chunks[idx]) || 0;
+    const barHeight = Math.max(2, (val / 128) * h * 0.8);
+    const x = i * (barWidth + gap);
+    ctx.fillRect(x, (h - barHeight) / 2, barWidth, barHeight);
+  }
+}
+
+window.togglePracticeRecording = async function() {
+  const btn = document.getElementById('practiceRecordBtn');
+  const status = document.getElementById('practiceRecordStatus');
+  const waveDiv = document.getElementById('practiceRecordWave');
+
+  if (_practiceMediaRecorder && _practiceMediaRecorder.state === 'recording') {
+    // Stop recording
+    _practiceMediaRecorder.stop();
+    clearInterval(_practiceRecordTimer);
+    btn.textContent = '🎙 Record';
+    btn.classList.remove('btn-danger');
+    status.textContent = 'Processing…';
+    return;
+  }
+
+  // Start recording
+  try {
+    _practiceRecordStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    _practiceMediaRecorder = new MediaRecorder(_practiceRecordStream, { mimeType: 'audio/ogg;codecs=opus' });
+    _practiceAudioChunks = [];
+
+    _practiceMediaRecorder.ondataavailable = e => { if (e.data.size) _practiceAudioChunks.push(e.data); };
+
+    _practiceMediaRecorder.onstop = async () => {
+      // Handled in logPracticeSession when they click Log Session
+      status.textContent = 'Recorded — click Log Session to save';
+    };
+
+    _practiceMediaRecorder.start(100); // collect data every 100ms
+    _practiceRecordStartTime = Date.now();
+
+    // Visual timer
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    waveDiv.innerHTML = '';
+    waveDiv.appendChild(canvas);
+    waveDiv.style.display = 'block';
+
+    _practiceRecordTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - _practiceRecordStartTime) / 1000);
+      const remaining = MAX_RECORD_SECONDS - elapsed;
+      if (remaining <= 0) {
+        _practiceMediaRecorder.stop();
+        clearInterval(_practiceRecordTimer);
+        btn.textContent = '🎙 Record';
+        btn.classList.remove('btn-danger');
+        status.textContent = 'Max 2 min reached';
+        return;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      status.textContent = `Recording… ${m}:${s.toString().padStart(2,'0')}`;
+      // Draw simple waveform from chunks (dummy visualization)
+      if (_practiceAudioChunks.length) {
+        // Convert last blob to array for visualization (simplified)
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.offsetWidth;
+        const h = canvas.height = canvas.offsetHeight;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#c9911a';
+        const bars = 40;
+        for (let i = 0; i < bars; i++) {
+          const hgt = Math.random() * h * 0.6 + 4;
+          ctx.fillRect(i * (w/bars) + 2, (h - hgt)/2, 3, hgt);
+        }
+      }
+    }, 200);
+
+    btn.textContent = '⏹ Stop';
+    btn.classList.add('btn-danger');
+  } catch(e) {
+    toast('Microphone access denied: ' + e.message, 'error');
+    status.textContent = 'Error: ' + e.message;
+  }
+};
+
 window.logPracticeSession = async function() {
   const title = document.getElementById('practiceTitle').value.trim();
   if (!title) { alert('Please enter what you practiced.'); return; }
   const minutes = _practiceTimerSeconds > 0 ? Math.round(_practiceTimerSeconds / 60) : 0;
   const notes = document.getElementById('practiceNotes').value.trim();
+  
+  let recordingUrl = null;
+  if (_practiceAudioChunks.length) {
+    try {
+      const { uploadBytes, getDownloadURL, ref } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
+      const blob = new Blob(_practiceAudioChunks, { type: 'audio/ogg;codecs=opus' });
+      const timestamp = Date.now();
+      const safeEmail = _currentUser.email.replace(/[^a-z0-9]/gi, '_');
+      const storageRef = ref(window._pstorage, `recordings/${safeEmail}/${timestamp}.ogg`);
+      await uploadBytes(storageRef, blob);
+      recordingUrl = await getDownloadURL(storageRef);
+      // Clean up
+      _practiceAudioChunks = [];
+      if (_practiceRecordStream) { _practiceRecordStream.getTracks().forEach(t => t.stop()); _practiceRecordStream = null; }
+      document.getElementById('practiceRecordBtn').textContent = '🎙 Record';
+      document.getElementById('practiceRecordBtn').classList.remove('btn-danger');
+      document.getElementById('practiceRecordStatus').textContent = '';
+      document.getElementById('practiceRecordWave').style.display = 'none';
+    } catch(e) {
+      toast('Recording upload failed: ' + e.message, 'error');
+    }
+  }
+
   try {
     await addDoc(collection(db, 'practiceSessions'), {
       email: _currentUser.email,
       title,
       minutes: Math.max(minutes, 1),
       notes,
+      recordingUrl,
       createdAt: new Date().toISOString(),
     });
     document.getElementById('practiceTitle').value = '';
     document.getElementById('practiceNotes').value = '';
     resetPracticeTimer();
-    toast('Practice session logged!');
+    toast(recordingUrl ? 'Practice session + recording saved!' : 'Practice session logged!');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 };
 
