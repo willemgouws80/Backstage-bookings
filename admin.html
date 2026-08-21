@@ -3031,8 +3031,10 @@ function renderCoursesList(courses) {
     return '📅 Free choice';
   };
   const isArchived = c => c.status === 'archived';
-  document.getElementById('coursesList').innerHTML = courses.length
-    ? courses.map(c=>`
+  const filter = window._courseFilter || 'active';
+  const filtered = courses.filter(c => filter === 'all' || (filter === 'active' && !isArchived(c)) || (filter === 'archived' && isArchived(c)));
+  document.getElementById('coursesList').innerHTML = filtered.length
+    ? filtered.map(c=>`
       <div class="list-item">
         <div class="li-content">
           <div class="li-title">${c.title}</div>
@@ -3519,7 +3521,7 @@ window.deleteAnnouncement = async function(id) {
 
 // Expose for panel switching
 window._loaders = Object.assign(
-  { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:loadDashboard, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:()=>{if(window.loadAvailability)window.loadAvailability();loadCalendar()}, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms, whatsapp:waInit, finance:loadFinance, bookkeeping:window.bkInit },
+  { dashboard:()=>{loadDashboard();loadPageViews();}, bookings:loadDashboard, courses:()=>{loadDashboard(); window.filterCourses('active');}, pricing:loadPricing, promo:loadPromo, content:loadContent, payments:loadPayments, contact:loadContact, alerts:loadAlerts, quotes:loadQuotes, invoices:loadInvoices, calendar:()=>{if(window.loadAvailability)window.loadAvailability();loadCalendar()}, students:loadStudents, attendance:loadAttendancePanel, terms:loadTerms, whatsapp:waInit, finance:loadFinance, bookkeeping:window.bkInit },
   window._loaders || {}
 );
 
