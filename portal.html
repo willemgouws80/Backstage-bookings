@@ -1717,8 +1717,25 @@ window.togglePracticeRecording = async function() {
   // Start recording
   try {
     _practiceRecordStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-    _practiceMediaRecorder = new MediaRecorder(_practiceRecordStream, { mimeType: 'audio/ogg;codecs=opus' });
+
+    // Detect supported mimeType with fallback
+    const mimeTypes = [
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      ''
+    ];
+    let mimeType = '';
+    for (const mt of mimeTypes) {
+      if (!mt || MediaRecorder.isTypeSupported(mt)) { mimeType = mt; break; }
+    }
+    const recorderOptions = mimeType ? { mimeType } : {};
+
+    _practiceMediaRecorder = new MediaRecorder(_practiceRecordStream, recorderOptions);
     _practiceAudioChunks = [];
+    _practiceMimeType = mimeType || 'audio/ogg'; // store for upload
 
     _practiceMediaRecorder.ondataavailable = e => { if (e.data.size) _practiceAudioChunks.push(e.data); };
 
@@ -1796,14 +1813,17 @@ window.logPracticeSession = async function() {
   if (_practiceAudioChunks.length) {
     try {
       const { uploadBytes, getDownloadURL, ref } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
-      const blob = new Blob(_practiceAudioChunks, { type: 'audio/ogg;codecs=opus' });
+      const mimeType = _practiceMimeType || 'audio/ogg';
+      const ext = mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'm4a' : 'ogg';
+      const blob = new Blob(_practiceAudioChunks, { type: mimeType });
       const timestamp = Date.now();
       const safeEmail = _currentUser.email.replace(/[^a-z0-9]/gi, '_');
-      const storageRef = ref(window._pstorage, `recordings/${safeEmail}/${timestamp}.ogg`);
+      const storageRef = ref(window._pstorage, `recordings/${safeEmail}/${timestamp}.${ext}`);
       await uploadBytes(storageRef, blob);
       recordingUrl = await getDownloadURL(storageRef);
       // Clean up
       _practiceAudioChunks = [];
+      _practiceMimeType = null;
       if (_practiceRecordStream) { _practiceRecordStream.getTracks().forEach(t => t.stop()); _practiceRecordStream = null; }
       document.getElementById('practiceRecordBtn').textContent = '🎙 Record';
       document.getElementById('practiceRecordBtn').classList.remove('btn-danger');
