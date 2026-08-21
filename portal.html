@@ -1724,18 +1724,17 @@ window.togglePracticeRecording = async function() {
       'audio/ogg',
       'audio/webm;codecs=opus',
       'audio/webm',
-      'audio/mp4',
-      ''
+      'audio/mp4'
     ];
     let mimeType = '';
     for (const mt of mimeTypes) {
-      if (!mt || MediaRecorder.isTypeSupported(mt)) { mimeType = mt; break; }
+      if (MediaRecorder.isTypeSupported(mt)) { mimeType = mt; break; }
     }
     const recorderOptions = mimeType ? { mimeType } : {};
 
     _practiceMediaRecorder = new MediaRecorder(_practiceRecordStream, recorderOptions);
     _practiceAudioChunks = [];
-    _practiceMimeType = mimeType || 'audio/ogg'; // store for upload
+    _practiceMimeType = mimeType; // store actual detected type (or undefined for browser default)
 
     _practiceMediaRecorder.ondataavailable = e => { if (e.data.size) _practiceAudioChunks.push(e.data); };
 
@@ -1813,9 +1812,21 @@ window.logPracticeSession = async function() {
   if (_practiceAudioChunks.length) {
     try {
       const { uploadBytes, getDownloadURL, ref } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
-      const mimeType = _practiceMimeType || 'audio/ogg';
-      const ext = mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'm4a' : 'ogg';
-      const blob = new Blob(_practiceAudioChunks, { type: mimeType });
+      let mimeType = _practiceMimeType;
+      let ext = 'ogg';
+      if (mimeType) {
+        if (mimeType.includes('webm')) ext = 'webm';
+        else if (mimeType.includes('mp4') || mimeType.includes('m4a')) ext = 'm4a';
+      } else {
+        // Browser chose the type - detect from first chunk
+        const firstChunk = _practiceAudioChunks[0];
+        if (firstChunk && firstChunk.type) {
+          mimeType = firstChunk.type;
+          if (mimeType.includes('webm')) ext = 'webm';
+          else if (mimeType.includes('mp4') || mimeType.includes('m4a')) ext = 'm4a';
+        }
+      }
+      const blob = new Blob(_practiceAudioChunks, { type: mimeType || undefined });
       const timestamp = Date.now();
       const safeEmail = _currentUser.email.replace(/[^a-z0-9]/gi, '_');
       const storageRef = ref(window._pstorage, `recordings/${safeEmail}/${timestamp}.${ext}`);
