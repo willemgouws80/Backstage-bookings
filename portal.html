@@ -3565,11 +3565,26 @@ const BB_CHORD_FREQS = {
 function startBossListen() {
   if (_bbState.listenCtx) return; // Already running
   
+  // Require HTTPS for getUserMedia
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    alert('🎤 Listen Mode requires HTTPS. Please use the live site (backstage-music.web.app).');
+    _bbState.listenMode = false;
+    document.getElementById('bbListenMode').checked = false;
+    toggleBossListenMode();
+    return;
+  }
+  
   navigator.mediaDevices.getUserMedia({ 
     audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
   }).then(stream => {
     _bbState.listenStream = stream;
     _bbState.listenCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Resume audio context if suspended (browser policy)
+    if (_bbState.listenCtx.state === 'suspended') {
+      _bbState.listenCtx.resume();
+    }
+    
     const src = _bbState.listenCtx.createMediaStreamSource(stream);
     _bbState.listenAnalyser = _bbState.listenCtx.createAnalyser();
     _bbState.listenAnalyser.fftSize = 8192;
@@ -3583,6 +3598,17 @@ function startBossListen() {
     _bbListenLoop();
   }).catch(e => {
     console.warn('Boss listen mic denied:', e);
+    let msg = 'Microphone access denied';
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+      msg = 'Microphone permission denied. Click the 🔒 icon in address bar → Allow microphone.';
+    } else if (e.name === 'NotFoundError') {
+      msg = 'No microphone found. Connect a microphone and try again.';
+    } else if (e.name === 'NotReadableError') {
+      msg = 'Microphone is in use by another app. Close other apps using the mic.';
+    } else {
+      msg += ': ' + e.message;
+    }
+    alert('🎤 ' + msg);
     _bbState.listenMode = false;
     document.getElementById('bbListenMode').checked = false;
     toggleBossListenMode();
