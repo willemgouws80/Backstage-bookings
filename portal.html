@@ -469,6 +469,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <div class="nav-item" onclick="showPanel('tuner',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg></span> Tuner</div>
     <div class="nav-item" onclick="showPanel('repertoire',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></svg></span> Repertoire</div>
     <div class="nav-item" onclick="showPanel('achievements',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 22V16"/><path d="M14 22V16"/><path d="M12 16c-3 0-5-3-5-8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3c0 5-2 8-5 8z"/></svg></span> Achievements</div>
+    <div class="nav-item" onclick="showPanel('boss-battle',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6.5.7-4.8 4.5 1.1 6.5L12 16.5 6.2 19.7l1.1-6.5L2.5 8.7 9 8z"/><path d="M12 22l-3-6-6.5-.7 4.8-4.5-1.1-6.5L12 7.5 17.8 4.3l-1.1 6.5L21.5 15.3 15 15.3z"/></svg></span> Boss Battle</div>
     <span class="sidebar-label">Info</span>
     <div class="nav-item" onclick="showPanel('first-lesson',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> First Lesson</div>
     <div class="nav-item" onclick="showPanel('agreement',this)" id="nav-agreement"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Tuition Agreement <span id="agreementNavBadge" style="display:none;background:var(--danger);color:#fff;font-size:.6rem;padding:.15rem .45rem;border-radius:8px;margin-left:auto">!</span></div>
@@ -902,6 +903,58 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       <div class="card">
         <div class="card-title">Badges</div>
         <div id="badgesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.75rem"></div>
+      </div>
+    </div>
+
+    <!-- BOSS BATTLE -->
+    <div class="panel" id="panel-boss-battle">
+      <div class="page-header"><h1><span class="panel-icon animated"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 6 6.5.7-4.8 4.5 1.1 6.5L12 16.5 6.2 19.7l1.1-6.5L2.5 8.7 9 8z"/><path d="M12 22l-3-6-6.5-.7 4.8-4.5-1.1-6.5L12 7.5 17.8 4.3l-1.1 6.5L21.5 15.3 15 15.3z"/></svg></span>Boss <em>Battle</em></h1></div>
+      <div class="card" style="text-align:center">
+        <div id="bbIntro" style="display:block">
+          <div style="font-size:4rem;margin:.5rem 0" id="bbBossEmoji">🐉</div>
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);margin:.5rem 0" id="bbBossName">Dragon</h2>
+          <p style="color:var(--muted);margin-bottom:1.5rem;max-width:300px;margin-left:auto;margin-right:auto">Defeat the boss by playing the right chords! Each level gets trickier.</p>
+          <div style="display:flex;justify-content:center;gap:.5rem;margin-bottom:1rem" id="bbHeartsDisplay">
+            <span class="bb-heart" data-i="0">❤️</span>
+            <span class="bb-heart" data-i="1">❤️</span>
+            <span class="bb-heart" data-i="2">❤️</span>
+          </div>
+          <button class="btn btn-gold" onclick="startBossBattle()">⚔️ Start Battle</button>
+        </div>
+        <div id="bbGame" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="font-size:3rem" id="bbBossEmojiGame">🐉</div>
+            <div style="text-align:right">
+              <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Level <span id="bbLevelNum">1</span></div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold)" id="bbBossNameGame">Dragon</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:center;gap:.5rem;margin-bottom:1.5rem" id="bbHeartsGame">
+            <span class="bb-heart" data-i="0">❤️</span>
+            <span class="bb-heart" data-i="1">❤️</span>
+            <span class="bb-heart" data-i="2">❤️</span>
+          </div>
+          <div class="card" style="background:rgba(201,145,26,.08);border-color:rgba(201,145,26,.3);margin-bottom:1.5rem">
+            <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Target Sequence</div>
+            <div style="display:flex;justify-content:center;gap:.75rem;flex-wrap:wrap" id="bbTargetChords"></div>
+          </div>
+          <div style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;min-height:1.5rem" id="bbStatus">Get ready…</div>
+          <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap" id="bbChordButtons"></div>
+          <button class="btn btn-outline" onclick="resetBossBattle()" style="margin-top:1.5rem">❌ Quit Battle</button>
+        </div>
+        <div id="bbVictory" style="display:none;text-align:center">
+          <div style="font-size:5rem;margin:1rem 0">🏆</div>
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;color:var(--gold);margin:.5rem 0">Victory!</h2>
+          <p style="color:var(--muted);margin-bottom:1.5rem">You defeated the <span id="bbDefeatedBoss">Dragon</span>!</p>
+          <button class="btn btn-gold" onclick="nextBossLevel()">➡️ Next Level</button>
+          <button class="btn btn-outline" onclick="resetBossBattle()" style="margin-left:.5rem">🔄 Play Again</button>
+        </div>
+        <div id="bbDefeat" style="display:none;text-align:center">
+          <div style="font-size:5rem;margin:1rem 0">💀</div>
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;color:var(--danger);margin:.5rem 0">Defeated…</h2>
+          <p style="color:var(--muted);margin-bottom:1.5rem">The <span id="bbDefeatedByBoss">Dragon</span> was too strong.</p>
+          <button class="btn btn-gold" onclick="resetBossBattle()">🔄 Try Again</button>
+        </div>
       </div>
     </div>
 
@@ -3201,6 +3254,344 @@ function renderAchievements() {
   if (earned.length) localStorage.setItem('bw_earned_badges', JSON.stringify([...new Set(earned)]));
   if (newBadgeEarned) setTimeout(showConfetti, 100);
 }
+
+// ═════════════════════════════════════════════════════════════════════
+// BOSS BATTLE GAME
+// ═════════════════════════════════════════════════════════════════════
+
+const BB_BOSSES = [
+  { name: 'Dragon', emoji: '🐉', color: '#e74c3c', levels: 8 },
+  { name: 'Goblin King', emoji: '👑', color: '#8e44ad', levels: 6 },
+  { name: 'Lava Golem', emoji: '🌋', color: '#e67e22', levels: 6 },
+  { name: 'Shadow Wraith', emoji: '👻', color: '#34495e', levels: 5 },
+  { name: 'Ice Queen', emoji: '❄️', color: '#3498db', levels: 5 },
+  { name: 'Cyber Hydra', emoji: '🤖', color: '#2c3e50', levels: 4 },
+];
+
+const BB_CHORDS = [
+  { name: 'A', fingers: '🎸', color: '#e74c3c' },
+  { name: 'D', fingers: '🎸', color: '#f39c12' },
+  { name: 'E', fingers: '🎸', color: '#2ecc71' },
+  { name: 'G', fingers: '🎸', color: '#3498db' },
+  { name: 'C', fingers: '🎸', color: '#9b59b6' },
+  { name: 'Am', fingers: '🎸', color: '#e67e22' },
+  { name: 'Em', fingers: '🎸', color: '#1abc9c' },
+  { name: 'Dm', fingers: '🎸', color: '#34495e' },
+];
+
+let _bbState = {
+  bossIndex: 0,
+  level: 1,
+  maxHearts: 3,
+  hearts: 3,
+  targetSequence: [],
+  playerSequence: [],
+  awaitingInput: false,
+  rhythmPattern: [],
+  rhythmStep: 0,
+  mode: 'sequence', // 'sequence' | 'rhythm'
+  rhythmInterval: null,
+};
+
+function getBoss() { return BB_BOSSES[_bbState.bossIndex] || BB_BOSSES[0]; }
+
+function generateSequence(level) {
+  const boss = getBoss();
+  const chords = BB_CHORDS.slice(0, Math.min(3 + Math.floor(level / 2), BB_CHORDS.length));
+  
+  if (level <= 3) {
+    // Levels 1-3: Simple sequence (A, A→D, A→D→E)
+    return chords.slice(0, level).map(c => c.name);
+  } else if (level <= 5) {
+    // Levels 4-5: Longer sequence, more chords
+    const len = 3 + Math.floor((level - 3) / 2);
+    const seq = [];
+    for (let i = 0; i < len; i++) {
+      seq.push(chords[Math.floor(Math.random() * chords.length)].name);
+    }
+    return seq;
+  } else if (level <= 7) {
+    // Levels 6-7: Rhythm mode - player copies a rhythm
+    _bbState.mode = 'rhythm';
+    const len = 4 + Math.floor((level - 6) / 2);
+    const pattern = [];
+    for (let i = 0; i < len; i++) {
+      pattern.push({ chord: chords[Math.floor(Math.random() * chords.length)].name, duration: Math.random() > 0.5 ? 'short' : 'long' });
+    }
+    return pattern;
+  } else {
+    // Level 8+: Complex rhythm with more chords
+    _bbState.mode = 'rhythm';
+    const len = 5;
+    const pattern = [];
+    for (let i = 0; i < len; i++) {
+      pattern.push({ chord: chords[Math.floor(Math.random() * Math.min(chords.length, 5))].name, duration: ['short','short','long'][Math.floor(Math.random()*3)] });
+    }
+    return pattern;
+  }
+}
+
+function renderTargetChords() {
+  const container = document.getElementById('bbTargetChords');
+  const seq = _bbState.targetSequence;
+  if (_bbState.mode === 'rhythm') {
+    container.innerHTML = seq.map((s, i) => `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;opacity:${_bbState.rhythmStep === i ? '1' : _bbState.rhythmStep > i ? '.4' : '.7'}">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--gold)">${s.chord}</div>
+        <div style="width:40px;height:8px;background:${s.duration==='long' ? 'var(--gold)' : 'var(--muted)'};border-radius:4px;transition:all .3s"></div>
+        <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase">${s.duration==='long' ? 'HOLD' : 'TAP'}</div>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = seq.map((chord, i) => `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem;opacity:${_bbState.playerSequence.length > i ? (_bbState.playerSequence[i]===chord ? '1' : '.3') : _bbState.playerSequence.length === i ? '1' : '.5'}">
+        <div style="font-size:2rem;font-weight:700;color:${_bbState.playerSequence.length > i && _bbState.playerSequence[i]!==chord ? 'var(--danger)' : 'var(--gold)'}">${chord}</div>
+        <div style="width:12px;height:12px;border-radius:50%;background:${_bbState.playerSequence.length > i ? (_bbState.playerSequence[i]===chord ? 'var(--success)' : 'var(--danger)') : _bbState.playerSequence.length === i ? 'var(--gold)' : 'var(--border)'};transition:all .2s"></div>
+      </div>
+    `).join('');
+  }
+}
+
+function renderChordButtons() {
+  const container = document.getElementById('bbChordButtons');
+  const availableChords = BB_CHORDS.slice(0, Math.min(3 + Math.floor(_bbState.level / 2), BB_CHORDS.length));
+  container.innerHTML = availableChords.map(c => `
+    <button class="btn bb-chord-btn ${c.name.length>1?'':'bb-wide'}" onclick="bbPlayChord('${c.name}')" style="background:${c.color}22;border-color:${c.color}88;color:${c.color};font-weight:600;min-width:60px;padding:.75rem 1rem" ${_bbState.awaitingInput?'':'disabled'}>
+      ${c.name}
+    </button>
+  `).join('');
+}
+
+function startBossBattle() {
+  const boss = getBoss();
+  _bbState = {
+    bossIndex: _bbState.bossIndex,
+    level: 1,
+    maxHearts: 3,
+    hearts: 3,
+    targetSequence: [],
+    playerSequence: [],
+    awaitingInput: false,
+    rhythmPattern: [],
+    rhythmStep: 0,
+    mode: 'sequence',
+    rhythmInterval: null,
+  };
+  document.getElementById('bbIntro').style.display = 'none';
+  document.getElementById('bbVictory').style.display = 'none';
+  document.getElementById('bbDefeat').style.display = 'none';
+  document.getElementById('bbGame').style.display = 'block';
+  updateBossUI();
+  nextLevel();
+}
+
+function updateBossUI() {
+  const boss = getBoss();
+  document.getElementById('bbBossEmojiGame').textContent = boss.emoji;
+  document.getElementById('bbBossNameGame').textContent = boss.name;
+  document.getElementById('bbLevelNum').textContent = _bbState.level;
+  document.getElementById('bbBossEmoji').textContent = boss.emoji;
+  document.getElementById('bbBossName').textContent = boss.name;
+  
+  // Update hearts
+  for (let i = 0; i < 3; i++) {
+    const h = document.querySelector(`#bbHeartsGame .bb-heart[data-i="${i}"]`);
+    if (h) h.textContent = i < _bbState.hearts ? '❤️' : '🤍';
+    const h2 = document.querySelector(`#bbHeartsDisplay .bb-heart[data-i="${i}"]`);
+    if (h2) h2.textContent = i < _bbState.hearts ? '❤️' : '🤍';
+  }
+  renderTargetChords();
+  renderChordButtons();
+}
+
+function nextLevel() {
+  if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
+  _bbState.targetSequence = generateSequence(_bbState.level);
+  _bbState.playerSequence = [];
+  _bbState.awaitingInput = true;
+  _bbState.rhythmStep = 0;
+  _bbState.mode = _bbState.targetSequence[0]?.chord ? 'rhythm' : 'sequence';
+  
+  const boss = getBoss();
+  document.getElementById('bbStatus').textContent = _bbState.mode === 'rhythm' 
+    ? `Watch the rhythm, then copy it!`
+    : `Play the sequence: ${_bbState.targetSequence.join(' → ')}`;
+  
+  updateBossUI();
+  
+  if (_bbState.mode === 'rhythm') {
+    playRhythmDemo();
+  }
+}
+
+function playRhythmDemo() {
+  const seq = _bbState.targetSequence;
+  _bbState.awaitingInput = false;
+  renderChordButtons(); // disable buttons
+  document.getElementById('bbStatus').textContent = 'Watch carefully…';
+  
+  let step = 0;
+  _bbState.rhythmStep = -1; // highlighting current
+  
+  function playNext() {
+    if (step >= seq.length) {
+      _bbState.awaitingInput = true;
+      _bbState.rhythmStep = 0;
+      _bbState.playerSequence = [];
+      renderChordButtons();
+      document.getElementById('bbStatus').textContent = 'Your turn! Copy the rhythm.';
+      renderTargetChords();
+      return;
+    }
+    const s = seq[step];
+    _bbState.rhythmStep = step;
+    renderTargetChords();
+    playChordSound(s.chord);
+    const delay = s.duration === 'long' ? 800 : 350;
+    step++;
+    setTimeout(playNext, delay + 150);
+  }
+  playNext();
+}
+
+function bbPlayChord(chord) {
+  if (!_bbState.awaitingInput) return;
+  playChordSound(chord);
+  
+  if (_bbState.mode === 'rhythm') {
+    // Rhythm mode: check timing roughly
+    const expected = _bbState.targetSequence[_bbState.rhythmStep];
+    if (!expected) return;
+    
+    const correct = chord === expected.chord;
+    _bbState.playerSequence.push({ chord, correct });
+    
+    if (!correct) {
+      loseHeart();
+      return;
+    }
+    
+    _bbState.rhythmStep++;
+    renderTargetChords();
+    
+    if (_bbState.rhythmStep >= _bbState.targetSequence.length) {
+      // Rhythm complete - check accuracy
+      const correctCount = _bbState.playerSequence.filter(p => p.correct).length;
+      if (correctCount >= _bbState.targetSequence.length - 1) {
+        levelComplete();
+      } else {
+        loseHeart();
+      }
+    }
+  } else {
+    // Sequence mode
+    _bbState.playerSequence.push(chord);
+    renderTargetChords();
+    
+    const expected = _bbState.targetSequence[_bbState.playerSequence.length - 1];
+    if (chord !== expected) {
+      loseHeart();
+      return;
+    }
+    
+    if (_bbState.playerSequence.length >= _bbState.targetSequence.length) {
+      levelComplete();
+    }
+  }
+}
+
+function playChordSound(chord) {
+  // Simple synth sound for chord feedback
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const freqMap = { A: 110, D: 146.83, E: 164.81, G: 196, C: 130.81, Am: 110, Em: 164.81, Dm: 146.83 };
+    const freq = freqMap[chord] || 220;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start(); osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+function loseHeart() {
+  _bbState.hearts--;
+  _bbState.awaitingInput = false;
+  if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
+  updateBossUI();
+  document.getElementById('bbStatus').textContent = `Wrong! ${_bbState.hearts} heart${_bbState.hearts!==1?'s':''} left.`;
+  
+  // Shake animation
+  const bossEmoji = document.getElementById('bbBossEmojiGame');
+  bossEmoji.style.animation = 'shake 0.4s';
+  setTimeout(() => bossEmoji.style.animation = '', 400);
+  
+  if (_bbState.hearts <= 0) {
+    setTimeout(() => showDefeat(), 800);
+  } else {
+    setTimeout(() => nextLevel(), 1200);
+  }
+}
+
+function levelComplete() {
+  _bbState.awaitingInput = false;
+  if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
+  document.getElementById('bbStatus').textContent = '💥 Heart destroyed!';
+  
+  const boss = getBoss();
+  if (_bbState.level >= boss.levels) {
+    // Boss defeated!
+    setTimeout(() => showVictory(), 800);
+  } else {
+    _bbState.level++;
+    _bbState.hearts = _bbState.maxHearts; // Restore hearts for next level
+    setTimeout(() => nextLevel(), 1500);
+  }
+  updateBossUI();
+}
+
+function showVictory() {
+  document.getElementById('bbGame').style.display = 'none';
+  document.getElementById('bbVictory').style.display = 'block';
+  document.getElementById('bbDefeatedBoss').textContent = getBoss().name;
+  showConfetti();
+}
+
+function showDefeat() {
+  document.getElementById('bbGame').style.display = 'none';
+  document.getElementById('bbDefeat').style.display = 'block';
+  document.getElementById('bbDefeatedByBoss').textContent = getBoss().name;
+}
+
+function nextBossLevel() {
+  const boss = getBoss();
+  if (_bbState.bossIndex < BB_BOSSES.length - 1) {
+    _bbState.bossIndex++;
+  }
+  _bbState.level = 1;
+  startBossBattle();
+}
+
+function resetBossBattle() {
+  if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
+  document.getElementById('bbGame').style.display = 'none';
+  document.getElementById('bbVictory').style.display = 'none';
+  document.getElementById('bbDefeat').style.display = 'none';
+  document.getElementById('bbIntro').style.display = 'block';
+  _bbState.hearts = 3;
+  updateBossUI();
+}
+
+// Add shake animation
+const style = document.createElement('style');
+style.textContent = `
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+.bb-chord-btn:active { transform:scale(0.95); }
+`;
+document.head.appendChild(style);
 
 // ── REPERTOIRE LISTENER (in loadStudentData) ──
 // Repertoire is loaded on-demand when panel is shown (via listener below)
