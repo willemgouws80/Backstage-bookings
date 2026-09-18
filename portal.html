@@ -919,6 +919,13 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
             <span class="bb-heart" data-i="1">❤️</span>
             <span class="bb-heart" data-i="2">❤️</span>
           </div>
+          <div style="display:flex;justify-content:center;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+            <label class="toggle-row" style="border:none;padding:0;gap:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.5rem 1rem">
+              <span class="toggle-label" style="font-size:.8rem">🎸 Button Mode</span>
+              <label class="toggle"><input type="checkbox" id="bbListenMode" onchange="toggleBossListenMode()"><span class="toggle-slider"></span></label>
+              <span class="toggle-label" style="font-size:.8rem">🎤 Listen Mode</span>
+            </label>
+          </div>
           <button class="btn btn-gold" onclick="startBossBattle()">⚔️ Start Battle</button>
         </div>
         <div id="bbGame" style="display:none">
@@ -3289,8 +3296,19 @@ let _bbState = {
   awaitingInput: false,
   rhythmPattern: [],
   rhythmStep: 0,
-  mode: 'sequence', // 'sequence' | 'rhythm'
+  mode: 'sequence',
   rhythmInterval: null,
+  listenMode: false,
+  listenStream: null,
+  listenCtx: null,
+  listenAnalyser: null,
+  listenData: null,
+  listenRaf: null,
+  listenStableNote: null,
+  listenStableCount: 0,
+  listenSilenceFrames: 0,
+  listenSmoothFreq: 0,
+  listenSmoother: [],
 };
 
 function getBoss() { return BB_BOSSES[_bbState.bossIndex] || BB_BOSSES[0]; }
@@ -3362,7 +3380,7 @@ function renderChordButtons() {
   `).join('');
 }
 
-function startBossBattle() {
+window.startBossBattle = function startBossBattle() {
   const boss = getBoss();
   _bbState = {
     bossIndex: _bbState.bossIndex,
@@ -3376,11 +3394,31 @@ function startBossBattle() {
     rhythmStep: 0,
     mode: 'sequence',
     rhythmInterval: null,
+    listenMode: document.getElementById('bbListenMode')?.checked || false,
+    listenStream: null,
+    listenCtx: null,
+    listenAnalyser: null,
+    listenData: null,
+    listenRaf: null,
+    listenStableNote: null,
+    listenStableCount: 0,
+    listenSilenceFrames: 0,
+    listenSmoothFreq: 0,
+    listenSmoother: [],
+    listenActive: true,
   };
   document.getElementById('bbIntro').style.display = 'none';
   document.getElementById('bbVictory').style.display = 'none';
   document.getElementById('bbDefeat').style.display = 'none';
   document.getElementById('bbGame').style.display = 'block';
+  
+  // Set button visibility based on mode
+  const btns = document.getElementById('bbChordButtons');
+  if (btns) btns.style.display = _bbState.listenMode ? 'none' : 'flex';
+  document.getElementById('bbStatus').textContent = _bbState.listenMode 
+    ? '🎤 Listen Mode ON — Play the chord on your instrument'
+    : '🎸 Button Mode — Tap the chords below';
+  
   updateBossUI();
   nextLevel();
 }
@@ -3402,6 +3440,16 @@ function updateBossUI() {
   }
   renderTargetChords();
   renderChordButtons();
+}
+
+function toggleBossListenMode() {
+  const enabled = document.getElementById('bbListenMode').checked;
+  _bbState.listenMode = enabled;
+  const btns = document.getElementById('bbChordButtons');
+  if (btns) btns.style.display = enabled ? 'none' : 'flex';
+  document.getElementById('bbStatus').textContent = enabled 
+    ? '🎤 Listen Mode ON — Play the chord on your instrument'
+    : '🎸 Button Mode — Tap the chords below';
 }
 
 function nextLevel() {
@@ -3452,6 +3500,113 @@ function playRhythmDemo() {
     setTimeout(playNext, delay + 150);
   }
   playNext();
+}
+
+function bbCheckListenMode() {
+  if (!_bbState.listenMode || !_bbState.awaitingInput) return;
+  
+  const targetChord = _bbState.mode === 'rhythm' 
+    ? _bbState.targetSequence[_bbState.rhythmStep]?.chord 
+    : _bbState.targetSequence[_bbState.playerSequence.length];
+  
+  if (!targetChord) return;
+  
+  const targetFreq = BB_CHORD_FREQS[targetChord];
+  if (!targetFreq) return;
+  
+  // Start listening if not already
+  if (!_bbState.listenCtx) startBossListen();
+  
+  // Check if we detected the target note
+  if (_bbState.listenStableNote === targetChord) {
+    _bbState.listenStableCount++;
+    if (_bbState.listenStableCount >= 3) { // Stable for 3 frames
+      _bbState.listenStableCount = 0;
+      _bbState.listenStableNote = null;
+      // Trigger chord recognition
+      bbPlayChord(targetChord);
+    }
+  } else {
+    _bbState.listenStableCount = 0;
+  }
+}
+
+// Chord root frequencies (standard tuning)
+const BB_CHORD_FREQS = {
+  'A': 110.00, 'D': 146.83, 'E': 164.81, 'G': 196.00,
+  'C': 130.81, 'Am': 110.00, 'Em': 164.81, 'Dm': 146.83
+};
+
+function startBossListen() {
+  if (_bbState.listenCtx) return; // Already running
+  
+  navigator.mediaDevices.getUserMedia({ 
+    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+  }).then(stream => {
+    _bbState.listenStream = stream;
+    _bbState.listenCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = _bbState.listenCtx.createMediaStreamSource(stream);
+    _bbState.listenAnalyser = _bbState.listenCtx.createAnalyser();
+    _bbState.listenAnalyser.fftSize = 8192;
+    src.connect(_bbState.listenAnalyser);
+    _bbState.listenData = new Float32Array(_bbState.listenAnalyser.fftSize);
+    _bbState.listenSmoother = [];
+    _bbState.listenStableNote = null;
+    _bbState.listenStableCount = 0;
+    _bbState.listenSilenceFrames = 0;
+    _bbState.listenSmoothFreq = 0;
+    _bbListenLoop();
+  }).catch(e => {
+    console.warn('Boss listen mic denied:', e);
+    _bbState.listenMode = false;
+    document.getElementById('bbListenMode').checked = false;
+    toggleBossListenMode();
+  });
+}
+
+function _bbListenLoop() {
+  if (!_bbState.listenCtx || !_bbState.listenActive) return;
+  _bbState.listenAnalyser.getFloatTimeDomainData(_bbState.listenData);
+  const rawFreq = _tunerYinDetect(_bbState.listenData, _bbState.listenCtx.sampleRate);
+  
+  if (rawFreq !== null) {
+    _bbState.listenSilenceFrames = 0;
+    // Simple smoothing
+    _bbState.listenSmoother.push(rawFreq);
+    if (_bbState.listenSmoother.length > 3) _bbState.listenSmoother.shift();
+    const smoothFreq = _bbState.listenSmoother.reduce((a,b)=>a+b,0) / _bbState.listenSmoother.length;
+    
+    // Convert to note name
+    const note = _tunerFreqToNote(smoothFreq);
+    if (note) {
+      if (note.name === _bbState.listenStableNote) {
+        _bbState.listenStableCount++;
+      } else {
+        _bbState.listenStableNote = note.name;
+        _bbState.listenStableCount = 1;
+      }
+    }
+  } else {
+    _bbState.listenSilenceFrames++;
+    if (_bbState.listenSilenceFrames > 8) {
+      _bbState.listenStableNote = null;
+      _bbState.listenStableCount = 0;
+    }
+  }
+  
+  bbCheckListenMode();
+  _bbState.listenRaf = requestAnimationFrame(_bbListenLoop);
+}
+
+function stopBossListen() {
+  _bbState.listenActive = false;
+  if (_bbState.listenRaf) cancelAnimationFrame(_bbState.listenRaf);
+  if (_bbState.listenStream) _bbState.listenStream.getTracks().forEach(t => t.stop());
+  if (_bbState.listenCtx) _bbState.listenCtx.close();
+  _bbState.listenStream = null;
+  _bbState.listenCtx = null;
+  _bbState.listenAnalyser = null;
+  _bbState.listenData = null;
 }
 
 function bbPlayChord(chord) {
@@ -3577,6 +3732,7 @@ function nextBossLevel() {
 
 function resetBossBattle() {
   if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
+  stopBossListen();
   document.getElementById('bbGame').style.display = 'none';
   document.getElementById('bbVictory').style.display = 'none';
   document.getElementById('bbDefeat').style.display = 'none';
