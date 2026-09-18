@@ -3593,6 +3593,12 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Expose to window for onclick handlers
+window.startBossBattle = startBossBattle;
+window.bbPlayChord = bbPlayChord;
+window.nextBossLevel = nextBossLevel;
+window.resetBossBattle = resetBossBattle;
+
 // ── REPERTOIRE LISTENER (in loadStudentData) ──
 // Repertoire is loaded on-demand when panel is shown (via listener below)
 
