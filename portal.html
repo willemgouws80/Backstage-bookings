@@ -946,6 +946,22 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
             <div style="display:flex;justify-content:center;gap:.75rem;flex-wrap:wrap" id="bbTargetChords"></div>
           </div>
           <div style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;min-height:1.5rem" id="bbStatus">Get ready…</div>
+          <div id="bbListenVisual" style="display:none;justify-content:center;align-items:center;gap:1rem;margin-bottom:1rem;padding:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-size:1.5rem">🎤</span>
+              <div>
+                <div style="display:flex;gap:2px;height:30px" id="bbMicLevel"></div>
+                <div style="font-size:.6rem;color:var(--muted);margin-top:.2rem">Mic Level</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-size:1.5rem">🎵</span>
+              <div>
+                <div style="font-size:2rem;font-weight:700;color:var(--gold)" id="bbDetectedNote">—</div>
+                <div style="font-size:.6rem;color:var(--muted);margin-top:.2rem">Detected Note</div>
+              </div>
+            </div>
+          </div>
           <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap" id="bbChordButtons"></div>
           <button class="btn btn-outline" onclick="resetBossBattle()" style="margin-top:1.5rem">❌ Quit Battle</button>
         </div>
@@ -3446,10 +3462,19 @@ function toggleBossListenMode() {
   const enabled = document.getElementById('bbListenMode').checked;
   _bbState.listenMode = enabled;
   const btns = document.getElementById('bbChordButtons');
+  const visual = document.getElementById('bbListenVisual');
   if (btns) btns.style.display = enabled ? 'none' : 'flex';
+  if (visual) visual.style.display = enabled ? 'flex' : 'none';
   document.getElementById('bbStatus').textContent = enabled 
     ? '🎤 Listen Mode ON — Play the chord on your instrument'
     : '🎸 Button Mode — Tap the chords below';
+  
+  // Start/stop listening if game is active
+  if (enabled && _bbState.awaitingInput !== undefined) {
+    startBossListen();
+  } else if (!enabled) {
+    stopBossListen();
+  }
 }
 
 function nextLevel() {
@@ -3567,6 +3592,27 @@ function startBossListen() {
 function _bbListenLoop() {
   if (!_bbState.listenCtx || !_bbState.listenActive) return;
   _bbState.listenAnalyser.getFloatTimeDomainData(_bbState.listenData);
+  
+  // Calculate RMS level for mic visualization
+  let rms = 0;
+  for (let i = 0; i < _bbState.listenData.length; i++) {
+    rms += _bbState.listenData[i] * _bbState.listenData[i];
+  }
+  rms = Math.sqrt(rms / _bbState.listenData.length);
+  const level = Math.min(1, rms * 20);
+  
+  // Update mic level bars
+  const levelDiv = document.getElementById('bbMicLevel');
+  if (levelDiv) {
+    levelDiv.innerHTML = '';
+    const bars = 20;
+    for (let i = 0; i < bars; i++) {
+      const bar = document.createElement('div');
+      bar.style.cssText = 'flex:1;height:' + (i < level * bars ? '100%' : '10%') + ';background:' + (i < level * bars ? 'var(--gold)' : 'var(--border)') + ';border-radius:1px;transition:height .05s';
+      levelDiv.appendChild(bar);
+    }
+  }
+  
   const rawFreq = _tunerYinDetect(_bbState.listenData, _bbState.listenCtx.sampleRate);
   
   if (rawFreq !== null) {
@@ -3579,6 +3625,10 @@ function _bbListenLoop() {
     // Convert to note name
     const note = _tunerFreqToNote(smoothFreq);
     if (note) {
+      // Update detected note display
+      const noteDiv = document.getElementById('bbDetectedNote');
+      if (noteDiv) noteDiv.textContent = note.name + (note.octave !== undefined ? note.octave : '');
+      
       if (note.name === _bbState.listenStableNote) {
         _bbState.listenStableCount++;
       } else {
@@ -3591,6 +3641,8 @@ function _bbListenLoop() {
     if (_bbState.listenSilenceFrames > 8) {
       _bbState.listenStableNote = null;
       _bbState.listenStableCount = 0;
+      const noteDiv = document.getElementById('bbDetectedNote');
+      if (noteDiv) noteDiv.textContent = '—';
     }
   }
   
