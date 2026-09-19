@@ -2962,7 +2962,7 @@ function _tunerRms(buffer) {
 }
 
 function _tunerYinDetect(buffer, sampleRate) {
-  const threshold = 0.2, minFreq = 65, maxFreq = 380, rmsThreshold = 0.00008, analysisSize = 3072;
+  const threshold = 0.15, minFreq = 65, maxFreq = 380, rmsThreshold = 0.00002, analysisSize = 3072;
   const rms = _tunerRms(buffer);
   if (rms < rmsThreshold) return null;
   const tauMin = Math.max(2, Math.floor(sampleRate / maxFreq));
@@ -3639,6 +3639,9 @@ function _bbListenLoop() {
     }
   }
   
+  // Debug: log RMS
+  console.log('Boss listen: RMS=', rms.toFixed(6), 'level=', level.toFixed(2));
+  
   const rawFreq = _tunerYinDetect(_bbState.listenData, _bbState.listenCtx.sampleRate);
   
   if (rawFreq !== null) {
@@ -3650,6 +3653,7 @@ function _bbListenLoop() {
     
     // Convert to note name
     const note = _tunerFreqToNote(smoothFreq);
+    console.log('Boss listen: rawFreq=', rawFreq ? rawFreq.toFixed(1) : null, 'smoothFreq=', smoothFreq.toFixed(1), 'note=', note ? note.name + note.octave + ' (' + note.cents + '¢)' : null);
     if (note) {
       // Update detected note display
       const noteDiv = document.getElementById('bbDetectedNote');
