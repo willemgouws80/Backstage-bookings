@@ -3639,9 +3639,6 @@ function _bbListenLoop() {
     }
   }
   
-  // Debug: log RMS
-  console.log('Boss listen: RMS=', rms.toFixed(6), 'level=', level.toFixed(2));
-  
   const rawFreq = _tunerYinDetect(_bbState.listenData, _bbState.listenCtx.sampleRate);
   
   if (rawFreq !== null) {
@@ -3653,7 +3650,6 @@ function _bbListenLoop() {
     
     // Convert to note name
     const note = _tunerFreqToNote(smoothFreq);
-    console.log('Boss listen: rawFreq=', rawFreq ? rawFreq.toFixed(1) : null, 'smoothFreq=', smoothFreq.toFixed(1), 'note=', note ? note.name + note.octave + ' (' + note.cents + '¢)' : null);
     if (note) {
       // Update detected note display
       const noteDiv = document.getElementById('bbDetectedNote');
