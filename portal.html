@@ -3536,14 +3536,16 @@ function bbCheckListenMode() {
   
   if (!targetChord) return;
   
+  // Extract root note from chord (A from Am, D from Dm, etc.)
+  const targetRoot = targetChord.replace(/[^A-G].*/, '');
   const targetFreq = BB_CHORD_FREQS[targetChord];
   if (!targetFreq) return;
   
   // Start listening if not already
   if (!_bbState.listenCtx) startBossListen();
   
-  // Check if we detected the target note
-  if (_bbState.listenStableNote === targetChord) {
+  // Check if we detected the target root note
+  if (_bbState.listenStableNote === targetRoot) {
     _bbState.listenStableCount++;
     if (_bbState.listenStableCount >= 3) { // Stable for 3 frames
       _bbState.listenStableCount = 0;
