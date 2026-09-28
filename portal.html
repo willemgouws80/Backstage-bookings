@@ -3826,6 +3826,7 @@ function startBossListen() {
     _bbState.listenSilenceFrames = 0;
     _bbState.listenSmoothFreq = 0;
     console.log('startBossListen: calling _bbListenLoop, ctx.state=', _bbState.listenCtx.state);
+    _bbState.listenActive = true;
     _bbListenLoop();
   }).catch(e => {
     console.error('startBossListen: error', e);
