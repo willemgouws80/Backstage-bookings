@@ -3683,8 +3683,10 @@ function toggleBossListenMode() {
   
   // Start/stop listening if game is active
   if (enabled && _bbState.awaitingInput !== undefined) {
+    console.log('Toggle: Starting boss listen, awaitingInput=', _bbState.awaitingInput);
     startBossListen();
   } else if (!enabled) {
+    console.log('Toggle: Stopping boss listen');
     stopBossListen();
   }
 }
@@ -3783,7 +3785,7 @@ const BB_CHORD_FREQS = {
 };
 
 function startBossListen() {
-  if (_bbState.listenCtx) return; // Already running
+  if (_bbState.listenCtx) { console.log('startBossListen: already running'); return; }
   
   // Require HTTPS for getUserMedia
   if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
@@ -3794,15 +3796,18 @@ function startBossListen() {
     return;
   }
   
+  console.log('startBossListen: requesting mic...');
   navigator.mediaDevices.getUserMedia({ 
     audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
   }).then(stream => {
+    console.log('startBossListen: got stream', stream.getTracks());
     _bbState.listenStream = stream;
     _bbState.listenCtx = new (window.AudioContext || window.webkitAudioContext)();
     
     // Resume audio context if suspended (browser policy)
     if (_bbState.listenCtx.state === 'suspended') {
-      _bbState.listenCtx.resume();
+      console.log('startBossListen: resuming suspended context');
+      _bbState.listenCtx.resume().then(() => console.log('startBossListen: context resumed')).catch(e => console.error('startBossListen: resume failed', e));
     }
     
     const src = _bbState.listenCtx.createMediaStreamSource(stream);
@@ -3812,12 +3817,13 @@ function startBossListen() {
     _bbState.listenData = new Float32Array(_bbState.listenAnalyser.fftSize);
     _bbState.listenSmoother = [];
     _bbState.listenStableNote = null;
+    _bbState.listenStableFreq = null;
     _bbState.listenStableCount = 0;
     _bbState.listenSilenceFrames = 0;
     _bbState.listenSmoothFreq = 0;
     _bbListenLoop();
   }).catch(e => {
-    console.warn('Boss listen mic denied:', e);
+    console.error('startBossListen: error', e);
     let msg = 'Microphone access denied';
     if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
       msg = 'Microphone permission denied. Click the 🔒 icon in address bar → Allow microphone.';
@@ -3836,7 +3842,7 @@ function startBossListen() {
 }
 
 function _bbListenLoop() {
-  if (!_bbState.listenCtx || !_bbState.listenActive) return;
+  if (!_bbState.listenCtx || !_bbState.listenActive) { console.log('_bbListenLoop: exiting'); return; }
   _bbState.listenAnalyser.getFloatTimeDomainData(_bbState.listenData);
   
   // Calculate RMS level for mic visualization
@@ -3860,10 +3866,10 @@ function _bbListenLoop() {
     }
   }
   
-  // Debug log
-  console.log('Boss listen: RMS=', rms.toFixed(6), 'level=', level.toFixed(2), 'rawFreq=', rawFreq ? rawFreq.toFixed(1) : null);
-  
   const rawFreq = _tunerYinDetect(_bbState.listenData, _bbState.listenCtx.sampleRate);
+  
+  // Debug log
+  console.log('_bbListenLoop: RMS=', rms.toFixed(6), 'level=', level.toFixed(2), 'rawFreq=', rawFreq ? rawFreq.toFixed(1) : null, 'ctx.state=', _bbState.listenCtx?.state);
   
   if (rawFreq !== null) {
     _bbState.listenSilenceFrames = 0;
