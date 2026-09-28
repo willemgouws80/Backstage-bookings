@@ -3602,6 +3602,7 @@ function renderChordButtons() {
 
 window.startBossBattle = function startBossBattle() {
   const boss = getBoss();
+  const wasListening = _bbState.listenCtx && _bbState.listenActive;
   _bbState = {
     bossIndex: _bbState.bossIndex,
     level: 1,
@@ -3615,18 +3616,18 @@ window.startBossBattle = function startBossBattle() {
     mode: 'sequence',
     rhythmInterval: null,
     listenMode: document.getElementById('bbListenMode')?.checked || false,
-    listenStream: null,
-    listenCtx: null,
-    listenAnalyser: null,
-    listenData: null,
-    listenRaf: null,
-listenStableNote: null,
-  listenStableFreq: null,
-  listenStableCount: 0,
-  listenSilenceFrames: 0,
+    listenStream: wasListening ? _bbState.listenStream : null,
+    listenCtx: wasListening ? _bbState.listenCtx : null,
+    listenAnalyser: wasListening ? _bbState.listenAnalyser : null,
+    listenData: wasListening ? _bbState.listenData : null,
+    listenRaf: wasListening ? _bbState.listenRaf : null,
+    listenStableNote: null,
+    listenStableFreq: null,
+    listenStableCount: 0,
+    listenSilenceFrames: 0,
     listenSmoothFreq: 0,
     listenSmoother: [],
-    listenActive: true,
+    listenActive: wasListening,
   };
   document.getElementById('bbIntro').style.display = 'none';
   document.getElementById('bbVictory').style.display = 'none';
