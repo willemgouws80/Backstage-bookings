@@ -3821,6 +3821,7 @@ function startBossListen() {
     _bbState.listenStableCount = 0;
     _bbState.listenSilenceFrames = 0;
     _bbState.listenSmoothFreq = 0;
+    console.log('startBossListen: calling _bbListenLoop, ctx.state=', _bbState.listenCtx.state);
     _bbListenLoop();
   }).catch(e => {
     console.error('startBossListen: error', e);
@@ -3842,7 +3843,8 @@ function startBossListen() {
 }
 
 function _bbListenLoop() {
-  if (!_bbState.listenCtx || !_bbState.listenActive) { console.log('_bbListenLoop: exiting'); return; }
+  console.log('_bbListenLoop: check ctx=', !!_bbState.listenCtx, 'active=', _bbState.listenActive, 'ctx.state=', _bbState.listenCtx?.state);
+  if (!_bbState.listenCtx || !_bbState.listenActive) { console.log('_bbListenLoop: exiting - ctx missing or inactive'); return; }
   _bbState.listenAnalyser.getFloatTimeDomainData(_bbState.listenData);
   
   // Calculate RMS level for mic visualization
