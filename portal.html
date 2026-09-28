@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>My Backstage Portal</title>
 <link rel="icon" href="New_Backstage_logo.png" sizes="any">
 <link rel="manifest" href="/manifest.json">
@@ -197,10 +197,183 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .empty-state p{font-size:.88rem;line-height:1.6}
 
 /* RESPONSIVE SIDEBAR */
-@media(max-width:768px){.sidebar{display:none;position:fixed;z-index:100;top:57px;left:0;height:calc(100vh - 57px)}.sidebar.open{display:block}.app{position:relative}.menu-toggle{display:flex!important}}
-.menu-toggle{display:none;background:transparent;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:.3rem;margin-right:.5rem;align-items:center}
-.mobile-overlay{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.5)}
+@media(max-width:768px){.sidebar{display:none;position:fixed;z-index:100;top:57px;left:0;height:calc(100vh - 57px);width:280px;max-width:85vw}.sidebar.open{display:block}.app{position:relative}.menu-toggle{display:flex!important}}
+.menu-toggle{display:none;background:transparent;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:.5rem .75rem;margin-right:.5rem;align-items:center;min-width:44px;min-height:44px}
+.mobile-overlay{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
 .mobile-overlay.open{display:block}
+
+/* SAFE AREA INSETS */
+@supports (padding: max(0px)) {
+  .topbar { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+  .main { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .sidebar { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .modal-content { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+}
+
+/* TOUCH TARGETS - minimum 44px */
+@media (max-width: 768px) {
+  .nav-item { padding: 1rem 1.25rem; min-height: 48px; }
+  .menu-toggle { min-width: 44px; min-height: 44px; }
+  .btn { min-height: 44px; padding: .85rem 1.25rem; }
+  .btn-sm { min-height: 36px; padding: .5rem .85rem; }
+  .fg input, .fg select, .fg textarea { min-height: 44px; padding: .75rem .85rem; font-size: 16px; /* prevents zoom on iOS */ }
+  .toggle { width: 52px; height: 28px; }
+  .toggle-slider::before { width: 20px; height: 20px; left: 4px; bottom: 4px; }
+  .toggle input:checked+.toggle-slider::before { transform: translateX(24px); }
+}
+
+/* SIDEBAR MOBILE IMPROVEMENTS */
+@media (max-width: 768px) {
+  .sidebar { 
+    box-shadow: 4px 0 24px rgba(0,0,0,.5); 
+    animation: slideIn .3s ease;
+  }
+  @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  .sidebar-label { padding: 1rem 1.25rem .5rem; font-size: .7rem; }
+  .nav-item { margin: 0 .5rem; border-radius: 8px; }
+}
+
+/* TOPBAR MOBILE */
+@media (max-width: 480px) {
+  .tb-logo-text { display: none; }
+  .tb-greeting { display: none; }
+  .tb-link { font-size: .75rem; padding: .4rem .6rem; }
+  .topbar { padding: .75rem 1rem; min-height: 56px; }
+}
+
+/* DASHBOARD STATS MOBILE */
+@media (max-width: 480px) {
+  .dash-hero-stats { flex-wrap: wrap; gap: .75rem; }
+  .dash-hero-stat { flex: 1 1 calc(50% - .375rem); min-width: 100px; }
+  .dash-hero-title { font-size: 1.75rem; }
+  .dash-hero-time { font-size: 1rem; }
+}
+
+/* CARD MOBILE */
+@media (max-width: 480px) {
+  .card { padding: 1rem 1.15rem; border-radius: 10px; margin-bottom: 1rem; }
+  .card-title { font-size: .95rem; margin-bottom: .85rem; }
+  .fg { margin-bottom: .75rem; }
+}
+
+/* FORM FIELDS MOBILE */
+@media (max-width: 480px) {
+  .fg input, .fg select, .fg textarea, .fg label { font-size: 16px !important; }
+  .fg input[type="checkbox"] { width: 20px; height: 20px; }
+  .two-col, .three-col { grid-template-columns: 1fr; gap: .75rem; }
+  .auth-box { padding: 2rem 1.5rem; margin: 1rem; }
+}
+
+/* BOSS BATTLE MOBILE */
+@media (max-width: 480px) {
+  .bb-chord-btn { min-width: 60px; padding: .85rem .6rem; font-size: .9rem; margin: .2rem; }
+  #bbTargetChords > div { font-size: 1.25rem; }
+  #bbBossEmojiGame { font-size: 2.5rem; }
+  #bbBossEmoji { font-size: 3rem; }
+  .bb-heart { font-size: 1.5rem; }
+  #bbStatus { font-size: .9rem; min-height: 2rem; }
+}
+
+/* LIST ITEMS MOBILE */
+@media (max-width: 480px) {
+  .list-item { padding: 1rem; flex-direction: column; align-items: flex-start; gap: .75rem; }
+  .li-actions { width: 100%; justify-content: flex-end; }
+  .li-actions .btn { min-width: 80px; }
+}
+
+/* MODAL MOBILE */
+@media (max-width: 480px) {
+  .modal-content { margin: 1rem; max-width: calc(100% - 2rem); max-height: calc(100vh - 2rem); border-radius: 12px; }
+  .modal-header { padding: 1rem 1.25rem; }
+  .modal-body { padding: 1rem 1.25rem; }
+  .modal-footer { padding: .75rem 1.25rem; flex-direction: column-reverse; gap: .5rem; }
+  .modal-footer .btn { width: 100%; }
+}
+
+/* METRONOME MOBILE */
+@media (max-width: 480px) {
+  #metroBpm { width: 100%; max-width: none; }
+  .metro-beat { min-width: 36px; height: 36px; font-size: .7rem; }
+}
+
+/* CHORD PRACTICE MOBILE */
+@media (max-width: 480px) {
+  .cp-chord-grid { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+  .cp-chord-btn { min-height: 56px; font-size: 1rem; padding: .75rem; }
+}
+
+/* EAR TRAINING MOBILE */
+@media (max-width: 480px) {
+  .et-option { min-width: 80px; min-height: 48px; padding: .75rem .5rem; font-size: .9rem; }
+  .et-interval-btn { min-width: 60px; min-height: 44px; font-size: .8rem; }
+}
+
+/* TUNER MOBILE */
+@media (max-width: 480px) {
+  #tunerNote { font-size: 2.5rem; min-width: 80px; }
+  #tunerCents { font-size: 1rem; }
+}
+
+/* ACHIEVEMENTS MOBILE */
+@media (max-width: 480px) {
+  #badgesContainer { grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+  #badgesContainer > div { padding: .5rem .3rem; }
+  #badgesContainer .icon { font-size: 1.25rem; }
+}
+
+/* PRACTICE TIMER MOBILE */
+@media (max-width: 480px) {
+  #practiceTimer { font-size: 3rem; }
+  .practice-controls .btn { min-width: 100px; padding: 1rem 1.5rem; font-size: 1rem; }
+}
+
+/* LESSONS LIST MOBILE */
+@media (max-width: 480px) {
+  .lesson-card { padding: 1rem; margin-bottom: .75rem; }
+  .lesson-time { font-size: 1.1rem; min-width: 70px; }
+  .lesson-info { flex: 1; min-width: 0; }
+  .lesson-actions { gap: .5rem; }
+}
+
+/* SCROLL HINTS */
+@media (max-width: 768px) {
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+}
+
+/* FOCUS VISIBLE FOR KEYBOARD NAV */
+@media (hover: none) and (pointer: coarse) {
+  *:focus { outline: none; }
+  *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+}
+
+/* DISABLE HOVER EFFECTS ON TOUCH */
+@media (hover: none) and (pointer: coarse) {
+  .list-item:hover { transform: none; box-shadow: none; }
+  .card:hover { transform: none; box-shadow: none; }
+  .btn:hover { transform: none; }
+  .nav-item:hover { background: transparent; }
+}
+
+/* TEXT SIZE ADJUST */
+@media (max-width: 480px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-size: 16px; }
+  .hint, .loading-text { font-size: .85rem; }
+}
+
+/* BETTER BUTTON SPACING IN ROWS */
+@media (max-width: 480px) {
+  .btn-row { display: flex; flex-direction: column; gap: .5rem; }
+  .btn-row .btn { width: 100%; }
+}
+
+/* PROGRESS BARS MOBILE */
+@media (max-width: 480px) {
+  .progress-bar { height: 8px; }
+  .progress-fill { height: 100%; }
+}
 
 /* NEXT LESSON CARD */
 .next-lesson{background:linear-gradient(135deg,rgba(201,145,26,.12) 0%,var(--surface2) 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--gold);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
@@ -3390,7 +3563,7 @@ function renderChordButtons() {
   const container = document.getElementById('bbChordButtons');
   const availableChords = BB_CHORDS.slice(0, Math.min(3 + Math.floor(_bbState.level / 2), BB_CHORDS.length));
   container.innerHTML = availableChords.map(c => `
-    <button class="btn bb-chord-btn ${c.name.length>1?'':'bb-wide'}" onclick="bbPlayChord('${c.name}')" style="background:${c.color}22;border-color:${c.color}88;color:${c.color};font-weight:600;min-width:60px;padding:.75rem 1rem" ${_bbState.awaitingInput?'':'disabled'}>
+    <button class="btn bb-chord-btn ${c.name.length>1?'':'bb-wide'}" onclick="bbPlayChord('${c.name}')" style="background:${c.color}22;border-color:${c.color}88;color:${c.color};font-weight:600;min-width:60px;padding:.85rem 1rem;touch-action:manipulation" ${_bbState.awaitingInput?'':'disabled'} onmousedown="this.style.transform='scale(0.93)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.93)'" ontouchend="this.style.transform=''">
       ${c.name}
     </button>
   `).join('');
