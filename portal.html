@@ -3803,6 +3803,7 @@ function startBossListen() {
     console.log('startBossListen: got stream', stream.getTracks());
     _bbState.listenStream = stream;
     _bbState.listenCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _bbState.listenActive = true;
     
     // Resume audio context if suspended (browser policy)
     if (_bbState.listenCtx.state === 'suspended') {
