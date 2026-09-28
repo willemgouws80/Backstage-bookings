@@ -3768,11 +3768,25 @@ function bbCheckListenMode() {
       if (_bbState.listenStableCount >= 3) { // Stable for 3 frames
         _bbState.listenStableCount = 0;
         _bbState.listenStableFreq = null;
-        // Trigger chord recognition
+        // Trigger chord recognition for CORRECT note
         bbPlayChord(targetChord);
       }
     } else {
-      _bbState.listenStableCount = 0;
+      // Detected a stable WRONG note - trigger mistake
+      // Only penalize if we have a stable different note (not just noise)
+      if (_bbState.listenStableCount >= 3) {
+        _bbState.listenStableCount = 0;
+        _bbState.listenStableFreq = null;
+        // Trigger chord recognition for WRONG note to trigger loseHeart
+        const wrongRoot = _bbState.listenStableNote;
+        if (wrongRoot && wrongRoot !== targetRoot) {
+          // Find a chord with this root to pass to bbPlayChord
+          const wrongChord = Object.keys(BB_CHORD_FREQS).find(c => c.startsWith(wrongRoot)) || wrongRoot;
+          bbPlayChord(wrongChord);
+        }
+      } else {
+        _bbState.listenStableCount = 0;
+      }
     }
   } else {
     _bbState.listenStableCount = 0;
