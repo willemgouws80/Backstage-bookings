@@ -3594,7 +3594,7 @@ function renderChordButtons() {
   const container = document.getElementById('bbChordButtons');
   const availableChords = BB_CHORDS.slice(0, Math.min(3 + Math.floor(_bbState.level / 2), BB_CHORDS.length));
   container.innerHTML = availableChords.map(c => `
-    <button class="btn bb-chord-btn ${c.name.length>1?'':'bb-wide'}" onclick="bbPlayChord('${c.name}')" style="background:${c.color}22;border-color:${c.color}88;color:${c.color};font-weight:600;min-width:60px;padding:.85rem 1rem;touch-action:manipulation" ${_bbState.awaitingInput?'':'disabled'} onmousedown="this.style.transform='scale(0.93)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.93)'" ontouchend="this.style.transform=''">
+    <button class="btn bb-chord-btn ${c.name.length>1?'':'bb-wide'}" onclick="bbPlayChord('${c.name}')" style="background:${c.color}22;border-color:${c.color}88;color:${c.color};font-weight:600;min-width:60px;padding:.85rem 1rem;touch-action:manipulation" ${_bbState.awaitingInput?'':'disabled'}>
       ${c.name}
     </button>
   `).join('');
