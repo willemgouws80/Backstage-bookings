@@ -3845,7 +3845,7 @@ function _bbListenLoop() {
     rms += _bbState.listenData[i] * _bbState.listenData[i];
   }
   rms = Math.sqrt(rms / _bbState.listenData.length);
-  const level = Math.min(1, rms * 20);
+  const level = Math.min(1, rms * 50); // Increased sensitivity
   
   // Update mic level bars
   const levelDiv = document.getElementById('bbMicLevel');
@@ -3854,10 +3854,14 @@ function _bbListenLoop() {
     const bars = 20;
     for (let i = 0; i < bars; i++) {
       const bar = document.createElement('div');
-      bar.style.cssText = 'flex:1;height:' + (i < level * bars ? '100%' : '10%') + ';background:' + (i < level * bars ? 'var(--gold)' : 'var(--border)') + ';border-radius:1px;transition:height .05s';
+      const isActive = i < level * bars;
+      bar.style.cssText = 'flex:1;height:' + (isActive ? '100%' : '15%') + ';background:' + (isActive ? 'var(--gold)' : 'var(--muted)') + ';border-radius:1px;transition:height .05s;min-width:2px';
       levelDiv.appendChild(bar);
     }
   }
+  
+  // Debug log
+  console.log('Boss listen: RMS=', rms.toFixed(6), 'level=', level.toFixed(2), 'rawFreq=', rawFreq ? rawFreq.toFixed(1) : null);
   
   const rawFreq = _tunerYinDetect(_bbState.listenData, _bbState.listenCtx.sampleRate);
   
