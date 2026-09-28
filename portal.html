@@ -3807,7 +3807,10 @@ function startBossListen() {
     // Resume audio context if suspended (browser policy)
     if (_bbState.listenCtx.state === 'suspended') {
       console.log('startBossListen: resuming suspended context');
-      _bbState.listenCtx.resume().then(() => console.log('startBossListen: context resumed')).catch(e => console.error('startBossListen: resume failed', e));
+      _bbState.listenCtx.resume().then(() => {
+        console.log('startBossListen: context resumed');
+        console.log('startBossListen: context state after resume:', _bbState.listenCtx.state);
+      }).catch(e => console.error('startBossListen: resume failed', e));
     }
     
     const src = _bbState.listenCtx.createMediaStreamSource(stream);
