@@ -3524,6 +3524,7 @@ let _bbState = {
   listenData: null,
   listenRaf: null,
   listenStableNote: null,
+  listenStableFreq: null,
   listenStableCount: 0,
   listenSilenceFrames: 0,
   listenSmoothFreq: 0,
@@ -3619,9 +3620,10 @@ window.startBossBattle = function startBossBattle() {
     listenAnalyser: null,
     listenData: null,
     listenRaf: null,
-    listenStableNote: null,
-    listenStableCount: 0,
-    listenSilenceFrames: 0,
+listenStableNote: null,
+  listenStableFreq: null,
+  listenStableCount: 0,
+  listenSilenceFrames: 0,
     listenSmoothFreq: 0,
     listenSmoother: [],
     listenActive: true,
@@ -3754,14 +3756,20 @@ function bbCheckListenMode() {
   // Start listening if not already
   if (!_bbState.listenCtx) startBossListen();
   
-  // Check if we detected the target root note
-  if (_bbState.listenStableNote === targetRoot) {
-    _bbState.listenStableCount++;
-    if (_bbState.listenStableCount >= 3) { // Stable for 3 frames
+  // Check if we detected a frequency close to target (frequency-based matching ±50 cents)
+  const detectedFreq = _bbState.listenStableFreq;
+  if (detectedFreq && detectedFreq > 0) {
+    const centsDiff = 1200 * Math.log2(detectedFreq / targetFreq);
+    if (Math.abs(centsDiff) <= 50) { // Within 50 cents (quarter tone)
+      _bbState.listenStableCount++;
+      if (_bbState.listenStableCount >= 3) { // Stable for 3 frames
+        _bbState.listenStableCount = 0;
+        _bbState.listenStableFreq = null;
+        // Trigger chord recognition
+        bbPlayChord(targetChord);
+      }
+    } else {
       _bbState.listenStableCount = 0;
-      _bbState.listenStableNote = null;
-      // Trigger chord recognition
-      bbPlayChord(targetChord);
     }
   } else {
     _bbState.listenStableCount = 0;
@@ -3871,6 +3879,7 @@ function _bbListenLoop() {
         _bbState.listenStableCount++;
       } else {
         _bbState.listenStableNote = note.name;
+        _bbState.listenStableFreq = smoothFreq;
         _bbState.listenStableCount = 1;
       }
     }
@@ -3878,6 +3887,7 @@ function _bbListenLoop() {
     _bbState.listenSilenceFrames++;
     if (_bbState.listenSilenceFrames > 8) {
       _bbState.listenStableNote = null;
+      _bbState.listenStableFreq = null;
       _bbState.listenStableCount = 0;
       const noteDiv = document.getElementById('bbDetectedNote');
       if (noteDiv) noteDiv.textContent = '—';
