@@ -349,6 +349,12 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
 .bk-modal-body{padding:1.5rem}
 .bk-modal-footer{display:flex;justify-content:flex-end;gap:.5rem;padding:1rem 1.5rem;border-top:1px solid var(--border)}
 
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c9911a">
@@ -415,6 +421,7 @@ body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--text);m
     <div class="nav-item" onclick="showPanel('payments',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span> Payments</div>
     <div class="nav-item" onclick="showPanel('contact',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span> Contact & Bank</div>
     <div class="nav-item" onclick="showPanel('alerts',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span> Alerts</div>
+    <div class="nav-item" onclick="showPanel('meetings',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Meetings</div>
     <div class="nav-item" onclick="showPanel('config',this)"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Firebase Setup</div>
   </aside>
 
@@ -1663,6 +1670,74 @@ See you soon! 🙌</textarea>
       <div id="studentsList"><div class="loading-text">Loading students…</div></div>
     </div>
 
+    <!-- MEETINGS -->
+    <div class="panel" id="panel-meetings">
+      <div class="page-header">
+        <h1><em>Meetings</em></h1>
+        <button class="btn btn-gold btn-sm" onclick="startMeetingRecording()">🎤 Start Recording</button>
+      </div>
+      
+      <div class="card" id="meetingRecorder" style="display:none">
+        <div class="card-title">Recording in Progress</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin:1rem 0">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--danger);animation:pulse 1s infinite"></div>
+          <div>
+            <div style="font-size:1.25rem;font-weight:600;color:var(--danger)" id="meetingTimer">00:00</div>
+            <div style="font-size:.8rem;color:var(--muted)" id="meetingStatus">Recording...</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-danger" onclick="stopMeetingRecording()">⏹ Stop Recording</button>
+          <button class="btn btn-outline" onclick="cancelMeetingRecording()">✕ Cancel</button>
+        </div>
+      </div>
+
+      <div class="card" id="meetingProcessing" style="display:none">
+        <div class="card-title">Processing Audio</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin:1rem 0">
+          <div class="spinner"></div>
+          <div>
+            <div style="font-size:1rem;color:var(--text)" id="processingStatus">Loading Whisper model...</div>
+            <div style="font-size:.8rem;color:var(--muted)" id="processingDetail">First load downloads ~50MB model</div>
+          </div>
+        </div>
+        <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:1rem">
+          <div id="processingProgress" style="height:100%;width:0%;background:var(--gold);transition:width .3s"></div>
+        </div>
+      </div>
+
+      <div class="card" id="meetingResult" style="display:none">
+        <div class="card-title">
+          <span>Transcript & Summary</span>
+          <span style="font-size:.75rem;color:var(--muted);font-weight:400" id="meetingDate"></span>
+        </div>
+        <div class="fg">
+          <label>Meeting Title</label>
+          <input type="text" id="meetingTitle" placeholder="e.g. Team standup, Parent meeting">
+        </div>
+        <div class="fg">
+          <label>Participants</label>
+          <input type="text" id="meetingParticipants" placeholder="e.g. Willem, Anri, Johann">
+        </div>
+        <div style="margin-top:1rem">
+          <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem">Full Transcript</div>
+          <textarea id="meetingTranscript" rows="10" style="width:100%;padding:.75rem;background:var(--surface3);border:1px solid var(--border);border-radius:4px;font-family:monospace;font-size:.8rem;color:var(--text);resize:vertical"></textarea>
+        </div>
+        <div style="margin-top:1rem">
+          <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem">AI Summary & Action Items</div>
+          <textarea id="meetingSummary" rows="8" style="width:100%;padding:.75rem;background:var(--surface3);border:1px solid var(--border);border-radius:4px;font-size:.8rem;color:var(--text);resize:vertical"></textarea>
+        </div>
+        <div class="btn-row" style="margin-top:1rem">
+          <button class="btn btn-gold" onclick="saveMeeting()">💾 Save Meeting</button>
+          <button class="btn btn-outline" onclick="resetMeetingForm()">✕ Discard</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Saved Meetings</div>
+        <div id="meetingsList"><div class="loading-text">Loading meetings...</div></div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -6549,6 +6624,299 @@ window.deleteFinanceTransaction = async function(id) {
     loadDashboard();
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 };
+
+// ── MEETINGS PANEL ──
+let _meetingRecorder = null;
+let _meetingChunks = [];
+let _meetingStartTime = 0;
+let _meetingTimerInterval = null;
+let _whisperPipeline = null;
+
+async function loadWhisperPipeline() {
+  if (_whisperPipeline) return _whisperPipeline;
+  
+  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@2.17.1');
+  
+  const progressCallback = (x) => {
+    const pct = Math.round(x.progress * 100);
+    document.getElementById('processingProgress').style.width = pct + '%';
+    document.getElementById('processingDetail').textContent = x.status + (x.file ? ` (${x.file})` : '');
+  };
+  
+  _whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+    quantized: true,
+    progress_callback: progressCallback
+  });
+  
+  return _whisperPipeline;
+}
+
+window.startMeetingRecording = async function() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+    });
+    
+    _meetingRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    _meetingChunks = [];
+    _meetingStartTime = Date.now();
+    
+    _meetingRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) _meetingChunks.push(e.data);
+    };
+    
+    _meetingRecorder.onstop = async () => {
+      await processMeetingRecording();
+    };
+    
+    _meetingRecorder.start(100); // Collect data every 100ms
+    
+    // UI updates
+    document.getElementById('meetingRecorder').style.display = 'block';
+    document.getElementById('meetingRecorder').scrollIntoView({ behavior: 'smooth' });
+    document.querySelector('#panel-meetings .page-header button').style.display = 'none';
+    
+    // Start timer
+    _meetingTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - _meetingStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+      const secs = (elapsed % 60).toString().padStart(2, '0');
+      document.getElementById('meetingTimer').textContent = `${mins}:${secs}`;
+    }, 1000);
+    
+  } catch (e) {
+    console.error('Recording error:', e);
+    toast('Microphone access denied: ' + e.message, 'error');
+  }
+};
+
+window.stopMeetingRecording = async function() {
+  if (_meetingRecorder && _meetingRecorder.state !== 'inactive') {
+    _meetingRecorder.stop();
+    clearInterval(_meetingTimerInterval);
+    _meetingRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+};
+
+window.cancelMeetingRecording = function() {
+  if (_meetingRecorder && _meetingRecorder.state !== 'inactive') {
+    _meetingRecorder.stop();
+    _meetingRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  clearInterval(_meetingTimerInterval);
+  _meetingChunks = [];
+  resetMeetingForm();
+};
+
+async function processMeetingRecording() {
+  document.getElementById('meetingRecorder').style.display = 'none';
+  document.getElementById('meetingProcessing').style.display = 'block';
+  document.getElementById('processingProgress').style.width = '0%';
+  
+  try {
+    // Create audio blob
+    const blob = new Blob(_meetingChunks, { type: 'audio/webm;codecs=opus' });
+    
+    // Load Whisper pipeline
+    document.getElementById('processingStatus').textContent = 'Loading Whisper model...';
+    const pipeline = await loadWhisperPipeline();
+    
+    // Transcribe
+    document.getElementById('processingStatus').textContent = 'Transcribing...';
+    document.getElementById('processingDetail').textContent = 'This may take a minute...';
+    
+    const result = await pipeline(blob, {
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      language: 'af', // Afrikaans
+      return_timestamps: false
+    });
+    
+    const transcript = result.text.trim();
+    
+    // Generate summary (simple client-side approach)
+    document.getElementById('processingStatus').textContent = 'Generating summary...';
+    document.getElementById('processingDetail').textContent = 'Analyzing transcript...';
+    
+    const summary = generateMeetingSummary(transcript);
+    
+    // Show result
+    document.getElementById('meetingProcessing').style.display = 'none';
+    document.getElementById('meetingResult').style.display = 'block';
+    document.getElementById('meetingResult').scrollIntoView({ behavior: 'smooth' });
+    
+    // Populate fields
+    const now = new Date();
+    document.getElementById('meetingDate').textContent = now.toLocaleDateString('en-ZA', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit' 
+    });
+    document.getElementById('meetingTranscript').value = transcript;
+    document.getElementById('meetingSummary').value = summary;
+    
+    // Pre-fill title
+    const firstWords = transcript.split(' ').slice(0, 8).join(' ');
+    document.getElementById('meetingTitle').value = firstWords + (transcript.length > 8 ? '...' : '');
+    
+    document.getElementById('processingProgress').style.width = '100%';
+    
+  } catch (e) {
+    console.error('Processing error:', e);
+    toast('Processing failed: ' + e.message, 'error');
+    document.getElementById('meetingProcessing').style.display = 'none';
+    document.getElementById('meetingRecorder').style.display = 'block';
+  }
+}
+
+function generateMeetingSummary(transcript) {
+  // Simple client-side summary generation
+  // In production, you'd call an LLM API here
+  const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  const keywords = extractKeywords(transcript);
+  
+  let summary = `MEETING SUMMARY\n`;
+  summary += `================\n\n`;
+  summary += `OVERVIEW:\n`;
+  summary += `This meeting covered ${sentences.length} key discussion points. `;
+  summary += `Main topics: ${keywords.slice(0, 5).join(', ')}.\n\n`;
+  
+  summary += `KEY POINTS:\n`;
+  sentences.slice(0, 5).forEach((s, i) => {
+    summary += `${i + 1}. ${s.trim()}.\n`;
+  });
+  
+  summary += `\nACTION ITEMS:\n`;
+  summary += `1. Review transcript for complete details\n`;
+  summary += `2. Assign follow-up tasks based on discussion\n`;
+  summary += `3. Schedule follow-up meeting if needed\n`;
+  
+  if (keywords.length > 0) {
+    summary += `\nKEYWORDS: ${keywords.join(', ')}`;
+  }
+  
+  return summary;
+}
+
+function extractKeywords(text) {
+  // Simple keyword extraction - remove common words
+  const stopWords = new Set(['die', 'en', 'van', 'in', 'vir', 'met', 'op', 'te', 'is', 'dit', 'nie', 'wat', 'ek', 'jy', 'ons', 'hulle', 'sy', 'hy', 'my', 'jou', 'hom', 'haar', 'ons', 'julle', 'hulle', 'se', 'sa', 'soos', 'of', 'as', 'maar', 'want', 'nog', 'al', 'almal', 'elke', 'iedereen', 'iemand', 'niemand', 'alles', 'nix']);
+  
+  const words = text.toLowerCase()
+    .replace(/[.,!?;:]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !stopWords.has(w));
+  
+  const freq = {};
+  words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([w]) => w);
+}
+
+window.saveMeeting = async function() {
+  const title = document.getElementById('meetingTitle').value.trim();
+  const participants = document.getElementById('meetingParticipants').value.trim();
+  const transcript = document.getElementById('meetingTranscript').value.trim();
+  const summary = document.getElementById('meetingSummary').value.trim();
+  
+  if (!title) { toast('Please enter a meeting title', 'error'); return; }
+  if (!transcript) { toast('No transcript to save', 'error'); return; }
+  
+  try {
+    await addDoc(collection(db, 'meetings'), {
+      title,
+      participants,
+      transcript,
+      summary,
+      createdAt: new Date().toISOString(),
+      createdBy: window._currentUser?.email || 'unknown'
+    });
+    
+    toast('Meeting saved!', 'success');
+    resetMeetingForm();
+    loadMeetingsList();
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+};
+
+window.resetMeetingForm = function() {
+  _meetingChunks = [];
+  clearInterval(_meetingTimerInterval);
+  if (_meetingRecorder) {
+    _meetingRecorder.stream?.getTracks().forEach(t => t.stop());
+    _meetingRecorder = null;
+  }
+  
+  document.getElementById('meetingRecorder').style.display = 'none';
+  document.getElementById('meetingProcessing').style.display = 'none';
+  document.getElementById('meetingResult').style.display = 'none';
+  document.querySelector('#panel-meetings .page-header button').style.display = 'inline-block';
+  document.getElementById('meetingTitle').value = '';
+  document.getElementById('meetingParticipants').value = '';
+  document.getElementById('meetingTranscript').value = '';
+  document.getElementById('meetingSummary').value = '';
+  document.getElementById('meetingTimer').textContent = '00:00';
+  document.getElementById('processingProgress').style.width = '0%';
+};
+
+async function loadMeetingsList() {
+  const container = document.getElementById('meetingsList');
+  try {
+    const q = query(collection(db, 'meetings'), orderBy('createdAt', 'desc'), limit(20));
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+      container.innerHTML = '<div class="loading-text">No meetings saved yet. Record your first meeting!</div>';
+      return;
+    }
+    
+    container.innerHTML = snap.docs.map(doc => {
+      const m = doc.data();
+      const date = new Date(m.createdAt).toLocaleDateString('en-ZA', { 
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit' 
+      });
+      const preview = m.transcript ? m.transcript.slice(0, 100) + '...' : '';
+      
+      return `
+        <div class="list-item" style="cursor:pointer" onclick="viewMeeting('${doc.id}')">
+          <div class="li-content">
+            <div class="li-title">${m.title || 'Untitled Meeting'}</div>
+            <div class="li-meta">${date} · ${m.participants || 'No participants'} · ${preview}</div>
+          </div>
+          <div class="li-actions">
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); deleteMeeting('${doc.id}')">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--danger);font-size:.85rem">Error loading meetings: ' + e.message + '</div>';
+  }
+}
+
+window.viewMeeting = async function(id) {
+  // Could open a modal to view full meeting details
+  toast('View meeting detail - coming soon', 'info');
+};
+
+window.deleteMeeting = async function(id) {
+  if (!confirm('Delete this meeting?')) return;
+  try {
+    await deleteDoc(doc(db, 'meetings', id));
+    toast('Meeting deleted', 'success');
+    loadMeetingsList();
+  } catch (e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
+};
+
+// Add meetings loader to window._loaders
+window._loaders = window._loaders || {};
+window._loaders.meetings = loadMeetingsList;
 
 </script>
 
