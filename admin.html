@@ -6635,21 +6635,39 @@ let _whisperPipeline = null;
 async function loadWhisperPipeline() {
   if (_whisperPipeline) return _whisperPipeline;
   
-  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@2.17.1');
+  const MAX_RETRIES = 2;
+  let lastError;
   
-  const progressCallback = (x) => {
-    const pct = Math.round(x.progress * 100);
-    document.getElementById('processingProgress').style.width = pct + '%';
-    document.getElementById('processingDetail').textContent = x.status + (x.file ? ` (${x.file})` : '');
-  };
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      document.getElementById('processingStatus').textContent = `Loading Transformer.js (attempt ${attempt}/${MAX_RETRIES})...`;
+      const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@2.17.1');
+      
+      const progressCallback = (x) => {
+        const pct = Math.round(x.progress * 100);
+        document.getElementById('processingProgress').style.width = pct + '%';
+        document.getElementById('processingDetail').textContent = x.status + (x.file ? ` (${x.file})` : '');
+      };
+      
+      document.getElementById('processingStatus').textContent = 'Loading Whisper model...';
+      _whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+        quantized: true,
+        progress_callback: progressCallback
+      });
+      
+      return _whisperPipeline;
+    } catch (e) {
+      console.error(`Attempt ${attempt} failed:`, e);
+      lastError = e;
+      if (attempt < MAX_RETRIES) {
+        document.getElementById('processingStatus').textContent = `Retrying... (${attempt}/${MAX_RETRIES})`;
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+  }
   
-  _whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-    quantized: true,
-    progress_callback: progressCallback
-  });
-  
-  return _whisperPipeline;
-}
+throw new Error('Failed to load transcription model after ' + MAX_RETRIES + ' attempts. Check internet connection. Details: ' + lastError.message);
+  }
 
 window.startMeetingRecording = async function() {
   try {
@@ -6762,7 +6780,12 @@ async function processMeetingRecording() {
     
   } catch (e) {
     console.error('Processing error:', e);
-    toast('Processing failed: ' + e.message, 'error');
+    let msg = 'Processing failed: ' + e.message;
+    if (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('dynamic') || e.message.includes('import')) {
+      msg = 'Failed to load transcription model (network error). Check internet connection and try again. Details: ' + e.message;
+    }
+    toast(msg, 'error');
+    console.error('Full error:', e);
     document.getElementById('meetingProcessing').style.display = 'none';
     document.getElementById('meetingRecorder').style.display = 'block';
   }
