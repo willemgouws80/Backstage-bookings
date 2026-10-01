@@ -5849,13 +5849,13 @@ async function generateMonthlyInvoices(){
   const year = today.getFullYear();
   // Fetch existing auto invoices for this month and all bookings once
   const [invSnap, bSnap] = await Promise.all([getDocs(collection(db,'invoices')), getDocs(collection(db,'bookings'))]);
-  const existingEmails = new Set();
+  const existingBookingIds = new Set();
   let existingCount = 0;
   invSnap.forEach(d => {
     const dd = d.data();
     if (dd.source === 'auto' && dd.month === month && dd.year === year) {
       existingCount++;
-      existingEmails.add(dd.studentEmail);
+      if (dd.bookingId) existingBookingIds.add(dd.bookingId);
     }
   });
   if (existingCount > 0) { if (!force) { loadInvoices(); return; } }
@@ -5871,8 +5871,8 @@ async function generateMonthlyInvoices(){
   let count = 0;
   const batch = [];
   for (const b of indBookings) {
-    if (existingEmails.has(b.email)) continue;
-    existingEmails.add(b.email);
+    if (existingBookingIds.has(b.id)) continue;
+    existingBookingIds.add(b.id);
     const invNum = `AUTO-${year}-${String(month).padStart(2,'0')}-${String(++count).padStart(3,'0')}`;
     batch.push(addDoc(collection(db,'invoices'), {
       invoiceNumber: invNum,
