@@ -1513,7 +1513,7 @@ async function loadStudentData() {
     renderProgress();
   }, e => console.error('attendance snapshot error:', e));
 
-  const invQ = query(collection(db,'invoices'), where('email','==',email));
+  const invQ = query(collection(db,'invoices'), where('studentEmail','==',email));
   onSnapshot(invQ, snap => {
     _invoices = [];
     snap.forEach(d => _invoices.push({id:d.id,...d.data()}));
