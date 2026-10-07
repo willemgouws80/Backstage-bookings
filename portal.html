@@ -3603,7 +3603,7 @@ function renderChordButtons() {
 
 window.startBossBattle = function startBossBattle() {
   const boss = getBoss();
-  const wasListening = _bbState.listenCtx && _bbState.listenActive;
+  const wasListening = _bbState.listenCtx && _bbState.listenActive && _bbState.listenCtx.state !== 'closed';
   _bbState = {
     bossIndex: _bbState.bossIndex,
     level: 1,
@@ -3642,6 +3642,12 @@ window.startBossBattle = function startBossBattle() {
   document.getElementById('bbStatus').textContent = _bbState.listenMode 
     ? '🎤 Listen Mode ON — Play the chord on your instrument'
     : '🎸 Button Mode — Tap the chords below';
+  
+  // If Listen Mode is on but audio context was closed, restart listening
+  if (_bbState.listenMode && (!_bbState.listenCtx || _bbState.listenCtx.state === 'closed')) {
+    console.log('startBossBattle: Listen Mode on but no valid context, starting fresh...');
+    setTimeout(() => startBossListen(), 100);
+  }
   
   updateBossUI();
   nextLevel();
