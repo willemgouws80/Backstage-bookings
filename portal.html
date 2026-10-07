@@ -3530,6 +3530,7 @@ let _bbState = {
   listenSilenceFrames: 0,
   listenSmoothFreq: 0,
   listenSmoother: [],
+  gameStartTime: null,
 };
 
 function getBoss() { return BB_BOSSES[_bbState.bossIndex] || BB_BOSSES[0]; }
@@ -3603,7 +3604,9 @@ function renderChordButtons() {
 
 window.startBossBattle = function startBossBattle() {
   const boss = getBoss();
-  const wasListening = _bbState.listenCtx && _bbState.listenActive && _bbState.listenCtx.state !== 'closed';
+  // Check Listen Mode toggle directly - don't rely on old state which may be stale
+  const listenModeEnabled = document.getElementById('bbListenMode')?.checked || false;
+  
   _bbState = {
     bossIndex: _bbState.bossIndex,
     level: 1,
@@ -3616,12 +3619,12 @@ window.startBossBattle = function startBossBattle() {
     rhythmStep: 0,
     mode: 'sequence',
     rhythmInterval: null,
-    listenMode: document.getElementById('bbListenMode')?.checked || false,
-    listenStream: wasListening ? _bbState.listenStream : null,
-    listenCtx: wasListening ? _bbState.listenCtx : null,
-    listenAnalyser: wasListening ? _bbState.listenAnalyser : null,
-    listenData: wasListening ? _bbState.listenData : null,
-    listenRaf: wasListening ? _bbState.listenRaf : null,
+    listenMode: listenModeEnabled,
+    listenStream: null,
+    listenCtx: null,
+    listenAnalyser: null,
+    listenData: null,
+    listenRaf: null,
     listenStableNote: null,
     listenStableFreq: null,
     listenStableCount: 0,
@@ -3629,7 +3632,7 @@ window.startBossBattle = function startBossBattle() {
     listenSilenceFrames: 0,
     listenSmoothFreq: 0,
     listenSmoother: [],
-    listenActive: wasListening,
+    listenActive: false,
   };
   document.getElementById('bbIntro').style.display = 'none';
   document.getElementById('bbVictory').style.display = 'none';
@@ -3643,9 +3646,9 @@ window.startBossBattle = function startBossBattle() {
     ? '🎤 Listen Mode ON — Play the chord on your instrument'
     : '🎸 Button Mode — Tap the chords below';
   
-  // If Listen Mode is on but audio context was closed, restart listening
-  if (_bbState.listenMode && (!_bbState.listenCtx || _bbState.listenCtx.state === 'closed')) {
-    console.log('startBossBattle: Listen Mode on but no valid context, starting fresh...');
+  // Always start listening fresh if Listen Mode is enabled
+  if (_bbState.listenMode) {
+    console.log('startBossBattle: Listen Mode on, starting fresh...');
     setTimeout(() => startBossListen(), 100);
   }
   
@@ -3707,6 +3710,7 @@ function nextLevel() {
   _bbState.awaitingInput = true;
   _bbState.rhythmStep = 0;
   _bbState.mode = _bbState.targetSequence[0]?.chord ? 'rhythm' : 'sequence';
+  _bbState.gameStartTime = Date.now(); // Track game start time for practice logging
   
   const boss = getBoss();
   document.getElementById('bbStatus').textContent = _bbState.mode === 'rhythm' 
@@ -4059,12 +4063,45 @@ function showVictory() {
   document.getElementById('bbVictory').style.display = 'block';
   document.getElementById('bbDefeatedBoss').textContent = getBoss().name;
   showConfetti();
+  logBossBattlePractice('victory');
 }
 
 function showDefeat() {
   document.getElementById('bbGame').style.display = 'none';
   document.getElementById('bbDefeat').style.display = 'block';
   document.getElementById('bbDefeatedByBoss').textContent = getBoss().name;
+  logBossBattlePractice('defeat');
+}
+
+function showDefeat() {
+  document.getElementById('bbGame').style.display = 'none';
+  document.getElementById('bbDefeat').style.display = 'block';
+  document.getElementById('bbDefeatedByBoss').textContent = getBoss().name;
+  logBossBattlePractice('defeat');
+}
+
+function logBossBattlePractice(outcome) {
+  if (!_bbState.gameStartTime) return;
+  
+  const durationMs = Date.now() - _bbState.gameStartTime;
+  const minutes = Math.max(1, Math.round(durationMs / 60000)); // Min 1 minute
+  
+  const title = `Boss Battle: ${getBoss().name} (${outcome})`;
+  const notes = `Boss Battle game - ${outcome}. Levels completed: ${_bbState.level}. Dragon lives left: ${_bbState.dragonLives}. Princess hearts left: ${_bbState.princessHearts}.`;
+  
+  try {
+    addDoc(collection(db, 'practiceSessions'), {
+      email: _currentUser?.email,
+      title: title,
+      minutes: minutes,
+      notes: notes,
+      createdAt: new Date().toISOString()
+    }).then(() => {
+      console.log(`Boss Battle practice logged: ${minutes} min - ${outcome}`);
+    }).catch(e => console.error('Failed to log Boss Battle practice:', e));
+  } catch (e) {
+    console.error('Failed to log Boss Battle practice:', e);
+  }
 }
 
 function nextBossLevel() {
@@ -4078,6 +4115,9 @@ function nextBossLevel() {
 
 function resetBossBattle() {
   if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
+  if (_bbState.gameStartTime) {
+    logBossBattlePractice('quit');
+  }
   stopBossListen();
   document.getElementById('bbGame').style.display = 'none';
   document.getElementById('bbVictory').style.display = 'none';
