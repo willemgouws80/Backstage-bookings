@@ -3526,6 +3526,7 @@ let _bbState = {
   listenStableNote: null,
   listenStableFreq: null,
   listenStableCount: 0,
+  listenWrongStableCount: 0,
   listenSilenceFrames: 0,
   listenSmoothFreq: 0,
   listenSmoother: [],
@@ -3624,6 +3625,7 @@ window.startBossBattle = function startBossBattle() {
     listenStableNote: null,
     listenStableFreq: null,
     listenStableCount: 0,
+    listenWrongStableCount: 0,
     listenSilenceFrames: 0,
     listenSmoothFreq: 0,
     listenSmoother: [],
@@ -3763,8 +3765,13 @@ function bbCheckListenMode() {
   const detectedFreq = _bbState.listenStableFreq;
   if (detectedFreq && detectedFreq > 0) {
     const centsDiff = 1200 * Math.log2(detectedFreq / targetFreq);
-    if (Math.abs(centsDiff) <= 50) { // Within 50 cents (quarter tone)
-      _bbState.listenStableCount++;
+    const isCorrect = Math.abs(centsDiff) <= 50; // Within 50 cents (quarter tone)
+    
+    if (isCorrect) {
+      // Correct note - increment correct stability counter
+      _bbState.listenStableCount = (_bbState.listenStableCount || 0) + 1;
+      _bbState.listenWrongStableCount = 0; // Reset wrong counter
+      
       if (_bbState.listenStableCount >= 3) { // Stable for 3 frames
         _bbState.listenStableCount = 0;
         _bbState.listenStableFreq = null;
@@ -3772,24 +3779,22 @@ function bbCheckListenMode() {
         bbPlayChord(targetChord);
       }
     } else {
-      // Detected a stable WRONG note - trigger mistake
-      // Only penalize if we have a stable different note (not just noise)
-      if (_bbState.listenStableCount >= 3) {
-        _bbState.listenStableCount = 0;
+      // Wrong note - increment wrong stability counter
+      _bbState.listenWrongStableCount = (_bbState.listenWrongStableCount || 0) + 1;
+      _bbState.listenStableCount = 0; // Reset correct counter
+      
+      if (_bbState.listenWrongStableCount >= 3) { // Stable wrong note for 3 frames
+        _bbState.listenWrongStableCount = 0;
         _bbState.listenStableFreq = null;
-        // Trigger chord recognition for WRONG note to trigger loseHeart
-        const wrongRoot = _bbState.listenStableNote;
-        if (wrongRoot && wrongRoot !== targetRoot) {
-          // Find a chord with this root to pass to bbPlayChord
-          const wrongChord = Object.keys(BB_CHORD_FREQS).find(c => c.startsWith(wrongRoot)) || wrongRoot;
-          bbPlayChord(wrongChord);
-        }
-      } else {
-        _bbState.listenStableCount = 0;
+        // Trigger mistake - princess loses a heart
+        loseHeart();
+        console.log('Wrong note detected - princess loses heart!');
       }
     }
   } else {
+    // No frequency detected - reset both counters
     _bbState.listenStableCount = 0;
+    _bbState.listenWrongStableCount = 0;
   }
 }
 
