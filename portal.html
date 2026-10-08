@@ -2237,78 +2237,8 @@ function renderProgress() {
 }
 
 // ── AUTH FUNCTIONS ──
-window.doSignIn = async function() {
-  const email = document.getElementById('siEmail').value.trim();
-  const pass = document.getElementById('siPass').value;
-  const btn = document.getElementById('siBtn');
-  const err = document.getElementById('authError');
-  if (!email || !pass) { err.textContent = 'Please enter your email and password.'; return; }
-  btn.textContent = 'Signing in…'; btn.disabled = true; err.textContent = '';
-  try {
-    const userCred = await signInWithEmailAndPassword(auth, email, pass);
-    // Record login timestamp (use canonical email from auth)
-    try { await setDoc(doc(db,'students',userCred.user.email), { lastLoginAt: new Date().toISOString() }, { merge: true }); console.log('✅ Login timestamp saved'); }
-    catch(e) { console.warn('Login timestamp failed:', e); }
-  } catch(e) {
-    let msg = 'Sign in failed.';
-    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'Incorrect email or password.';
-    if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait a few minutes.';
-    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
-    if (e.code === 'auth/user-disabled') msg = 'This account has been disabled.';
-    err.textContent = msg;
-    btn.textContent = 'Sign In →'; btn.disabled = false;
-  }
-};
-
-window.doSignUp = async function() {
-  const fName = document.getElementById('suFName').value.trim();
-  const lName = document.getElementById('suLName').value.trim();
-  const email = document.getElementById('suEmail').value.trim();
-  const phone = document.getElementById('suPhone').value.trim();
-  const pass = document.getElementById('suPass').value;
-  const btn = document.getElementById('suBtn');
-  const err = document.getElementById('authError');
-  if (!fName || !lName || !email || !phone || !pass) { err.textContent = 'Please fill in all fields.'; return; }
-  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
-  btn.textContent = 'Creating account…'; btn.disabled = true; err.textContent = '';
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    // Create student profile document
-    try {
-      await setDoc(doc(db,'students',email), {
-        firstName: fName, lastName: lName, email, phone, createdAt: new Date().toISOString()
-      });
-    } catch(e) { /* rules may not allow write yet */ }
-    toast('Account created! Welcome to Backstage.');
-  } catch(e) {
-    let msg = 'Could not create account.';
-    if (e.code === 'auth/email-already-in-use') msg = 'This email is already registered. Sign in instead.';
-    if (e.code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
-    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
-    err.textContent = msg;
-    btn.textContent = 'Create Account →'; btn.disabled = false;
-  }
-};
-
-window.doSignOut = async function() {
-  await signOut(auth);
-};
-
-window.switchAuthTab = function(tab) {
-  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.auth-form').forEach(f=>{
-    f.classList.remove('active');
-    f.style.display = 'none';
-  });
-  const el = document.getElementById('auth'+tab.charAt(0).toUpperCase()+tab.slice(1));
-  if (el) {
-    el.classList.add('active');
-    el.style.display = 'block';
-  }
-  document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
-  const err = document.getElementById('authError');
-  if (err) err.textContent = '';
-};
+// Auth functions are defined in the separate script below to ensure they're globally available
+// They use window._auth and window._db set by the module script above
 
 // ── PANEL SWITCHING ──
 window.showPanel = function(name, el) {
@@ -4073,13 +4003,6 @@ function showDefeat() {
   logBossBattlePractice('defeat');
 }
 
-function showDefeat() {
-  document.getElementById('bbGame').style.display = 'none';
-  document.getElementById('bbDefeat').style.display = 'block';
-  document.getElementById('bbDefeatedByBoss').textContent = getBoss().name;
-  logBossBattlePractice('defeat');
-}
-
 function logBossBattlePractice(outcome) {
   if (!_bbState.gameStartTime) return;
   
@@ -4784,6 +4707,90 @@ if ('serviceWorker' in navigator) {
 // Focus email on load
 setTimeout(() => document.getElementById('siEmail')?.focus(), 100);
 </script>
+
+<script>
+// ── AUTH FUNCTIONS (non-module, runs after module, uses window._auth, window._db) ──
+window.doSignIn = async function() {
+  const auth = window._auth;
+  const db = window._db;
+  const email = document.getElementById('siEmail').value.trim();
+  const pass = document.getElementById('siPass').value;
+  const btn = document.getElementById('siBtn');
+  const err = document.getElementById('authError');
+  if (!email || !pass) { err.textContent = 'Please enter your email and password.'; return; }
+  btn.textContent = 'Signing in…'; btn.disabled = true; err.textContent = '';
+  try {
+    const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+    const userCred = await signInWithEmailAndPassword(window._auth, email, pass);
+    try { 
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+      await setDoc(doc(window._db,'students',userCred.user.email), { lastLoginAt: new Date().toISOString() }, { merge: true }); 
+      console.log('✅ Login timestamp saved'); 
+    } catch(e) { console.warn('Login timestamp failed:', e); }
+  } catch(e) {
+    let msg = 'Sign in failed.';
+    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'Incorrect email or password.';
+    if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait a few minutes.';
+    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+    if (e.code === 'auth/user-disabled') msg = 'This account has been disabled.';
+    err.textContent = msg;
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
+};
+
+window.doSignUp = async function() {
+  const fName = document.getElementById('suFName').value.trim();
+  const lName = document.getElementById('suLName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const phone = document.getElementById('suPhone').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const btn = document.getElementById('suBtn');
+  const err = document.getElementById('authError');
+  if (!fName || !lName || !email || !phone || !pass) { err.textContent = 'Please fill in all fields.'; return; }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+  btn.textContent = 'Creating account…'; btn.disabled = true; err.textContent = '';
+  try {
+    const { createUserWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+    const cred = await createUserWithEmailAndPassword(window._auth, email, pass);
+    try {
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+      await setDoc(doc(window._db,'students',email), {
+        firstName: fName, lastName: lName, email, phone, createdAt: new Date().toISOString()
+      });
+    } catch(e) { /* rules may not allow write yet */ }
+    toast('Account created! Welcome to Backstage.');
+  } catch(e) {
+    let msg = 'Could not create account.';
+    if (e.code === 'auth/email-already-in-use') msg = 'This email is already registered. Sign in instead.';
+    if (e.code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
+    if (e.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+    err.textContent = msg;
+    btn.textContent = 'Create Account →'; btn.disabled = false;
+  }
+};
+
+window.doSignOut = async function() {
+  const { signOut } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+  await signOut(window._auth);
+};
+
+window.switchAuthTab = function(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f=>{
+    f.classList.remove('active');
+    f.style.display = 'none';
+  });
+  const el = document.getElementById('auth'+tab.charAt(0).toUpperCase()+tab.slice(1));
+  if (el) {
+    el.classList.add('active');
+    el.style.display = 'block';
+  }
+  document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
+  const err = document.getElementById('authError');
+  if (err) err.textContent = '';
+};
+</script>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 let _venueMap = null;
