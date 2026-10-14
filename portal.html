@@ -3712,7 +3712,7 @@ function bbCheckListenMode() {
   };
   
   const targetTones = BB_CHORD_TONES[targetChord] || [BB_CHORD_FREQS[targetChord]];
-  if (!targetTones || targetTones.length === 0) return;
+  if (!targetTones || targetTones.length === 0) { console.log('No target tones for:', targetChord); return; }
   
   // Start listening if not already
   if (!_bbState.listenCtx) startBossListen();
@@ -3720,11 +3720,13 @@ function bbCheckListenMode() {
   // Check if we detected a frequency close to ANY target chord tone (frequency-based matching ±50 cents)
   const detectedFreq = _bbState.listenStableFreq;
   if (detectedFreq && detectedFreq > 0) {
+    console.log('Detected freq:', detectedFreq.toFixed(1), 'Target tones:', targetTones);
     // Check against all chord tones (root, 3rd, 5th)
     const isCorrect = targetTones.some(tone => {
       const centsDiff = 1200 * Math.log2(detectedFreq / tone);
       return Math.abs(centsDiff) <= 50; // Within 50 cents (quarter tone)
     });
+    console.log('isCorrect:', isCorrect);
     
     if (isCorrect) {
       // Correct note - increment correct stability counter
