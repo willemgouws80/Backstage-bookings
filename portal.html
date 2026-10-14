@@ -3724,17 +3724,34 @@ function bbCheckListenMode() {
     console.log('=== CHORD DETECTION DEBUG ===');
     console.log('Target chord:', targetChord);
     console.log('Target tones (Hz):', targetTones.map(t => t.toFixed(1)));
-    console.log('Detected freq:', detectedFreq.toFixed(1));
+    console.log('Detected freq:', detectedFreq.toFixed(1), '(raw:', _bbState.listenStableFreq.toFixed(1), ')');
     
-    // Check against all chord tones (root, 3rd, 5th)
+    // Check detected freq against target tones, ALSO check octaves (×2, ÷2)
     let bestMatch = null;
     let bestCents = 9999;
+    let bestTone = null;
+    
     targetTones.forEach(tone => {
-      const centsDiff = 1200 * Math.log2(detectedFreq / tone);
-      const absCents = Math.abs(centsDiff);
+      // Check fundamental
+      let centsDiff = 1200 * Math.log2(detectedFreq / tone);
+      let absCents = Math.abs(centsDiff);
       if (absCents < bestCents) {
         bestCents = absCents;
         bestMatch = tone;
+      }
+      // Check octave up (×2)
+      centsDiff = 1200 * Math.log2(detectedFreq / (tone * 2));
+      absCents = Math.abs(centsDiff);
+      if (absCents < bestCents) {
+        bestCents = absCents;
+        bestMatch = tone * 2;
+      }
+      // Check octave down (÷2)
+      centsDiff = 1200 * Math.log2(detectedFreq / (tone / 2));
+      absCents = Math.abs(centsDiff);
+      if (absCents < bestCents) {
+        bestCents = absCents;
+        bestMatch = tone / 2;
       }
     });
     console.log('Best match:', bestMatch.toFixed(1), 'at', bestCents.toFixed(1), 'cents');
