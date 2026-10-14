@@ -3723,7 +3723,9 @@ function bbCheckListenMode() {
       _bbState.listenWrongStableCount = (_bbState.listenWrongStableCount || 0) + 1;
       _bbState.listenStableCount = 0; // Reset correct counter
       
-      if (_bbState.listenWrongStableCount >= 3) { // Stable wrong note for 3 frames
+      // Less sensitive for wrong notes: require 6 stable frames instead of 3
+      // This makes it more forgiving - princess only loses heart if wrong note is held longer
+      if (_bbState.listenWrongStableCount >= 6) { // Stable wrong note for 6 frames (was 3)
         _bbState.listenWrongStableCount = 0;
         _bbState.listenStableFreq = null;
         // Trigger mistake - princess loses a heart
