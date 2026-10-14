@@ -3720,13 +3720,28 @@ function bbCheckListenMode() {
   // Check if we detected a frequency close to ANY target chord tone (frequency-based matching ±50 cents)
   const detectedFreq = _bbState.listenStableFreq;
   if (detectedFreq && detectedFreq > 0) {
-    console.log('Detected freq:', detectedFreq.toFixed(1), 'Target tones:', targetTones);
+    // Debug: show what we're detecting vs what we expect
+    console.log('=== CHORD DETECTION DEBUG ===');
+    console.log('Target chord:', targetChord);
+    console.log('Target tones (Hz):', targetTones.map(t => t.toFixed(1)));
+    console.log('Detected freq:', detectedFreq.toFixed(1));
+    
     // Check against all chord tones (root, 3rd, 5th)
-    const isCorrect = targetTones.some(tone => {
+    let bestMatch = null;
+    let bestCents = 9999;
+    targetTones.forEach(tone => {
       const centsDiff = 1200 * Math.log2(detectedFreq / tone);
-      return Math.abs(centsDiff) <= 50; // Within 50 cents (quarter tone)
+      const absCents = Math.abs(centsDiff);
+      if (absCents < bestCents) {
+        bestCents = absCents;
+        bestMatch = tone;
+      }
     });
-    console.log('isCorrect:', isCorrect);
+    console.log('Best match:', bestMatch.toFixed(1), 'at', bestCents.toFixed(1), 'cents');
+    
+    const isCorrect = bestCents <= 100; // Within 100 cents (semitone) - more generous for chords
+    
+    console.log('isCorrect:', isCorrect, '(threshold: 100 cents)');
     
     if (isCorrect) {
       // Correct note - increment correct stability counter
