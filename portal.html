@@ -3637,7 +3637,7 @@ function nextLevel() {
   if (_bbState.rhythmInterval) clearInterval(_bbState.rhythmInterval);
   _bbState.targetSequence = generateSequence(_bbState.level);
   _bbState.playerSequence = [];
-  _bbState.awaitingInput = true;
+  _bbState.awaitingInput = false; // Start disabled, will enable after demo
   _bbState.rhythmStep = 0;
   _bbState.mode = _bbState.targetSequence[0]?.chord ? 'rhythm' : 'sequence';
   _bbState.gameStartTime = Date.now(); // Track game start time for practice logging
@@ -3645,12 +3645,15 @@ function nextLevel() {
   const boss = getBoss();
   document.getElementById('bbStatus').textContent = _bbState.mode === 'rhythm' 
     ? `Watch the rhythm, then copy it!`
-    : `Play the sequence: ${_bbState.targetSequence.join(' → ')}`;
+    : `Listen to the chord, then play it back`;
   
   updateBossUI();
   
   if (_bbState.mode === 'rhythm') {
     playRhythmDemo();
+  } else {
+    // Sequence mode: play target chord(s) first, then enable listening
+    playSequenceDemo();
   }
 }
 
@@ -3695,17 +3698,33 @@ function bbCheckListenMode() {
   
   // Extract root note from chord (A from Am, D from Dm, etc.)
   const targetRoot = targetChord.replace(/[^A-G].*/, '');
-  const targetFreq = BB_CHORD_FREQS[targetChord];
-  if (!targetFreq) return;
+  
+  // Define chord tones (root, 3rd, 5th) for each chord - accepts any chord tone
+  const BB_CHORD_TONES = {
+    'A':  [110.00, 138.59, 164.81],  // A, C#, E
+    'Am': [110.00, 130.81, 164.81],  // A, C, E
+    'D':  [146.83, 185.00, 220.00],  // D, F#, A
+    'Dm': [146.83, 174.61, 220.00],  // D, F, A
+    'E':  [164.81, 207.65, 246.94],  // E, G#, B
+    'Em': [164.81, 196.00, 246.94],  // E, G, B
+    'G':  [196.00, 246.94, 293.66],  // G, B, D
+    'C':  [130.81, 164.81, 196.00],  // C, E, G
+  };
+  
+  const targetTones = BB_CHORD_TONES[targetChord] || [BB_CHORD_FREQS[targetChord]];
+  if (!targetTones || targetTones.length === 0) return;
   
   // Start listening if not already
   if (!_bbState.listenCtx) startBossListen();
   
-  // Check if we detected a frequency close to target (frequency-based matching ±50 cents)
+  // Check if we detected a frequency close to ANY target chord tone (frequency-based matching ±50 cents)
   const detectedFreq = _bbState.listenStableFreq;
   if (detectedFreq && detectedFreq > 0) {
-    const centsDiff = 1200 * Math.log2(detectedFreq / targetFreq);
-    const isCorrect = Math.abs(centsDiff) <= 50; // Within 50 cents (quarter tone)
+    // Check against all chord tones (root, 3rd, 5th)
+    const isCorrect = targetTones.some(tone => {
+      const centsDiff = 1200 * Math.log2(detectedFreq / tone);
+      return Math.abs(centsDiff) <= 50; // Within 50 cents (quarter tone)
+    });
     
     if (isCorrect) {
       // Correct note - increment correct stability counter
